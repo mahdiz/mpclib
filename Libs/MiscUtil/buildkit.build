@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="BuildKit"
+         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <!-- See http://msbuildtasks.tigris.org -->
+  <Import Project="$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets"/>
+
+  <PropertyGroup>
+    <OutputDirectory>tmp</OutputDirectory>
+  </PropertyGroup>
+
+  <Target Name="BuildKit">
+    <!-- Clean up -->
+    <RemoveDir Directories="$(OutputDirectory)" />
+    <MakeDir Directories="$(OutputDirectory)" />
+    
+    
+    <!-- Work out where we are... -->
+    <SvnInfo LocalPath=".">
+      <Output TaskParameter="RepositoryPath" PropertyName="SvnUrl" />
+    </SvnInfo>
+    
+    <!-- ... and what the latest version is -->
+    <SvnInfo RepositoryPath="$(SvnUrl)">
+      <Output TaskParameter="LastChangedRevision" PropertyName="Revision" />
+    </SvnInfo>
+
+    <!-- Fetch the source -->
+    <SvnExport RepositoryPath="$(SvnUrl)"
+               LocalPath="$(OutputDirectory)\MiscUtil"
+               Revision="$(LastRevision)" />
+              
+    <!-- No idea how to redirect this!
+    <SvnClient Command="log"
+               Arguments="-r $(LastRevision):1">
+    </SvnClient>
+    -->
+    
+    <!-- Update the AssemblyInfo with the revision number -->
+    
+    <FileUpdate Files="$(OutputDirectory)\MiscUtil\MiscUtil\Properties\AssemblyInfo.cs"
+                Regex='(\[\s*assembly:\s*AssemblyFileVersion\(\s*"[^\.]+\.[^\.]+)\.([^\.]+)(\.)([^\.]+)("\)\s*\])'
+                ReplacementText='$1.$2.$(Revision)$5' />
+    
+    <!-- Zip up the source -->    
+    <ItemGroup>
+      <ZipFiles Include="$(OutputDirectory)\MiscUtil\**" />
+    </ItemGroup>
+    
+    <Zip WorkingDirectory="$(OutputDirectory)"
+         ZipFileName="$(OutputDirectory)\MiscUtil-Src-r$(Revision).zip"
+         Files="@(ZipFiles)" />
+               
+    <!-- Build for both 3.5 and 2.0 -->
+    <MsBuild Projects="$(OutputDirectory)\MiscUtil\MiscUtil.sln" 
+             Properties="Configuration=Release" />
+    <MsBuild Projects="$(OutputDirectory)\MiscUtil\MiscUtil.sln" 
+             Properties="Configuration=Release 2.0" />
+  
+    <NUnit Assemblies="$(OutputDirectory)\MiscUtil\MiscUtil.UnitTests\bin\Release\MiscUtil.UnitTests.dll"
+           ToolPath="c:\Program Files\NUnit 2.4.3\bin"
+    />
+    
+    <NUnit Assemblies="$(OutputDirectory)\MiscUtil\MiscUtil.UnitTests\bin\Release 2.0\MiscUtil.UnitTests.dll"
+           ToolPath="c:\Program Files\NUnit 2.4.3\bin"
+    />
+  
+    <ItemGroup>
+      <Licence Include="licence.txt" />
+      <ReadMe Include="readme.txt" />
+      <Rel20Xml Include="$(OutputDirectory)\MiscUtil\MiscUtil\bin\Release 2.0\MiscUtil.xml" />
+      <Rel20Dll Include="$(OutputDirectory)\MiscUtil\MiscUtil\bin\Release 2.0\MiscUtil.dll" />
+      <Rel35Xml Include="$(OutputDirectory)\MiscUtil\MiscUtil\bin\Release\MiscUtil.xml" />
+      <Rel35Dll Include="$(OutputDirectory)\MiscUtil\MiscUtil\bin\Release\MiscUtil.dll" />
+    </ItemGroup>
+  
+    <Copy DestinationFolder="$(OutputDirectory)\2.0"
+          SourceFiles="@(Rel20Xml);@(Rel20Dll);@(ReadMe);@(Licence)" />
+    <Copy DestinationFolder="$(OutputDirectory)\3.5"
+          SourceFiles="@(Rel35Xml);@(Rel35Dll);@(ReadMe);@(Licence)" />
+    <Copy SourceFiles="@(Rel20Dll)" DestinationFiles="$(OutputDirectory)\MiscUtil-DotNet2-r$(Revision).dll" />
+    <Copy SourceFiles="@(Rel35Dll)" DestinationFiles="$(OutputDirectory)\MiscUtil-r$(Revision).dll" />
+          
+          
+    <ItemGroup>
+      <ZipFiles20 Include="$(OutputDirectory)\2.0\*.*" />
+      <ZipFiles35 Include="$(OutputDirectory)\3.5\*.*" />
+    </ItemGroup>
+          
+    <Zip WorkingDirectory="$(OutputDirectory)\2.0"
+         Files="@(ZipFiles20)"
+         ZipFileName="$(OutputDirectory)\MiscUtil-DotNet2-r$(Revision).zip" />
+
+    <Zip WorkingDirectory="$(OutputDirectory)\3.5"
+         Files="@(ZipFiles35)"
+         ZipFileName="$(OutputDirectory)\MiscUtil-r$(Revision).zip" />
+
+  </Target>
+ 
+
+</Project>

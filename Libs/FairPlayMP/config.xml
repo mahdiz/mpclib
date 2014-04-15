@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<Fairplay2>	
+	<!--  The circuit file to compute -->
+	<Circuit>Voting.sfdl</Circuit>
+
+	<!-- List of IP's of the computers involved in the computation. -->
+	<Participates>
+	
+		<!-- List of players (IP or RP) -->
+		<Players>
+			<Player NameInFunction="voter[0]">132.65.34.104</Player>
+			<Player NameInFunction="voter[1]">132.65.34.105</Player>
+			<Player NameInFunction="voter[2]">132.65.34.106</Player>
+			<Player NameInFunction="voter[3]">132.65.34.107</Player>
+			<Player NameInFunction="voter[4]">132.65.34.108</Player>
+		</Players>
+		
+		<!-- List of IP of the CP -->
+		<ComputationPlayers>
+			132.65.34.104,132.65.34.105,132.65.34.106,132.65.34.107,132.65.34.108
+		</ComputationPlayers>
+	</Participates>
+	
+	<Security>
+		<Port>
+			12347
+		</Port>
+		<!-- The prime number to use as modulo, modulo % 4 should be equal 3, the length of this number along with the number of CP will determine the security parameter -->		
+    <Modulo>
+      8134060736918996028712079761368916127641277829121964464624779195144112206006554344138214045605191215378391962090258586211
+		</Modulo>
+		<!-- The protocol to use for the Pseudo Random Generator -->
+		<PRGProtocol>
+			SHA1PRNG
+		</PRGProtocol>
+		<!-- The certificates to use for the SSL connection -->	
+		<Certificate>
+			<KeyStore>
+				certificate/ks
+			</KeyStore>
+			<KeyStorePassword>
+				123456
+			</KeyStorePassword>
+			<TrustStore>
+				certificate/ts
+			</TrustStore>
+			<TrustStorePassword>
+				123456
+			</TrustStorePassword>
+		</Certificate>
+	</Security>
+</Fairplay2>

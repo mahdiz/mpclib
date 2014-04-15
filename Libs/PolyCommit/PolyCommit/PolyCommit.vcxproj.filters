@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Native">
+      <UniqueIdentifier>{0cea3736-531f-4594-9ba2-ab3c76fec1ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Native\PbcWrapper">
+      <UniqueIdentifier>{3a508e64-fa67-4880-834b-572cb07ca837}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Native">
+      <UniqueIdentifier>{38615033-8105-4faa-b9be-554b41600128}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Native\PbcWrapper">
+      <UniqueIdentifier>{542ec4e8-219e-41f7-bdaf-5f9d1a4051b1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PbcWrapper\G.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\G1.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\G2.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\GT.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\Pairing.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\PBCExceptions.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\PPPairing.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\Zr.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="PbcWrapper\PbcWapper.h">
+      <Filter>Header Files\Native\PbcWrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="MG.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PolyCommitCommon.h">
+      <Filter>Header Files\Native</Filter>
+    </ClInclude>
+    <ClInclude Include="PolyCommitProofs.h">
+      <Filter>Header Files\Native</Filter>
+    </ClInclude>
+    <ClInclude Include="PolyCommitProver.h">
+      <Filter>Header Files\Native</Filter>
+    </ClInclude>
+    <ClInclude Include="PolyCommitVerifier.h">
+      <Filter>Header Files\Native</Filter>
+    </ClInclude>
+    <ClInclude Include="PcParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PolyCommit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AssemblyInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\G.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\G1.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\G2.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\GT.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\Pairing.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\PPPairing.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PbcWrapper\Zr.cpp">
+      <Filter>Source Files\Native\PbcWrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="PolyCommitCommon.cpp">
+      <Filter>Source Files\Native</Filter>
+    </ClCompile>
+    <ClCompile Include="PolyCommitProofs.cpp">
+      <Filter>Source Files\Native</Filter>
+    </ClCompile>
+    <ClCompile Include="PolyCommitProver.cpp">
+      <Filter>Source Files\Native</Filter>
+    </ClCompile>
+    <ClCompile Include="PolyCommitVerifier.cpp">
+      <Filter>Source Files\Native</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\openssl\lib\libeay32.lib" />
+    <Library Include="..\..\gmp-vc\lib\gmp-vc.lib" />
+  </ItemGroup>
+</Project>

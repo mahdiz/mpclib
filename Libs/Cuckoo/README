@@ -1,0 +1,27 @@
+Project outline:
+
+cuckoo.py: A high level cuckoo rule simulator used to find good group sizes
+
+rangebst.py: A binary search tree that supports a ranged lookup function
+
+mkfigs.py: Takes the output of cuckoo.py and makes figures
+
+
+To run the system:
+
+On Ubuntu:
+0) sudo apt-get install pypy python-matplotlib
+1) pypy cuckoo.py > result_file
+2) python mkfigs.py ../results_file
+
+
+NOTES:
+
+* pypy is a python interpreter with JIT, it's *much* faster than the
+standard python interpreter for applications like this one.  
+
+* the mkfigs command will create a pdf ../results_file.pdf and also show you
+the figure in an X window.
+
+* the files in results/ are named as such: results_<num_attacks>_kvalue where kvalue is either std (meaning minimum recommended value) or k=1 or k=15.  If <num_attacks> is missing then the value is 10,000.
+

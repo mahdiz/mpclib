@@ -1,0 +1,5 @@
+A fully homomorphic scheme preserves computation for both addition and multiplication, which is considerably more powerful. Such a system also preserves the useful algebraic properties of a ring.
+
+Gentry's original method also involved setting up an initial lattice that is "somewhat" homomorphic (meaning that it is very limited in the functions that it can be used to evaluate), then "bootstrapping" it by iteratively improving it. Subsequent advances (like BGV'11, which is implemented in HELib) allowed faster computation of Gentry's original method, eliminating bootstrap stages and replacing some of the lattice-based operations with integer math.
+
+HElib uses single instruction, multiple data (SIMD) operations to parallelize some encryption steps, and other methods for keeping the ciphertext as compact as possible, thus making it faster to process.

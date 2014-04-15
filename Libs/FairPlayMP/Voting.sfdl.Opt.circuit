@@ -1,0 +1,132 @@
+// /**
+//  * Performs a voting between two candidates.
+//  * At the end all the voters know who won.
+//  * Nothing else is known to anyone.
+//  **/
+// program voting{
+//     const nVoters = 5;
+// 	type VotesCount = Int<4>; // Enough bits to count up to 5 voters.
+// 
+// 	// Two candidates (in two's compliment).
+// 	type Vote = Int<2>;
+// 	type Voter = struct{Vote input, Vote output};
+// 
+// 	function void main(Voter[nVoters] voters){
+// 		var VotesCount[2] vc;
+// 		var Vote win;
+// 		
+// 		// Making the voting.
+// 		for(i=0 to nVoters-1){
+// 			if(voters[i].input == 0)
+// 				vc[0] = vc[0] + 1;
+// 			else
+// 				vc[1] = vc[1] + 1;
+// 		}
+// 		
+// 		if (vc[1] > vc[0])
+// 			win = 1;
+// 		
+// 		// Setting the result.
+// 		for(i=0 to nVoters-1)
+// 			voters[i].output = win;
+//    }
+// }
+0 gate arity 0 table [ 0 ] inputs [ ]		//CONST 0 , vc[0].$1(2) , vc[1].$1(2) , vc[0].$1(3) , win.$1(1) , voters[0].output.$1(0) , voters[1].output.$1(1) , voters[0].output.$1(2) , voters[1].output.$1(2) , voters[2].output.$1(2) , voters[0].output.$1(3) , voters[1].output.$1(3) , voters[2].output.$1(3) , voters[3].output.$1(3) , voters[0].output.$1(4) , voters[1].output.$1(4) , voters[2].output.$1(4) , voters[3].output.$1(4) , voters[4].output.$1(4) []
+1 gate arity 0 table [ 1 ] inputs [ ]		//CONST 1 []
+// --------------- EOF ------------------
+// ---------------- BEFORE: (v0.bitSize+v1.bitSize)
+// ---------------- After: (v0.bitSize+v1.bitSize) Pins: [ 0 ]
+// ---------------- BEFORE: (v0.bitSize+v1.bitSize)
+// ---------------- After: (v0.bitSize+v1.bitSize) Pins: [ 0 ]
+// SFDL file for Program: voting
+2 input		//voters[0].input.$0(0) , voters[i].input.$0(0) , voters[0].input.$0(1) [12]
+3 input		//voters[0].input.$1(0) , voters[i].input.$1(0) , voters[0].input.$1(1) [12]
+4 input		//voters[1].input.$0(0) , voters[i].input.$0(0) , voters[1].input.$0(1) [13]
+5 input		//voters[1].input.$1(0) , voters[i].input.$1(0) , voters[1].input.$1(1) [13]
+6 input		//voters[2].input.$0(0) , voters[i].input.$0(0) , voters[2].input.$0(1) [17]
+7 input		//voters[2].input.$1(0) , voters[i].input.$1(0) , voters[2].input.$1(1) [17]
+8 input		//voters[3].input.$0(0) , voters[i].input.$0(0) , voters[3].input.$0(1) [28]
+9 input		//voters[3].input.$1(0) , voters[i].input.$1(0) , voters[3].input.$1(1) [28]
+10 input		//voters[4].input.$0(0) , voters[i].input.$0(0) , voters[4].input.$0(1) [45]
+11 input		//voters[4].input.$1(0) , voters[i].input.$1(0) , voters[4].input.$1(1) [45]
+// ---------------- BEFORE: (nVoters+(-1))
+// ---------------- After: (nVoters+(-1)) Pins: [ 0 0 1 0 ]
+12 gate arity 2 table [ 1 0 0 0 ] inputs [ 3 2 ]		// [16, 14, 15]
+13 gate arity 2 table [ 1 0 0 0 ] inputs [ 5 4 ]		// [16, 14, 15]
+14 gate arity 2 table [ 0 1 1 0 ] inputs [ 13 12 ]		// [19, 18, 21, 20, 22, 25]
+// ---------------- Assign: vc[0] = (vc[0]+1)
+// ---------------- BEFORE: (vc[0]+1)
+// ---------------- After: (vc[0]+1) Pins: [ 1 0 ]
+// ---------------- Assign: vc[1] = (vc[1]+1)
+// ---------------- BEFORE: (vc[1]+1)
+// ---------------- After: (vc[1]+1) Pins: [ 1 0 ]
+15 gate arity 2 table [ 0 0 0 1 ] inputs [ 13 12 ]		// [19, 18, 23]
+16 gate arity 2 table [ 1 0 0 0 ] inputs [ 13 12 ]		// [21, 20, 26]
+17 gate arity 2 table [ 1 0 0 0 ] inputs [ 7 6 ]		// [23, 22, 25, 24, 27, 26]
+18 gate arity 2 table [ 0 1 1 0 ] inputs [ 14 15 ]		// [23]
+19 gate arity 2 table [ 0 0 0 1 ] inputs [ 14 15 ]		// [24]
+// ---------------- Assign: vc[0] = (vc[0]+1)
+// ---------------- BEFORE: (vc[0]+1)
+20 gate arity 2 table [ 0 1 1 0 ] inputs [ 14 16 ]		// [26]
+21 gate arity 2 table [ 0 0 0 1 ] inputs [ 14 16 ]		// [27]
+22 gate arity 2 table [ 0 1 1 0 ] inputs [ 14 17 ]		// [37, 29, 30]
+23 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 15 18 17 ]		//vc[0].$1(6) [38, 29, 30]
+24 gate arity 2 table [ 0 0 0 1 ] inputs [ 19 17 ]		// [32, 39, 31]
+25 gate arity 2 table [ 1 0 0 1 ] inputs [ 14 17 ]		// [34, 33, 41]
+26 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 20 16 17 ]		//vc[1].$1(6) [34, 33, 42]
+27 gate arity 2 table [ 0 1 0 0 ] inputs [ 21 17 ]		// [35, 36, 43]
+// ---------------- After: (vc[0]+1) Pins: [ 20 22 24 26 ]
+// ---------------- Assign: vc[1] = (vc[1]+1)
+// ---------------- BEFORE: (vc[1]+1)
+28 gate arity 2 table [ 1 0 0 0 ] inputs [ 9 8 ]		// [38, 39, 37, 42, 43, 40, 41, 44]
+29 gate arity 2 table [ 0 1 1 0 ] inputs [ 23 22 ]		// [38]
+30 gate arity 2 table [ 0 0 0 1 ] inputs [ 23 22 ]		// [32, 31]
+31 gate arity 2 table [ 0 1 1 0 ] inputs [ 24 30 ]		// [39]
+32 gate arity 2 table [ 0 0 0 1 ] inputs [ 24 30 ]		// [40]
+33 gate arity 2 table [ 0 1 1 0 ] inputs [ 26 25 ]		// [42]
+34 gate arity 2 table [ 0 0 0 1 ] inputs [ 26 25 ]		// [35, 36]
+35 gate arity 2 table [ 0 1 1 0 ] inputs [ 34 27 ]		// [43]
+// ---------------- After: (vc[1]+1) Pins: [ 28 30 32 34 ]
+36 gate arity 2 table [ 0 0 0 1 ] inputs [ 34 27 ]		// [44]
+37 gate arity 2 table [ 0 1 1 0 ] inputs [ 22 28 ]		// [56, 46, 47]
+38 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 23 29 28 ]		//vc[0].$1(8) [57, 46, 47]
+39 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 24 31 28 ]		//vc[0].$2(8) [49, 48, 58]
+40 gate arity 2 table [ 0 0 0 1 ] inputs [ 32 28 ]		// [50, 59]
+41 gate arity 2 table [ 1 0 0 1 ] inputs [ 25 28 ]		// [51, 52, 60]
+42 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 33 26 28 ]		//vc[1].$1(8) [51, 52, 61]
+43 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 35 27 28 ]		//vc[1].$2(8) [54, 53, 62]
+44 gate arity 2 table [ 0 1 0 0 ] inputs [ 36 28 ]		// [55, 63]
+45 gate arity 2 table [ 1 0 0 0 ] inputs [ 11 10 ]		// [59, 58, 57, 56, 63, 62, 61, 60]
+46 gate arity 2 table [ 0 1 1 0 ] inputs [ 38 37 ]		// [57]
+// ---------------- Assign: vc[0] = (vc[0]+1)
+// ---------------- BEFORE: (vc[0]+1)
+47 gate arity 2 table [ 0 0 0 1 ] inputs [ 38 37 ]		// [49, 48]
+48 gate arity 2 table [ 0 1 1 0 ] inputs [ 39 47 ]		// [58]
+49 gate arity 2 table [ 0 0 0 1 ] inputs [ 39 47 ]		// [50]
+50 gate arity 2 table [ 0 1 1 0 ] inputs [ 40 49 ]		// [59]
+51 gate arity 2 table [ 0 1 1 0 ] inputs [ 42 41 ]		// [61]
+52 gate arity 2 table [ 0 0 0 1 ] inputs [ 42 41 ]		// [54, 53]
+53 gate arity 2 table [ 0 1 1 0 ] inputs [ 43 52 ]		// [62]
+54 gate arity 2 table [ 0 0 0 1 ] inputs [ 43 52 ]		// [55]
+// ---------------- After: (vc[0]+1) Pins: [ 47 49 51 53 ]
+// ---------------- Assign: vc[1] = (vc[1]+1)
+// ---------------- BEFORE: (vc[1]+1)
+55 gate arity 2 table [ 0 1 1 0 ] inputs [ 54 44 ]		// [63]
+56 gate arity 2 table [ 0 1 1 0 ] inputs [ 45 37 ]		// [69]
+57 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 38 46 45 ]		//vc[0].$1(10) [70]
+58 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 39 48 45 ]		//vc[0].$2(10) [71]
+59 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 40 50 45 ]		//vc[0].$3(10) [72]
+60 gate arity 2 table [ 1 0 0 1 ] inputs [ 45 41 ]		// [69, 64, 65]
+61 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 51 42 45 ]		//vc[1].$1(10) [64, 65]
+62 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 53 43 45 ]		//vc[1].$2(10) [66, 67]
+// ---------------- After: (vc[1]+1) Pins: [ 55 57 59 61 ]
+63 gate arity 3 table [ 0 1 0 1 0 0 1 1 ] inputs [ 55 44 45 ]		//vc[1].$3(10) [68]
+64 gate arity 2 table [ 0 1 1 0 ] inputs [ 61 60 ]		// [70]
+65 gate arity 2 table [ 0 1 1 1 ] inputs [ 61 60 ]		// [66, 67]
+66 gate arity 2 table [ 0 1 1 0 ] inputs [ 62 65 ]		// [71]
+67 gate arity 2 table [ 0 1 1 1 ] inputs [ 62 65 ]		// [68]
+68 gate arity 2 table [ 0 1 1 0 ] inputs [ 63 67 ]		// [72]
+69 gate arity 2 table [ 0 0 0 1 ] inputs [ 60 56 ]		// [70]
+70 gate arity 3 table [ 0 0 0 1 0 1 1 1 ] inputs [ 69 64 57 ]		// [71]
+71 gate arity 3 table [ 0 0 0 1 0 1 1 1 ] inputs [ 70 66 58 ]		// [72]
+72 gate arity 3 table [ 0 1 1 0 1 0 0 1 ] inputs [ 71 68 59 ]		// []

@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7B978A53-598D-445D-AF78-5A762C3AD42C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MpcLib.DistributedSystem.Mpc.Dkms</RootNamespace>
+    <AssemblyName>MpcLib.DistributedSystem.Mpc.Dkms</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;SIMULATION</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\Unm.DistributedSystem.QuorumSystem.ScalableSmpc.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SIMULATION</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\Unm.DistributedSystem.QuorumSystem.ScalableSmpc.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Protocol\Circuit\Circuit.cs" />
+    <Compile Include="Protocol\Circuit\Gate.cs" />
+    <Compile Include="Enums.cs" />
+    <Compile Include="Protocol\Messages\InputMsg.cs" />
+    <Compile Include="Protocol\MpcKey.cs" />
+    <Compile Include="Protocol\Messages\ShareMsg.cs" />
+    <Compile Include="Protocol\Messages\DkmsMsg.cs" />
+    <Compile Include="Network\DkmsNetwork.cs" />
+    <Compile Include="Network\DkmsParty.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Protocol\DkmsKey.cs" />
+    <Compile Include="Protocol\DkmsProtocol.cs" />
+    <Compile Include="Protocol\Messages\MpcMsg.cs" />
+    <Compile Include="Protocol\MpcSession.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BasicDataStructures\BasicDataStructures.csproj">
+      <Project>{D89AFE72-407E-4414-BDFC-E5B50BB25BEF}</Project>
+      <Name>BasicDataStructures</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\BgwMpc\BgwMpc.csproj">
+      <Project>{75771b97-efc0-45ec-a527-b32102c5ab68}</Project>
+      <Name>BgwMpc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DiscreteEventScheduler\DiscreteEventScheduler.csproj">
+      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
+      <Name>DiscreteEventScheduler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DistributedSystem\DistributedSystem.csproj">
+      <Project>{FB8DD953-2188-41F9-9B81-B5FCB509F2BA}</Project>
+      <Name>DistributedSystem</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FiniteField\FiniteField.csproj">
+      <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
+      <Name>FiniteField</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\QuorumSystem\QuorumSystem.csproj">
+      <Project>{53392685-E75C-478B-AC7C-A22C704B19E6}</Project>
+      <Name>QuorumSystem</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
+      <Project>{2279AD83-89CC-439F-A198-4E6C1C73F668}</Project>
+      <Name>SecretSharing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Mpc\Mpc.csproj">
+      <Project>{3010BD08-601E-4123-86A5-93ACE9E4BF64}</Project>
+      <Name>Mpc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
+      <Project>{4966DB10-9B4A-426F-8D36-D56D47CBE0AC}</Project>
+      <Name>StochasticUtils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

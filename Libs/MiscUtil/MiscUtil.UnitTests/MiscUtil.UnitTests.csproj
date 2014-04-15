@@ -1,0 +1,189 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{57C0CD94-8066-4738-8B81-58FF9E18BFDE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MiscUtil.UnitTests</RootNamespace>
+    <AssemblyName>MiscUtil.UnitTests</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\MiscUtil.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;DOTNET35</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;DOTNET35</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release 2.0|AnyCPU' ">
+    <OutputPath>bin\Release 2.0\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework, Version=2.2.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77" />
+    <Reference Include="PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=x86" />
+    <Reference Include="PresentationFramework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="Rhino.Mocks, Version=2.9.5.51, Culture=neutral, PublicKeyToken=0b3305902db7183f, processorArchitecture=MSIL" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Release 2.0'">
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationChooserTest.cs" />
+    <Compile Include="CachingBufferManagerTest.cs" />
+    <Compile Include="Collections\ComparisonComparerTest.cs" />
+    <Compile Include="Collections\ProjectionEqualityComparerTest.cs" />
+    <Compile Include="Collections\DictionaryByTypeTest.cs" />
+    <Compile Include="Collections\Extensions\ComparerExtTest.cs" />
+    <Compile Include="Collections\Extensions\DictionaryExtTest.cs" />
+    <Compile Include="Collections\ProjectionComparerTest.cs" />
+    <Compile Include="Collections\RandomAccessQueueTest.cs" />
+    <Compile Include="Collections\RangeIteratorTest.cs" />
+    <Compile Include="Collections\RangeTest.cs" />
+    <Compile Include="Collections\ReverseComparerTest.cs" />
+    <Compile Include="Collections\SmartEnumerableTest.cs" />
+    <Compile Include="Conversion\TestDoubleConverter.cs" />
+    <Compile Include="Conversion\TestLittleEndianBitConverter.cs" />
+    <Compile Include="Collections\Extensions\RangeBasedExtTest.cs" />
+    <Compile Include="Extensions\ReferenceExtTest.cs" />
+    <Compile Include="Extensions\TimeRelated\DateTimeBasedExtTest.cs" />
+    <Compile Include="Extensions\TimeRelated\TimeSpanBasedExtTest.cs" />
+    <Compile Include="IO\EndianBinaryReaderTest.cs" />
+    <Compile Include="IO\ReverseLineReaderTest.cs" />
+    <Compile Include="Linq\EditableLookupTest.cs" />
+    <Compile Include="Linq\ExampleUsage.cs" />
+    <Compile Include="Linq\Extensions\DataProducerExtTest.cs" />
+    <Compile Include="Linq\Extensions\DataProducerExtTest.Conversion.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\Extensions\DataProducerExtTest.Grouping.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\Extensions\DataProducerExtTest.Math.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\Extensions\DataProducerExtTest.NullArguments.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\Extensions\DataProducerExtTest.Pipeline.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\Extensions\DataProducerExtTest.SingleReturn.cs">
+      <DependentUpon>DataProducerExtTest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Linq\FutureProxyTest.cs" />
+    <Compile Include="IO\LineReaderTest.cs" />
+    <Compile Include="IO\StreamStub.cs" />
+    <Compile Include="IO\StreamUtilTest.cs" />
+    <Compile Include="IO\StringWriterWithEncodingTest.cs" />
+    <Compile Include="Linq\DataProducerTest.cs" />
+    <Compile Include="Linq\Extensions\EnumerableExtTest.cs" />
+    <Compile Include="Linq\FutureTest.cs" />
+    <Compile Include="Linq\OrderedDataProducerTest.cs" />
+    <Compile Include="Linq\ProducerGroupingTest.cs" />
+    <Compile Include="Linq\SimpleLinq.cs" />
+    <Compile Include="Linq\TypeExtTest.cs" />
+    <Compile Include="GenericMathTest.cs" />
+    <Compile Include="NonNullableTest.cs" />
+    <Compile Include="OperatorTest.cs" />
+    <Compile Include="PartialComparerTest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RandomGrabber.cs" />
+    <Compile Include="Reflection\PropertyCopyTest.cs" />
+    <Compile Include="StaticRandomTest.cs" />
+    <Compile Include="Text\UnicodeRangeTest.cs" />
+    <Compile Include="Text\Utf32StringTest.cs" />
+    <Compile Include="Threading\OrderedLockTest.cs" />
+    <Compile Include="Threading\SyncLockTest.cs" />
+    <Compile Include="Xml\Linq\Extensions\ObjectExtTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiscUtil\MiscUtil.csproj">
+      <Project>{4FC1D5F4-661F-48DC-B397-4CDCB7D61ABE}</Project>
+      <Name>MiscUtil</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="IO\samplefile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="lib\nunit.framework.dll" />
+    <Content Include="lib\Rhino.Mocks.dll" />
+    <Content Include="lib\Rhino.Mocks.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{B4F97281-0DBD-4835-9ED8-7DFB966E87FF}" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

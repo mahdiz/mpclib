@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7C22CD86-4FCF-496A-861D-98F35665559B}</ProjectGuid>
+    <RootNamespace>pbcvc</RootNamespace>
+    <ProjectName>pbc-vc</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>pbc-vc-Debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>pbc-vc</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>.;..\gmp-vc;include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>libcmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libc.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Link>
+    <Lib />
+    <PostBuildEvent>
+      <Command>echo Copying project output ($(TargetFileName)) to the lib folder...
+xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "lib" /Y /F</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>.;..\gmp-vc;include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile />
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <PostBuildEvent>
+      <Command>echo Copying project output ($(TargetFileName)) to the lib folder...
+xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "lib" /Y /F</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="arith\dlog.cpp" />
+    <ClCompile Include="arith\fasterfp.cpp" />
+    <ClCompile Include="arith\fastfp.cpp" />
+    <ClCompile Include="arith\field.cpp" />
+    <ClCompile Include="arith\fieldquadratic.cpp" />
+    <ClCompile Include="arith\fp.cpp" />
+    <ClCompile Include="arith\init_random.win32.cpp" />
+    <ClCompile Include="arith\montfp.cpp" />
+    <ClCompile Include="arith\multiz.cpp" />
+    <ClCompile Include="arith\naivefp.cpp" />
+    <ClCompile Include="arith\poly.cpp" />
+    <ClCompile Include="arith\random.cpp" />
+    <ClCompile Include="arith\ternary_extension_field.cpp" />
+    <ClCompile Include="arith\tinyfp.cpp" />
+    <ClCompile Include="arith\z.cpp" />
+    <ClCompile Include="ecc\a_param.cpp" />
+    <ClCompile Include="ecc\curve.cpp" />
+    <ClCompile Include="ecc\d_param.cpp" />
+    <ClCompile Include="ecc\eta_T_3.cpp" />
+    <ClCompile Include="ecc\e_param.cpp" />
+    <ClCompile Include="ecc\f_param.cpp" />
+    <ClCompile Include="ecc\g_param.cpp" />
+    <ClCompile Include="ecc\hilbert.cpp" />
+    <ClCompile Include="ecc\mnt.cpp" />
+    <ClCompile Include="ecc\mpc.cpp" />
+    <ClCompile Include="ecc\pairing.cpp" />
+    <ClCompile Include="ecc\param.cpp" />
+    <ClCompile Include="ecc\singular.cpp" />
+    <ClCompile Include="misc\darray.cpp" />
+    <ClCompile Include="misc\extend_printf.cpp" />
+    <ClCompile Include="misc\memory.cpp" />
+    <ClCompile Include="misc\symtab.cpp" />
+    <ClCompile Include="misc\utils.cpp" />
+    <ClCompile Include="pbc\pbc.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ecc\mpc.h" />
+    <ClInclude Include="ecc\param.h" />
+    <ClInclude Include="include\pbc.h" />
+    <ClInclude Include="include\pbc_a1_param.h" />
+    <ClInclude Include="include\pbc_a_param.h" />
+    <ClInclude Include="include\pbc_curve.h" />
+    <ClInclude Include="include\pbc_d_param.h" />
+    <ClInclude Include="include\pbc_e_param.h" />
+    <ClInclude Include="include\pbc_field.h" />
+    <ClInclude Include="include\pbc_fieldquadratic.h" />
+    <ClInclude Include="include\pbc_fp.h" />
+    <ClInclude Include="include\pbc_f_param.h" />
+    <ClInclude Include="include\pbc_g_param.h" />
+    <ClInclude Include="include\pbc_hilbert.h" />
+    <ClInclude Include="include\pbc_i_param.h" />
+    <ClInclude Include="include\pbc_memory.h" />
+    <ClInclude Include="include\pbc_mnt.h" />
+    <ClInclude Include="include\pbc_multiz.h" />
+    <ClInclude Include="include\pbc_pairing.h" />
+    <ClInclude Include="include\pbc_param.h" />
+    <ClInclude Include="include\pbc_poly.h" />
+    <ClInclude Include="include\pbc_random.h" />
+    <ClInclude Include="include\pbc_singular.h" />
+    <ClInclude Include="include\pbc_ternary_extension_field.h" />
+    <ClInclude Include="include\pbc_test.h" />
+    <ClInclude Include="include\pbc_utils.h" />
+    <ClInclude Include="include\pbc_z.h" />
+    <ClInclude Include="misc\darray.h" />
+    <ClInclude Include="misc\symtab.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="README.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

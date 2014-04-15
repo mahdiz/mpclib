@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DBBD8F6C-B452-46A9-AFF0-65E4429E04F1}</ProjectGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Keyword>ManagedCProj</Keyword>
+    <RootNamespace>PolyCommit</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CLRSupport>true</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CLRSupport>true</CLRSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile />
+      <AdditionalIncludeDirectories>..\..\openssl\include;..\..\pbc-vc\include;..\..\gmp-vc;..\..\ntl-vc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\openssl\include;..\..\pbc-vc\include;..\..\gmp-vc;..\..\ntl-vc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <Profile>true</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MG.h" />
+    <ClInclude Include="PbcWrapper\G.h" />
+    <ClInclude Include="PbcWrapper\G1.h" />
+    <ClInclude Include="PbcWrapper\G2.h" />
+    <ClInclude Include="PbcWrapper\GT.h" />
+    <ClInclude Include="PbcWrapper\Pairing.h" />
+    <ClInclude Include="PbcWrapper\PbcWapper.h" />
+    <ClInclude Include="PbcWrapper\PBCExceptions.h" />
+    <ClInclude Include="PbcWrapper\PPPairing.h" />
+    <ClInclude Include="PbcWrapper\Zr.h" />
+    <ClInclude Include="PcParams.h" />
+    <ClInclude Include="PolyCommitCommon.h" />
+    <ClInclude Include="PolyCommitProofs.h" />
+    <ClInclude Include="PolyCommitProver.h" />
+    <ClInclude Include="PolyCommitVerifier.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="PbcWrapper\G.cpp" />
+    <ClCompile Include="PbcWrapper\G1.cpp" />
+    <ClCompile Include="PbcWrapper\G2.cpp" />
+    <ClCompile Include="PbcWrapper\GT.cpp" />
+    <ClCompile Include="PbcWrapper\Pairing.cpp" />
+    <ClCompile Include="PbcWrapper\PPPairing.cpp" />
+    <ClCompile Include="PbcWrapper\Zr.cpp" />
+    <ClCompile Include="PolyCommit.cpp" />
+    <ClCompile Include="PolyCommitCommon.cpp" />
+    <ClCompile Include="PolyCommitProofs.cpp" />
+    <ClCompile Include="PolyCommitProver.cpp" />
+    <ClCompile Include="PolyCommitVerifier.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.csproj">
+      <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\FiniteField\FiniteField.csproj">
+      <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ntl-vc\ntl-vc.vcxproj">
+      <Project>{1bc0acb8-c2f9-42d2-9c80-30a34d5c8c7b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\pbc-vc\pbc-vc.vcxproj">
+      <Project>{7c22cd86-4fcf-496a-861d-98f35665559b}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\gmp-vc\lib\gmp-vc.lib" />
+    <Library Include="..\..\openssl\lib\libeay32.lib" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

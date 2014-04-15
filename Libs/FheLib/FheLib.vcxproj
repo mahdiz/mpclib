@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CB78114A-2C36-459D-A462-4061267CEECC}</ProjectGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Keyword>ManagedCProj</Keyword>
+    <RootNamespace>FheLib</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CLRSupport>false</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CLRSupport>false</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>include;..\ntl-vc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies />
+    </Link>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+      <Command>echo Copying project output ($(TargetFileName)) from solution folder to project folder:
+xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "$(ProjectDir)$(Configuration)" /Y /F</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>include;..\ntl-vc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAsManaged>false</CompileAsManaged>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies />
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\bluestein.cpp" />
+    <ClCompile Include="src\CModulus.cpp" />
+    <ClCompile Include="src\Ctxt.cpp" />
+    <ClCompile Include="src\DoubleCRT.cpp" />
+    <ClCompile Include="src\EncryptedArray.cpp" />
+    <ClCompile Include="src\FHE.cpp" />
+    <ClCompile Include="src\FHEContext.cpp" />
+    <ClCompile Include="src\IndexSet.cpp" />
+    <ClCompile Include="src\KeySwitching.cpp" />
+    <ClCompile Include="src\mz-test1.cpp" />
+    <ClCompile Include="src\NumbTh.cpp" />
+    <ClCompile Include="src\PAlgebra.cpp" />
+    <ClCompile Include="src\replicate.cpp" />
+    <ClCompile Include="src\Test_General.cpp" />
+    <ClCompile Include="src\timing.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\AltCRT.h" />
+    <ClInclude Include="include\bluestein.h" />
+    <ClInclude Include="include\cloned_ptr.h" />
+    <ClInclude Include="include\CModulus.h" />
+    <ClInclude Include="include\Ctxt.h" />
+    <ClInclude Include="include\DoubleCRT.h" />
+    <ClInclude Include="include\EncryptedArray.h" />
+    <ClInclude Include="include\FHE.h" />
+    <ClInclude Include="include\FHEContext.h" />
+    <ClInclude Include="include\IndexMap.h" />
+    <ClInclude Include="include\IndexSet.h" />
+    <ClInclude Include="include\NumbTh.h" />
+    <ClInclude Include="include\PAlgebra.h" />
+    <ClInclude Include="include\replicate.h" />
+    <ClInclude Include="include\SingleCRT.h" />
+    <ClInclude Include="include\timing.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\doxygen-manual.pdf" />
+    <None Include="Resources\easy-start.pdf" />
+    <None Include="Resources\Guide-to-HELib.pdf" />
+    <None Include="Resources\he-library.pdf" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

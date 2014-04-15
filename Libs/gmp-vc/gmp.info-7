@@ -1,0 +1,834 @@
+This is gmp.info, produced by makeinfo version 4.2 from gmp.texi.
+
+This manual describes how to install and use the GNU multiple precision
+arithmetic library, version 4.1.2.
+
+   Copyright 1991, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
+2001, 2002 Free Software Foundation, Inc.
+
+   Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License, Version
+1.1 or any later version published by the Free Software Foundation;
+with no Invariant Sections, with the Front-Cover Texts being "A GNU
+Manual", and with the Back-Cover Texts being "You have freedom to copy
+and modify this GNU Manual, like GNU software".  A copy of the license
+is included in *Note GNU Free Documentation License::.
+INFO-DIR-SECTION GNU libraries
+START-INFO-DIR-ENTRY
+* gmp: (gmp).                   GNU Multiple Precision Arithmetic Library.
+END-INFO-DIR-ENTRY
+
+
+File: gmp.info,  Node: Assembler Cache Handling,  Next: Assembler Floating Point,  Prev: Assembler Carry Propagation,  Up: Assembler Coding
+
+Cache Handling
+--------------
+
+   GMP aims to perform well both on operands that fit entirely in L1
+cache and those which don't.
+
+   Basic routines like `mpn_add_n' or `mpn_lshift' are often used on
+large operands, so L2 and main memory performance is important for them.
+`mpn_mul_1' and `mpn_addmul_1' are mostly used for multiply and square
+basecases, so L1 performance matters most for them, unless assembler
+versions of `mpn_mul_basecase' and `mpn_sqr_basecase' exist, in which
+case the remaining uses are mostly for larger operands.
+
+   For L2 or main memory operands, memory access times will almost
+certainly be more than the calculation time.  The aim therefore is to
+maximize memory throughput, by starting a load of the next cache line
+which processing the contents of the previous one.  Clearly this is
+only possible if the chip has a lock-up free cache or some sort of
+prefetch instruction.  Most current chips have both these features.
+
+   Prefetching sources combines well with loop unrolling, since a
+prefetch can be initiated once per unrolled loop (or more than once if
+the loop covers more than one cache line).
+
+   On CPUs without write-allocate caches, prefetching destinations will
+ensure individual stores don't go further down the cache hierarchy,
+limiting bandwidth.  Of course for calculations which are slow anyway,
+like `mpn_divrem_1', write-throughs might be fine.
+
+   The distance ahead to prefetch will be determined by memory latency
+versus throughput.  The aim of course is to have data arriving
+continuously, at peak throughput.  Some CPUs have limits on the number
+of fetches or prefetches in progress.
+
+   If a special prefetch instruction doesn't exist then a plain load
+can be used, but in that case care must be taken not to attempt to read
+past the end of an operand, since that might produce a segmentation
+violation.
+
+   Some CPUs or systems have hardware that detects sequential memory
+accesses and initiates suitable cache movements automatically, making
+life easy.
+
+
+File: gmp.info,  Node: Assembler Floating Point,  Next: Assembler SIMD Instructions,  Prev: Assembler Cache Handling,  Up: Assembler Coding
+
+Floating Point
+--------------
+
+   Floating point arithmetic is used in GMP for multiplications on CPUs
+with poor integer multipliers.  It's mostly useful for `mpn_mul_1',
+`mpn_addmul_1' and `mpn_submul_1' on 64-bit machines, and
+`mpn_mul_basecase' on both 32-bit and 64-bit machines.
+
+   With IEEE 53-bit double precision floats, integer multiplications
+producing up to 53 bits will give exact results.  Breaking a 64x64
+multiplication into eight 16x32->48 bit pieces is convenient.  With
+some care though six 21x32->53 bit products can be used, if one of the
+lower two 21-bit pieces also uses the sign bit.
+
+   For the `mpn_mul_1' family of functions on a 64-bit machine, the
+invariant single limb is split at the start, into 3 or 4 pieces.
+Inside the loop, the bignum operand is split into 32-bit pieces.  Fast
+conversion of these unsigned 32-bit pieces to floating point is highly
+machine-dependent.  In some cases, reading the data into the integer
+unit, zero-extending to 64-bits, then transferring to the floating
+point unit back via memory is the only option.
+
+   Converting partial products back to 64-bit limbs is usually best
+done as a signed conversion.  Since all values are smaller than 2^53,
+signed and unsigned are the same, but most processors lack unsigned
+conversions.
+
+
+
+   Here is a diagram showing 16x32 bit products for an `mpn_mul_1' or
+`mpn_addmul_1' with a 64-bit limb.  The single limb operand V is split
+into four 16-bit parts.  The multi-limb operand U is split in the loop
+into two 32-bit parts.
+
+                     +---+---+---+---+
+                     |v48|v32|v16|v00|    V operand
+                     +---+---+---+---+
+     
+                     +-------+---+---+
+                 x   |  u32  |  u00  |    U operand (one limb)
+                     +---------------+
+     
+     ---------------------------------
+     
+                         +-----------+
+                         | u00 x v00 |    p00    48-bit products
+                         +-----------+
+                     +-----------+
+                     | u00 x v16 |        p16
+                     +-----------+
+                 +-----------+
+                 | u00 x v32 |            p32
+                 +-----------+
+             +-----------+
+             | u00 x v48 |                p48
+             +-----------+
+                 +-----------+
+                 | u32 x v00 |            r32
+                 +-----------+
+             +-----------+
+             | u32 x v16 |                r48
+             +-----------+
+         +-----------+
+         | u32 x v32 |                    r64
+         +-----------+
+     +-----------+
+     | u32 x v48 |                        r80
+     +-----------+
+
+   p32 and r32 can be summed using floating-point addition, and
+likewise p48 and r48.  p00 and p16 can be summed with r64 and r80 from
+the previous iteration.
+
+   For each loop then, four 49-bit quantities are transfered to the
+integer unit, aligned as follows,
+
+     |-----64bits----|-----64bits----|
+                        +------------+
+                        | p00 + r64' |    i00
+                        +------------+
+                    +------------+
+                    | p16 + r80' |        i16
+                    +------------+
+                +------------+
+                | p32 + r32  |            i32
+                +------------+
+            +------------+
+            | p48 + r48  |                i48
+            +------------+
+
+   The challenge then is to sum these efficiently and add in a carry
+limb, generating a low 64-bit result limb and a high 33-bit carry limb
+(i48 extends 33 bits into the high half).
+
+
+File: gmp.info,  Node: Assembler SIMD Instructions,  Next: Assembler Software Pipelining,  Prev: Assembler Floating Point,  Up: Assembler Coding
+
+SIMD Instructions
+-----------------
+
+   The single-instruction multiple-data support in current
+microprocessors is aimed at signal processing algorithms where each
+data point can be treated more or less independently.  There's
+generally not much support for propagating the sort of carries that
+arise in GMP.
+
+   SIMD multiplications of say four 16x16 bit multiplies only do as much
+work as one 32x32 from GMP's point of view, and need some shifts and
+adds besides.  But of course if say the SIMD form is fully pipelined
+and uses less instruction decoding then it may still be worthwhile.
+
+   On the 80x86 chips, MMX has so far found a use in `mpn_rshift' and
+`mpn_lshift' since it allows 64-bit operations, and is used in a special
+case for 16-bit multipliers in the P55 `mpn_mul_1'.  3DNow and SSE
+haven't found a use so far.
+
+
+File: gmp.info,  Node: Assembler Software Pipelining,  Next: Assembler Loop Unrolling,  Prev: Assembler SIMD Instructions,  Up: Assembler Coding
+
+Software Pipelining
+-------------------
+
+   Software pipelining consists of scheduling instructions around the
+branch point in a loop.  For example a loop taking a checksum of an
+array of limbs might have a load and an add, but the load wouldn't be
+for that add, rather for the one next time around the loop.  Each load
+then is effectively scheduled back in the previous iteration, allowing
+latency to be hidden.
+
+   Naturally this is wanted only when doing things like loads or
+multiplies that take a few cycles to complete, and only where a CPU has
+multiple functional units so that other work can be done while waiting.
+
+   A pipeline with several stages will have a data value in progress at
+each stage and each loop iteration moves them along one stage.  This is
+like juggling.
+
+   Within the loop some moves between registers may be necessary to
+have the right values in the right places for each iteration.  Loop
+unrolling can help this, with each unrolled block able to use different
+registers for different values, even if some shuffling is still needed
+just before going back to the top of the loop.
+
+
+File: gmp.info,  Node: Assembler Loop Unrolling,  Prev: Assembler Software Pipelining,  Up: Assembler Coding
+
+Loop Unrolling
+--------------
+
+   Loop unrolling consists of replicating code so that several limbs are
+processed in each loop.  At a minimum this reduces loop overheads by a
+corresponding factor, but it can also allow better register usage, for
+example alternately using one register combination and then another.
+Judicious use of `m4' macros can help avoid lots of duplication in the
+source code.
+
+   Unrolling is commonly done to a power of 2 multiple so the number of
+unrolled loops and the number of remaining limbs can be calculated with
+a shift and mask.  But other multiples can be used too, just by
+subtracting each N limbs processed from a counter and waiting for less
+than N remaining (or offsetting the counter by N so it goes negative
+when there's less than N remaining).
+
+   The limbs not a multiple of the unrolling can be handled in various
+ways, for example
+
+   * A simple loop at the end (or the start) to process the excess.
+     Care will be wanted that it isn't too much slower than the
+     unrolled part.
+
+   * A set of binary tests, for example after an 8-limb unrolling, test
+     for 4 more limbs to process, then a further 2 more or not, and
+     finally 1 more or not.  This will probably take more code space
+     than a simple loop.
+
+   * A `switch' statement, providing separate code for each possible
+     excess, for example an 8-limb unrolling would have separate code
+     for 0 remaining, 1 remaining, etc, up to 7 remaining.  This might
+     take a lot of code, but may be the best way to optimize all cases
+     in combination with a deep pipelined loop.
+
+   * A computed jump into the middle of the loop, thus making the first
+     iteration handle the excess.  This should make times smoothly
+     increase with size, which is attractive, but setups for the jump
+     and adjustments for pointers can be tricky and could become quite
+     difficult in combination with deep pipelining.
+
+   One way to write the setups and finishups for a pipelined unrolled
+loop is simply to duplicate the loop at the start and the end, then
+delete instructions at the start which have no valid antecedents, and
+delete instructions at the end whose results are unwanted.  Sizes not a
+multiple of the unrolling can then be handled as desired.
+
+
+File: gmp.info,  Node: Internals,  Next: Contributors,  Prev: Algorithms,  Up: Top
+
+Internals
+*********
+
+   *This chapter is provided only for informational purposes and the
+various internals described here may change in future GMP releases.
+Applications expecting to be compatible with future releases should use
+only the documented interfaces described in previous chapters.*
+
+* Menu:
+
+* Integer Internals::
+* Rational Internals::
+* Float Internals::
+* Raw Output Internals::
+* C++ Interface Internals::
+
+
+File: gmp.info,  Node: Integer Internals,  Next: Rational Internals,  Prev: Internals,  Up: Internals
+
+Integer Internals
+=================
+
+   `mpz_t' variables represent integers using sign and magnitude, in
+space dynamically allocated and reallocated.  The fields are as follows.
+
+`_mp_size'
+     The number of limbs, or the negative of that when representing a
+     negative integer.  Zero is represented by `_mp_size' set to zero,
+     in which case the `_mp_d' data is unused.
+
+`_mp_d'
+     A pointer to an array of limbs which is the magnitude.  These are
+     stored "little endian" as per the `mpn' functions, so `_mp_d[0]'
+     is the least significant limb and `_mp_d[ABS(_mp_size)-1]' is the
+     most significant.  Whenever `_mp_size' is non-zero, the most
+     significant limb is non-zero.
+
+     Currently there's always at least one limb allocated, so for
+     instance `mpz_set_ui' never needs to reallocate, and `mpz_get_ui'
+     can fetch `_mp_d[0]' unconditionally (though its value is then
+     only wanted if `_mp_size' is non-zero).
+
+`_mp_alloc'
+     `_mp_alloc' is the number of limbs currently allocated at `_mp_d',
+     and naturally `_mp_alloc >= ABS(_mp_size)'.  When an `mpz' routine
+     is about to (or might be about to) increase `_mp_size', it checks
+     `_mp_alloc' to see whether there's enough space, and reallocates
+     if not.  `MPZ_REALLOC' is generally used for this.
+
+   The various bitwise logical functions like `mpz_and' behave as if
+negative values were twos complement.  But sign and magnitude is always
+used internally, and necessary adjustments are made during the
+calculations.  Sometimes this isn't pretty, but sign and magnitude are
+best for other routines.
+
+   Some internal temporary variables are setup with `MPZ_TMP_INIT' and
+these have `_mp_d' space obtained from `TMP_ALLOC' rather than the
+memory allocation functions.  Care is taken to ensure that these are
+big enough that no reallocation is necessary (since it would have
+unpredictable consequences).
+
+
+File: gmp.info,  Node: Rational Internals,  Next: Float Internals,  Prev: Integer Internals,  Up: Internals
+
+Rational Internals
+==================
+
+   `mpq_t' variables represent rationals using an `mpz_t' numerator and
+denominator (*note Integer Internals::).
+
+   The canonical form adopted is denominator positive (and non-zero),
+no common factors between numerator and denominator, and zero uniquely
+represented as 0/1.
+
+   It's believed that casting out common factors at each stage of a
+calculation is best in general.  A GCD is an O(N^2) operation so it's
+better to do a few small ones immediately than to delay and have to do
+a big one later.  Knowing the numerator and denominator have no common
+factors can be used for example in `mpq_mul' to make only two cross
+GCDs necessary, not four.
+
+   This general approach to common factors is badly sub-optimal in the
+presence of simple factorizations or little prospect for cancellation,
+but GMP has no way to know when this will occur.  As per *Note
+Efficiency::, that's left to applications.  The `mpq_t' framework might
+still suit, with `mpq_numref' and `mpq_denref' for direct access to the
+numerator and denominator, or of course `mpz_t' variables can be used
+directly.
+
+
+File: gmp.info,  Node: Float Internals,  Next: Raw Output Internals,  Prev: Rational Internals,  Up: Internals
+
+Float Internals
+===============
+
+   Efficient calculation is the primary aim of GMP floats and the use
+of whole limbs and simple rounding facilitates this.
+
+   `mpf_t' floats have a variable precision mantissa and a single
+machine word signed exponent.  The mantissa is represented using sign
+and magnitude.
+
+        most                   least
+     significant            significant
+        limb                   limb
+     
+                                 _mp_d
+      |---- _mp_exp --->           |
+       _____ _____ _____ _____ _____
+      |_____|_____|_____|_____|_____|
+                        . <------------ radix point
+     
+       <-------- _mp_size --------->
+
+The fields are as follows.
+
+`_mp_size'
+     The number of limbs currently in use, or the negative of that when
+     representing a negative value.  Zero is represented by `_mp_size'
+     and `_mp_exp' both set to zero, and in that case the `_mp_d' data
+     is unused.  (In the future `_mp_exp' might be undefined when
+     representing zero.)
+
+`_mp_prec'
+     The precision of the mantissa, in limbs.  In any calculation the
+     aim is to produce `_mp_prec' limbs of result (the most significant
+     being non-zero).
+
+`_mp_d'
+     A pointer to the array of limbs which is the absolute value of the
+     mantissa.  These are stored "little endian" as per the `mpn'
+     functions, so `_mp_d[0]' is the least significant limb and
+     `_mp_d[ABS(_mp_size)-1]' the most significant.
+
+     The most significant limb is always non-zero, but there are no
+     other restrictions on its value, in particular the highest 1 bit
+     can be anywhere within the limb.
+
+     `_mp_prec+1' limbs are allocated to `_mp_d', the extra limb being
+     for convenience (see below).  There are no reallocations during a
+     calculation, only in a change of precision with `mpf_set_prec'.
+
+`_mp_exp'
+     The exponent, in limbs, determining the location of the implied
+     radix point.  Zero means the radix point is just above the most
+     significant limb.  Positive values mean a radix point offset
+     towards the lower limbs and hence a value >= 1, as for example in
+     the diagram above.  Negative exponents mean a radix point further
+     above the highest limb.
+
+     Naturally the exponent can be any value, it doesn't have to fall
+     within the limbs as the diagram shows, it can be a long way above
+     or a long way below.  Limbs other than those included in the
+     `{_mp_d,_mp_size}' data are treated as zero.
+
+
+The following various points should be noted.
+
+Low Zeros
+     The least significant limbs `_mp_d[0]' etc can be zero, though
+     such low zeros can always be ignored.  Routines likely to produce
+     low zeros check and avoid them to save time in subsequent
+     calculations, but for most routines they're quite unlikely and
+     aren't checked.
+
+Mantissa Size Range
+     The `_mp_size' count of limbs in use can be less than `_mp_prec' if
+     the value can be represented in less.  This means low precision
+     values or small integers stored in a high precision `mpf_t' can
+     still be operated on efficiently.
+
+     `_mp_size' can also be greater than `_mp_prec'.  Firstly a value is
+     allowed to use all of the `_mp_prec+1' limbs available at `_mp_d',
+     and secondly when `mpf_set_prec_raw' lowers `_mp_prec' it leaves
+     `_mp_size' unchanged and so the size can be arbitrarily bigger than
+     `_mp_prec'.
+
+Rounding
+     All rounding is done on limb boundaries.  Calculating `_mp_prec'
+     limbs with the high non-zero will ensure the application requested
+     minimum precision is obtained.
+
+     The use of simple "trunc" rounding towards zero is efficient,
+     since there's no need to examine extra limbs and increment or
+     decrement.
+
+Bit Shifts
+     Since the exponent is in limbs, there are no bit shifts in basic
+     operations like `mpf_add' and `mpf_mul'.  When differing exponents
+     are encountered all that's needed is to adjust pointers to line up
+     the relevant limbs.
+
+     Of course `mpf_mul_2exp' and `mpf_div_2exp' will require bit
+     shifts, but the choice is between an exponent in limbs which
+     requires shifts there, or one in bits which requires them almost
+     everywhere else.
+
+Use of `_mp_prec+1' Limbs
+     The extra limb on `_mp_d' (`_mp_prec+1' rather than just
+     `_mp_prec') helps when an `mpf' routine might get a carry from its
+     operation.  `mpf_add' for instance will do an `mpn_add' of
+     `_mp_prec' limbs.  If there's no carry then that's the result, but
+     if there is a carry then it's stored in the extra limb of space and
+     `_mp_size' becomes `_mp_prec+1'.
+
+     Whenever `_mp_prec+1' limbs are held in a variable, the low limb
+     is not needed for the intended precision, only the `_mp_prec' high
+     limbs.  But zeroing it out or moving the rest down is unnecessary.
+     Subsequent routines reading the value will simply take the high
+     limbs they need, and this will be `_mp_prec' if their target has
+     that same precision.  This is no more than a pointer adjustment,
+     and must be checked anyway since the destination precision can be
+     different from the sources.
+
+     Copy functions like `mpf_set' will retain a full `_mp_prec+1' limbs
+     if available.  This ensures that a variable which has `_mp_size'
+     equal to `_mp_prec+1' will get its full exact value copied.
+     Strictly speaking this is unnecessary since only `_mp_prec' limbs
+     are needed for the application's requested precision, but it's
+     considered that an `mpf_set' from one variable into another of the
+     same precision ought to produce an exact copy.
+
+Application Precisions
+     `__GMPF_BITS_TO_PREC' converts an application requested precision
+     to an `_mp_prec'.  The value in bits is rounded up to a whole limb
+     then an extra limb is added since the most significant limb of
+     `_mp_d' is only non-zero and therefore might contain only one bit.
+
+     `__GMPF_PREC_TO_BITS' does the reverse conversion, and removes the
+     extra limb from `_mp_prec' before converting to bits.  The net
+     effect of reading back with `mpf_get_prec' is simply the precision
+     rounded up to a multiple of `mp_bits_per_limb'.
+
+     Note that the extra limb added here for the high only being
+     non-zero is in addition to the extra limb allocated to `_mp_d'.
+     For example with a 32-bit limb, an application request for 250
+     bits will be rounded up to 8 limbs, then an extra added for the
+     high being only non-zero, giving an `_mp_prec' of 9.  `_mp_d' then
+     gets 10 limbs allocated.  Reading back with `mpf_get_prec' will
+     take `_mp_prec' subtract 1 limb and multiply by 32, giving 256
+     bits.
+
+     Strictly speaking, the fact the high limb has at least one bit
+     means that a float with, say, 3 limbs of 32-bits each will be
+     holding at least 65 bits, but for the purposes of `mpf_t' it's
+     considered simply to be 64 bits, a nice multiple of the limb size.
+
+
+File: gmp.info,  Node: Raw Output Internals,  Next: C++ Interface Internals,  Prev: Float Internals,  Up: Internals
+
+Raw Output Internals
+====================
+
+`mpz_out_raw' uses the following format.
+
+     +------+------------------------+
+     | size |       data bytes       |
+     +------+------------------------+
+
+   The size is 4 bytes written most significant byte first, being the
+number of subsequent data bytes, or the twos complement negative of
+that when a negative integer is represented.  The data bytes are the
+absolute value of the integer, written most significant byte first.
+
+   The most significant data byte is always non-zero, so the output is
+the same on all systems, irrespective of limb size.
+
+   In GMP 1, leading zero bytes were written to pad the data bytes to a
+multiple of the limb size.  `mpz_inp_raw' will still accept this, for
+compatibility.
+
+   The use of "big endian" for both the size and data fields is
+deliberate, it makes the data easy to read in a hex dump of a file.
+Unfortunately it also means that the limb data must be reversed when
+reading or writing, so neither a big endian nor little endian system
+can just read and write `_mp_d'.
+
+
+File: gmp.info,  Node: C++ Interface Internals,  Prev: Raw Output Internals,  Up: Internals
+
+C++ Interface Internals
+=======================
+
+   A system of expression templates is used to ensure something like
+`a=b+c' turns into a simple call to `mpz_add' etc.  For `mpf_class' and
+`mpfr_class' the scheme also ensures the precision of the final
+destination is used for any temporaries within a statement like
+`f=w*x+y*z'.  These are important features which a naive implementation
+cannot provide.
+
+   A simplified description of the scheme follows.  The true scheme is
+complicated by the fact that expressions have different return types.
+For detailed information, refer to the source code.
+
+   To perform an operation, say, addition, we first define a "function
+object" evaluating it,
+
+     struct __gmp_binary_plus
+     {
+       static void eval(mpf_t f, mpf_t g, mpf_t h) { mpf_add(f, g, h); }
+     };
+
+And an "additive expression" object,
+
+     __gmp_expr<__gmp_binary_expr<mpf_class, mpf_class, __gmp_binary_plus> >
+     operator+(const mpf_class &f, const mpf_class &g)
+     {
+       return __gmp_expr
+         <__gmp_binary_expr<mpf_class, mpf_class, __gmp_binary_plus> >(f, g);
+     }
+
+   The seemingly redundant `__gmp_expr<__gmp_binary_expr<...>>' is used
+to encapsulate any possible kind of expression into a single template
+type.  In fact even `mpf_class' etc are `typedef' specializations of
+`__gmp_expr'.
+
+   Next we define assignment of `__gmp_expr' to `mpf_class'.
+
+     template <class T>
+     mpf_class & mpf_class::operator=(const __gmp_expr<T> &expr)
+     {
+       expr.eval(this->get_mpf_t(), this->precision());
+       return *this;
+     }
+     
+     template <class Op>
+     void __gmp_expr<__gmp_binary_expr<mpf_class, mpf_class, Op> >::eval
+     (mpf_t f, unsigned long int precision)
+     {
+       Op::eval(f, expr.val1.get_mpf_t(), expr.val2.get_mpf_t());
+     }
+
+   where `expr.val1' and `expr.val2' are references to the expression's
+operands (here `expr' is the `__gmp_binary_expr' stored within the
+`__gmp_expr').
+
+   This way, the expression is actually evaluated only at the time of
+assignment, when the required precision (that of `f') is known.
+Furthermore the target `mpf_t' is now available, thus we can call
+`mpf_add' directly with `f' as the output argument.
+
+   Compound expressions are handled by defining operators taking
+subexpressions as their arguments, like this:
+
+     template <class T, class U>
+     __gmp_expr
+     <__gmp_binary_expr<__gmp_expr<T>, __gmp_expr<U>, __gmp_binary_plus> >
+     operator+(const __gmp_expr<T> &expr1, const __gmp_expr<U> &expr2)
+     {
+       return __gmp_expr
+         <__gmp_binary_expr<__gmp_expr<T>, __gmp_expr<U>, __gmp_binary_plus> >
+         (expr1, expr2);
+     }
+
+   And the corresponding specializations of `__gmp_expr::eval':
+
+     template <class T, class U, class Op>
+     void __gmp_expr
+     <__gmp_binary_expr<__gmp_expr<T>, __gmp_expr<U>, Op> >::eval
+     (mpf_t f, unsigned long int precision)
+     {
+       // declare two temporaries
+       mpf_class temp1(expr.val1, precision), temp2(expr.val2, precision);
+       Op::eval(f, temp1.get_mpf_t(), temp2.get_mpf_t());
+     }
+
+   The expression is thus recursively evaluated to any level of
+complexity and all subexpressions are evaluated to the precision of `f'.
+
+
+File: gmp.info,  Node: Contributors,  Next: References,  Prev: Internals,  Up: Top
+
+Contributors
+************
+
+   Torbjorn Granlund wrote the original GMP library and is still
+developing and maintaining it.  Several other individuals and
+organizations have contributed to GMP in various ways.  Here is a list
+in chronological order:
+
+   Gunnar Sjoedin and Hans Riesel helped with mathematical problems in
+early versions of the library.
+
+   Richard Stallman contributed to the interface design and revised the
+first version of this manual.
+
+   Brian Beuning and Doug Lea helped with testing of early versions of
+the library and made creative suggestions.
+
+   John Amanatides of York University in Canada contributed the function
+`mpz_probab_prime_p'.
+
+   Paul Zimmermann of Inria sparked the development of GMP 2, with his
+comparisons between bignum packages.
+
+   Ken Weber (Kent State University, Universidade Federal do Rio Grande
+do Sul) contributed `mpz_gcd', `mpz_divexact', `mpn_gcd', and
+`mpn_bdivmod', partially supported by CNPq (Brazil) grant 301314194-2.
+
+   Per Bothner of Cygnus Support helped to set up GMP to use Cygnus'
+configure.  He has also made valuable suggestions and tested numerous
+intermediary releases.
+
+   Joachim Hollman was involved in the design of the `mpf' interface,
+and in the `mpz' design revisions for version 2.
+
+   Bennet Yee contributed the initial versions of `mpz_jacobi' and
+`mpz_legendre'.
+
+   Andreas Schwab contributed the files `mpn/m68k/lshift.S' and
+`mpn/m68k/rshift.S' (now in `.asm' form).
+
+   The development of floating point functions of GNU MP 2, were
+supported in part by the ESPRIT-BRA (Basic Research Activities) 6846
+project POSSO (POlynomial System SOlving).
+
+   GNU MP 2 was finished and released by SWOX AB, SWEDEN, in
+cooperation with the IDA Center for Computing Sciences, USA.
+
+   Robert Harley of Inria, France and David Seal of ARM, England,
+suggested clever improvements for population count.
+
+   Robert Harley also wrote highly optimized Karatsuba and 3-way Toom
+multiplication functions for GMP 3.  He also contributed the ARM
+assembly code.
+
+   Torsten Ekedahl of the Mathematical department of Stockholm
+University provided significant inspiration during several phases of
+the GMP development.  His mathematical expertise helped improve several
+algorithms.
+
+   Paul Zimmermann wrote the Divide and Conquer division code, the REDC
+code, the REDC-based mpz_powm code, the FFT multiply code, and the
+Karatsuba square root.  The ECMNET project Paul is organizing was a
+driving force behind many of the optimizations in GMP 3.
+
+   Linus Nordberg wrote the new configure system based on autoconf and
+implemented the new random functions.
+
+   Kent Boortz made the Macintosh port.
+
+   Kevin Ryde worked on a number of things: optimized x86 code, m4 asm
+macros, parameter tuning, speed measuring, the configure system,
+function inlining, divisibility tests, bit scanning, Jacobi symbols,
+Fibonacci and Lucas number functions, printf and scanf functions, perl
+interface, demo expression parser, the algorithms chapter in the
+manual, `gmpasm-mode.el', and various miscellaneous improvements
+elsewhere.
+
+   Steve Root helped write the optimized alpha 21264 assembly code.
+
+   Gerardo Ballabio wrote the `gmpxx.h' C++ class interface and the C++
+`istream' input routines.
+
+   GNU MP 4.0 was finished and released by Torbjorn Granlund and Kevin
+Ryde.  Torbjorn's work was partially funded by the IDA Center for
+Computing Sciences, USA.
+
+   (This list is chronological, not ordered after significance.  If you
+have contributed to GMP but are not listed above, please tell
+<tege@swox.com> about the omission!)
+
+   Thanks goes to Hans Thorsen for donating an SGI system for the GMP
+test system environment.
+
+
+File: gmp.info,  Node: References,  Next: GNU Free Documentation License,  Prev: Contributors,  Up: Top
+
+References
+**********
+
+Books
+=====
+
+   * Jonathan M. Borwein and Peter B. Borwein, "Pi and the AGM: A Study
+     in Analytic Number Theory and Computational Complexity", Wiley,
+     John & Sons, 1998.
+
+   * Henri Cohen, "A Course in Computational Algebraic Number Theory",
+     Graduate Texts in Mathematics number 138, Springer-Verlag, 1993.
+     `http://www.math.u-bordeaux.fr/~cohen'
+
+   * Donald E. Knuth, "The Art of Computer Programming", volume 2,
+     "Seminumerical Algorithms", 3rd edition, Addison-Wesley, 1998.
+     `http://www-cs-faculty.stanford.edu/~knuth/taocp.html'
+
+   * John D. Lipson, "Elements of Algebra and Algebraic Computing", The
+     Benjamin Cummings Publishing Company Inc, 1981.
+
+   * Alfred J. Menezes, Paul C. van Oorschot and Scott A. Vanstone,
+     "Handbook of Applied Cryptography",
+     `http://www.cacr.math.uwaterloo.ca/hac/'
+
+   * Richard M. Stallman, "Using and Porting GCC", Free Software
+     Foundation, 1999, available online
+     `http://www.gnu.org/software/gcc/onlinedocs/', and in the GCC
+     package `ftp://ftp.gnu.org/gnu/gcc/'
+
+Papers
+======
+
+   * Christoph Burnikel and Joachim Ziegler, "Fast Recursive Division",
+     Max-Planck-Institut fuer Informatik Research Report
+     MPI-I-98-1-022,
+     `http://data.mpi-sb.mpg.de/internet/reports.nsf/NumberView/1998-1-022'
+
+   * Torbjorn Granlund and Peter L. Montgomery, "Division by Invariant
+     Integers using Multiplication", in Proceedings of the SIGPLAN
+     PLDI'94 Conference, June 1994.  Also available
+     `ftp://ftp.cwi.nl/pub/pmontgom/divcnst.psa4.gz' (and .psl.gz).
+
+   * Peter L. Montgomery, "Modular Multiplication Without Trial
+     Division", in Mathematics of Computation, volume 44, number 170,
+     April 1985.
+
+   * Tudor Jebelean, "An algorithm for exact division", Journal of
+     Symbolic Computation, volume 15, 1993, pp. 169-180.  Research
+     report version available
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1992/92-35.ps.gz'
+
+   * Tudor Jebelean, "Exact Division with Karatsuba Complexity -
+     Extended Abstract", RISC-Linz technical report 96-31,
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1996/96-31.ps.gz'
+
+   * Tudor Jebelean, "Practical Integer Division with Karatsuba
+     Complexity", ISSAC 97, pp. 339-341.  Technical report available
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1996/96-29.ps.gz'
+
+   * Tudor Jebelean, "A Generalization of the Binary GCD Algorithm",
+     ISSAC 93, pp. 111-116.  Technical report version available
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1993/93-01.ps.gz'
+
+   * Tudor Jebelean, "A Double-Digit Lehmer-Euclid Algorithm for
+     Finding the GCD of Long Integers", Journal of Symbolic
+     Computation, volume 19, 1995, pp. 145-157.  Technical report
+     version also available
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1992/92-69.ps.gz'
+
+   * Werner Krandick and Tudor Jebelean, "Bidirectional Exact Integer
+     Division", Journal of Symbolic Computation, volume 21, 1996, pp.
+     441-455.  Early technical report version also available
+     `ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1994/94-50.ps.gz'
+
+   * R. Moenck and A. Borodin, "Fast Modular Transforms via Division",
+     Proceedings of the 13th Annual IEEE Symposium on Switching and
+     Automata Theory, October 1972, pp. 90-96.  Reprinted as "Fast
+     Modular Transforms", Journal of Computer and System Sciences,
+     volume 8, number 3, June 1974, pp. 366-386.
+
+   * Arnold Scho"nhage and Volker Strassen, "Schnelle Multiplikation
+     grosser Zahlen", Computing 7, 1971, pp. 281-292.
+
+   * Kenneth Weber, "The accelerated integer GCD algorithm", ACM
+     Transactions on Mathematical Software, volume 21, number 1, March
+     1995, pp. 111-122.
+
+   * Paul Zimmermann, "Karatsuba Square Root", INRIA Research Report
+     3805, November 1999, `http://www.inria.fr/RRRT/RR-3805.html'
+
+   * Paul Zimmermann, "A Proof of GMP Fast Division and Square Root
+     Implementations",
+     `http://www.loria.fr/~zimmerma/papers/proof-div-sqrt.ps.gz'
+
+   * Dan Zuras, "On Squaring and Multiplying Large Integers", ARITH-11:
+     IEEE Symposium on Computer Arithmetic, 1993, pp. 260 to 271.
+     Reprinted as "More on Multiplying and Squaring Large Integers",
+     IEEE Transactions on Computers, volume 43, number 8, August 1994,
+     pp. 899-908.
+
