@@ -116,6 +116,9 @@
     <ProjectReference Include="..\..\FiniteField\FiniteField.csproj">
       <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\gmp-vc\gmp.vcxproj">
+      <Project>{3c59c2f0-96ed-4fda-999d-444c4ee166a1}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\ntl-vc\ntl-vc.vcxproj">
       <Project>{1bc0acb8-c2f9-42d2-9c80-30a34d5c8c7b}</Project>
     </ProjectReference>
@@ -124,7 +127,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\gmp-vc\lib\gmp-vc.lib" />
     <Library Include="..\..\openssl\lib\libeay32.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

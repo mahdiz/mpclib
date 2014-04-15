@@ -112,6 +112,5 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\openssl\lib\libeay32.lib" />
-    <Library Include="..\..\gmp-vc\lib\gmp-vc.lib" />
   </ItemGroup>
 </Project>

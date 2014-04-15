@@ -6,6 +6,14 @@
 *.user
 *.sln.docstates
 
+# .lib's ignored to keep checkouts small
+ntl-vc.lib
+ntl-vc-Debug.lib
+pbc-vc.lib
+pbc-vc-Debug.lib
+gmp-vc.lib
+gmp-vc-Debug.lib
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -39,7 +47,6 @@ dlldata.c
 *.ilk
 *.meta
 *.obj
-*.lib
 *.pch
 *.pdb
 *.pgc

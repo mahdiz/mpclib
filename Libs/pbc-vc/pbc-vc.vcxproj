@@ -60,8 +60,8 @@
     </Link>
     <Lib />
     <PostBuildEvent>
-      <Command>echo Copying project output ($(TargetFileName)) to the lib folder...
-xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "lib" /Y /F</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -82,8 +82,8 @@ xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "lib" /Y /F</Command>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying project output ($(TargetFileName)) to the lib folder...
-xcopy "$(SolutionDir)$(Configuration)\$(TargetFileName)" "lib" /Y /F</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
