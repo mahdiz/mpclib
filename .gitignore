@@ -41,9 +41,6 @@ Thumbs.db
 [Rr]eleasePS/
 dlldata.c
 
-*_i.c
-*_p.c
-*_i.h
 *.ilk
 *.meta
 *.obj
