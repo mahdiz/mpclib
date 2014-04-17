@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw.Vss
+namespace MpcLib.MpcProtocols.Bgw.Vss
 {
 	public class BgwVss
 	{

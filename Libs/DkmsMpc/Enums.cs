@@ -1,4 +1,4 @@
-﻿namespace MpcLib.DistributedSystem.Mpc.Dkms
+﻿namespace MpcLib.MpcProtocols.Dkms
 {
 	/// <summary>
 	/// Scalabe SMPC protocol stages.

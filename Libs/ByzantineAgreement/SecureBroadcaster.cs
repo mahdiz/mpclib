@@ -4,11 +4,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using MpcLib.Common.StochasticUtils;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.ByzantineAgreement
+namespace MpcLib.ByzantineAgreement
 {
+	using MpcLib.Common;
 	using MpcLib.Common.FiniteField;
+	using MpcLib.DistributedSystem;
 
 	/// <summary>
 	/// Implements a secure broadcast protocol based on Michael Rabin's Byzantine agreement.
@@ -25,6 +27,7 @@ namespace MpcLib.DistributedSystem.ByzantineAgreement
 		private readonly TData data;
 		private readonly bool isDealer;
 		private readonly int prime;
+		public override ProtocolIds Id { get { return ProtocolIds.Rabin; } }
 
 		private List<ShareMessage> dealerShares;
 		private Dictionary<BroadcastMessage<TData>, int> collectedMessages = 
@@ -51,15 +54,15 @@ namespace MpcLib.DistributedSystem.ByzantineAgreement
 
 				for (int round = 0; round < N; round++)
 				{
-					var polynomialDeg = EntityCount % 4 == 0 ? (EntityCount / 4 - 1) : (EntityCount / 4);
+					var polynomialDeg = NumParties % 4 == 0 ? (NumParties / 4 - 1) : (NumParties / 4);
 
 					// TODO: uncomment for non-simulation use. (use a directive to disable in simulation use)
 					// var shares = Shamir.Share(new Zp(prime, RandGen.Next(0, 2)), NumEntities, polynomialDeg);
 
 					var randomSecret = new Zp(prime, StaticRandom.Next(0, 2));
-					var shares = ShamirSharing.Share(randomSecret, EntityCount, polynomialDeg);
+					var shares = ShamirSharing.Share(randomSecret, NumParties, polynomialDeg);
 
-					for (int j = 0; j < EntityCount; j++)
+					for (int j = 0; j < NumParties; j++)
 						Send(Entity.Id, EntityIds[j], new ShareMessage(BroadcastStage.DealerLotteryShare, shares[j], round));		// TODO: Message delay needed. These messages must be received after DealerDataSend.
 				}
 			}

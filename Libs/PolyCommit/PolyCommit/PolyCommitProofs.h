@@ -10,7 +10,7 @@
 using namespace std;
 using namespace NTL;
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
 	class ZK_Prover
 	{
@@ -199,5 +199,5 @@ namespace PolyCommitment
 		ZZ_p FS_index(const string nonce = "");
 		static ZZ_p FS_index(const G1 &C, const string nonce = "");
 	};
-}
+} } }
 #endif

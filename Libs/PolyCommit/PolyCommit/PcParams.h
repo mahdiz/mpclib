@@ -2,7 +2,7 @@
 
 #include "PolyCommitCommon.h"
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
 	public ref class PcParams
 	{
@@ -20,4 +20,4 @@ namespace PolyCommitment
 			delete(p);
 		}
 	};
-}
+} } }

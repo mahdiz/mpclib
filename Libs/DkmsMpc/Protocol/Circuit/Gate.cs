@@ -2,7 +2,7 @@
 using MpcLib.Common.BasicDataStructures.Dag;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public class Gate : Node<Gate>
 	{

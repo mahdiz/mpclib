@@ -1,7 +1,7 @@
 ﻿using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.ByzantineAgreement
+namespace MpcLib.ByzantineAgreement
 {
 	public class ShareMessage : BroadcastMessage
 	{

@@ -8,6 +8,7 @@ namespace MpcLib.DistributedSystem
 	{
 		public virtual int SenderId { get; set; }
 		public abstract int StageKey { get; }
+		public ProtocolIds ProtocolId = ProtocolIds.NotSet;
 
 #if DEBUG && SIMULATION
 		private static ulong idGen = 0;

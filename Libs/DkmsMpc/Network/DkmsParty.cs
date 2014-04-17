@@ -4,7 +4,7 @@ using System.Diagnostics;
 using MpcLib.Common.FiniteField;
 using MpcLib.DistributedSystem.QuorumSystem;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public class DkmsParty : Processor<DkmsProtocol>
 	{

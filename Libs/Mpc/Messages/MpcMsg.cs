@@ -1,6 +1,7 @@
 ﻿using System;
+using MpcLib.DistributedSystem;
 
-namespace MpcLib.DistributedSystem.Mpc
+namespace MpcLib.MpcProtocols
 {
 	public class MpcMsg : Msg
 	{

@@ -1,4 +1,4 @@
-﻿namespace MpcLib.DistributedSystem.Mpc
+﻿namespace MpcLib.MpcProtocols
 {
 	/// <summary>
 	/// MPC protocol stage.
@@ -11,6 +11,6 @@
 		ResultReceive,
 		RandomizationReceive,
 		SecureBroadcast,
-		CommitmentsBroadcast
+		CommitBroadcast
 	}
 }

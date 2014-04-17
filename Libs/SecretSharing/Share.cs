@@ -1,7 +1,7 @@
 using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.SecretSharing
+namespace MpcLib.SecretSharing
 {
 	public class Share<T> : ISizable where T : ISizable
 	{

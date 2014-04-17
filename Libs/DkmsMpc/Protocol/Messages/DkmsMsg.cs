@@ -1,4 +1,5 @@
-﻿namespace MpcLib.DistributedSystem.Mpc.Dkms
+﻿using MpcLib.DistributedSystem;
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public abstract class DkmsMsg : Msg
 	{

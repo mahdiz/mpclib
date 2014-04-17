@@ -3,7 +3,8 @@
 #include <winsock2.h>
 
 using namespace std;
-using namespace PolyCommitment;
+using namespace MpcLib::Commitments;
+using namespace MpcLib::Commitments::PolyCommitment;
 
 void PolyCommitParams::create(ostream &os, const string pairingparams, unsigned int t)
 {

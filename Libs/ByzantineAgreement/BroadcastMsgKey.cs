@@ -1,4 +1,6 @@
-﻿namespace MpcLib.DistributedSystem.ByzantineAgreement
+﻿using MpcLib.DistributedSystem;
+
+namespace MpcLib.ByzantineAgreement
 {
 	public class BroadcastMsgKey : StateKey
 	{

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.SecretSharing
+namespace MpcLib.SecretSharing
 {
 	public class ShareDetails
 	{

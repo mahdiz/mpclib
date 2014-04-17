@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw
+namespace MpcLib.MpcProtocols.Bgw
 {
 	public class WelchBerlekampDecoder
 	{

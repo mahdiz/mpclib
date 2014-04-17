@@ -5,14 +5,15 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using MpcLib.Common.FiniteField;
+using MpcLib.MpcProtocols;
 
-namespace MpcLib.DistributedSystem.Mpc.Crypto
+namespace MpcLib.MpcProtocols.Crypto
 {
-	public class CommitmentMsg : MpcMsg
+	public class DlCommitMsg : MpcMsg
 	{
 		public readonly IList<BigInteger> Commitments;
 
-		public CommitmentMsg(IList<BigInteger> commitments, Stage stage)
+		public DlCommitMsg(IList<BigInteger> commitments, Stage stage)
 			: base(stage)
 		{
 			Commitments = commitments;

@@ -2,7 +2,7 @@
 
 #define LENGTH_OF_RANDOMNESS 20 // this gives about a 1-in-a-million error probability
 
-using namespace PolyCommitment;
+using namespace MpcLib::Commitments::PolyCommitment;
 
 bool verifyPoly(const PolyCommitParams *p, const G1 &C, const ZZ_pX &f)
 {

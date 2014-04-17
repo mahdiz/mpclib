@@ -4,11 +4,12 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using MpcLib.Common.FiniteField;
 using MpcLib.Common.FiniteField.Circuits;
-using MpcLib.DistributedSystem.ByzantineAgreement;
-using MpcLib.DistributedSystem.Mpc.Bgw.Vss;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.ByzantineAgreement;
+using MpcLib.MpcProtocols.Bgw.Vss;
+using MpcLib.SecretSharing;
+using MpcLib.DistributedSystem;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw
+namespace MpcLib.MpcProtocols.Bgw
 {
 	public class ByzantineBgwProtocol : BgwProtocol
 	{
@@ -35,7 +36,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 		{
 			get
 			{
-				return EntityCount - BadPlayers.Count;
+				return NumParties - BadPlayers.Count;
 			}
 		}
 
@@ -50,7 +51,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 			// PolynomialDeg = NumEntities % 4 == 0 ? (NumEntities / 4 - 1) : (NumEntities / 4);
 			// Mahdi: Changed to the following since n/3 - 1 of players can be dishonest.
 			// degree = n - t, where t is the number of dishonest players
-			PolynomialDeg = (int)Math.Floor(2 * EntityCount / 3.0);
+			PolynomialDeg = (int)Math.Floor(2 * NumParties / 3.0);
 		}
 
 		#region Methods
@@ -94,7 +95,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 		public override void Run()
 		{
 			//// send my input (secret) to all players
-			var mySecretShares = BgwVss.ShareByzantineCase(Input, EntityCount, PolynomialDeg);
+			var mySecretShares = BgwVss.ShareByzantineCase(Input, NumParties, PolynomialDeg);
 			Send(GetShareMessages(mySecretShares, Stage.InputReceive), BadPlayers);
 
 			//OnReceive((int)Stage.InputReceive, NumEntities,
@@ -600,14 +601,14 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 
 				if (isOrigPolyLegal)
 				{
-					var verifList_f_j_w_i = secretPoly.CalculateF_i_xValuesForPlayers(EntityCount, Prime);
+					var verifList_f_j_w_i = secretPoly.CalculateF_i_xValuesForPlayers(NumParties, Prime);
 					var verifMsgs = GetVerifShareMessages(verifList_f_j_w_i, playerToVerify, true);
 					Send(verifMsgs);
 				}
 				else // received polynomials are corrupted Send random list and remember to complain
 				{
 					// received a corrupted polynomials from player with ID 'playerToVerify'
-					var verifList_f_j_w_i = ZpMatrix.GetRandomMatrix(1, EntityCount, Prime).GetMatrixRow(0);
+					var verifList_f_j_w_i = ZpMatrix.GetRandomMatrix(1, NumParties, Prime).GetMatrixRow(0);
 
 					var verifMsgs = GetVerifShareMessages(verifList_f_j_w_i, playerToVerify, false);
 					Send(verifMsgs);
@@ -635,7 +636,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 			if (verifShares[0].ReceivedGoodPoly)		// had received a valid polynomial?
 			{
 				recvShare_i = new Zp(secretPoly.Fi_xPolynomial[0]);
-				var verifyWithList_g_j_w_i = secretPoly.calculateG_i_yValuesForVerification(EntityCount, Prime);
+				var verifyWithList_g_j_w_i = secretPoly.calculateG_i_yValuesForVerification(NumParties, Prime);
 				wrongCoordinatesList = CompareCoordianteList(verifShares, verifyWithList_g_j_w_i);
 			}
 			else
@@ -695,11 +696,11 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 		// TODO: MAHDI: HAS WRONG ORDERING!
 		private IList<Zp> GetMultStepCoeffsForCheaters(int j)
 		{
-			var rowsToRemove = new bool[EntityCount];
-			for (int i = 0; i < EntityCount; i++)
+			var rowsToRemove = new bool[NumParties];
+			for (int i = 0; i < NumParties; i++)
 				rowsToRemove[i] = BadPlayers.Contains(i);
 
-			var vanderMonde = ZpMatrix.GetSymmetricPrimitiveVandermondeMatrix(EntityCount, Prime).Transpose;
+			var vanderMonde = ZpMatrix.GetSymmetricPrimitiveVandermondeMatrix(NumParties, Prime).Transpose;
 			var filteredMatrix = vanderMonde.RemoveRowsFromMatrix(rowsToRemove).Inverse;
 			return filteredMatrix.GetMatrixRow(j);
 		}
@@ -822,7 +823,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 
 		private bool IsNewPublicDataContradictOld(IList<SecretPolynomials> oldPublicData, IList<SecretPolynomials> newPublicData)
 		{
-			for (int i = 0; i < EntityCount; i++)
+			for (int i = 0; i < NumParties; i++)
 			{
 				var secretToCheck = oldPublicData[i];
 				if ((secretToCheck != null) && (!secretToCheck.Equals(newPublicData[i])))
@@ -833,13 +834,13 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 
 		private bool IsPublicDataContradictPrivate(SecretPolynomials myRecvPolys, IList<SecretPolynomials> recvPublicPolysList, IList<PlayerNotification> recvComplaintesList, Zp myRecvShare)
 		{
-			if ((recvPublicPolysList == null) || (recvPublicPolysList.Count != EntityCount))
+			if ((recvPublicPolysList == null) || (recvPublicPolysList.Count != NumParties))
 				return true;
 
-			var myG_j_w_iValues = myRecvPolys.calculateG_i_yValuesForVerification(EntityCount, Prime);
-			var myF_j_w_iValues = myRecvPolys.CalculateF_i_xValuesForPlayers(EntityCount, Prime);
+			var myG_j_w_iValues = myRecvPolys.calculateG_i_yValuesForVerification(NumParties, Prime);
+			var myF_j_w_iValues = myRecvPolys.CalculateF_i_xValuesForPlayers(NumParties, Prime);
 
-			for (int k = 0; k < EntityCount; k++)
+			for (int k = 0; k < NumParties; k++)
 			{
 				if ((recvComplaintesList[k] != null) && (recvComplaintesList[k].Confirmation == Confirmation.Complaint))
 				{
@@ -850,8 +851,8 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 						return true;
 
 					// Verify that the public information doesn't contradict itself - check that : f(w^k, w^k) = fk(w^k) = gk(w^k) = f(w^k, w^k)
-					var playerKNewFk_x_w_iValues = playerKNewPolys.CalculateF_i_xValuesForPlayers(EntityCount, Prime);
-					var playerKNewGk_y_w_iValues = playerKNewPolys.calculateG_i_yValuesForVerification(EntityCount, Prime);
+					var playerKNewFk_x_w_iValues = playerKNewPolys.CalculateF_i_xValuesForPlayers(NumParties, Prime);
+					var playerKNewGk_y_w_iValues = playerKNewPolys.calculateG_i_yValuesForVerification(NumParties, Prime);
 					if (!playerKNewFk_x_w_iValues[k].Equals(playerKNewGk_y_w_iValues[k]))
 						return true;
 

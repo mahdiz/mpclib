@@ -46,7 +46,7 @@
 using namespace std;
 using namespace NTL;
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
 	class PolyCommitParams
 	{
@@ -141,5 +141,7 @@ namespace PolyCommitment
 
 	Zr to_Zr(const Pairing &e, const ZZ_p x);
 	Zr to_Zr(const Pairing &e, const uint64_t x);
+}
+}
 }
 #endif

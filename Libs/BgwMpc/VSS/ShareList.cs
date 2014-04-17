@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw.Vss
+namespace MpcLib.MpcProtocols.Bgw.Vss
 {
 	public abstract class ShareList<T> : BgwShare where T : BgwShare
 	{

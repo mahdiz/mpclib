@@ -1,7 +1,7 @@
 ﻿using MpcLib.Common;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public class ShareMsg<T> : DkmsMsg where T : ISizable
 	{

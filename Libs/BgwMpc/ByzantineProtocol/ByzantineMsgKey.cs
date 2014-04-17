@@ -1,4 +1,4 @@
-﻿namespace MpcLib.DistributedSystem.Mpc.Bgw
+﻿namespace MpcLib.MpcProtocols.Bgw
 {
 	///// <summary>
 	///// State key used for the Byzantine SMPC protocol.

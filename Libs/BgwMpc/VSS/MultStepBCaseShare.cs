@@ -1,7 +1,7 @@
 using System;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw.Vss
+namespace MpcLib.MpcProtocols.Bgw.Vss
 {
 	public class MultStepBCaseShare : BgwShare
 	{

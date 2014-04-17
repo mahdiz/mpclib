@@ -1,4 +1,4 @@
-﻿namespace MpcLib.DistributedSystem.ByzantineAgreement
+﻿namespace MpcLib.ByzantineAgreement
 {
 	/// <summary>
 	/// Rabin's algorithm for Byzantine agreement stage.

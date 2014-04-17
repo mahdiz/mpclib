@@ -1,7 +1,7 @@
 ﻿using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public class InputMsg : DkmsMsg
 	{

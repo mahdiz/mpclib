@@ -17,6 +17,8 @@ namespace MpcLib.DistributedSystem
 		/// </summary>
 		public int Id { get; internal set; }
 
+		public int val;
+
 		/// <summary>
 		/// Runs the entity.
 		/// </summary>

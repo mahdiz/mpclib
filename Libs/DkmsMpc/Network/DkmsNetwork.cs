@@ -1,9 +1,9 @@
 ﻿using MpcLib.Common.FiniteField;
 using MpcLib.DistributedSystem.QuorumSystem;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 using MpcLib.Simulation.Des;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	/// <summary>
 	/// Represents a distributed network for DKMS'12 protocol.

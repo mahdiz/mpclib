@@ -2,9 +2,9 @@
 
 #include "PolyCommitCommon.h"
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
-	public ref class MG
+	public ref class MG : MpcLib::Common::ISizable
 	{
 	public:
 		G1 *g;
@@ -18,5 +18,15 @@ namespace PolyCommitment
 		{
 			delete g;
 		}
+
+		property int Size
+		{
+			virtual int get()
+			{
+				return g->getElementSize(true);
+			}
+		}
 	};
+} 
+} 
 }

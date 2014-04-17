@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 using MpcLib.Common.FiniteField.Circuits;
-using MpcLib.DistributedSystem.Mpc.Bgw.Vss;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.DistributedSystem;
+using MpcLib.MpcProtocols.Bgw.Vss;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw
+namespace MpcLib.MpcProtocols.Bgw
 {
 	public delegate void FinishHandler(StateKey stateKey);
 
@@ -23,6 +25,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 		protected readonly Circuit Circuit;
 		protected readonly int Prime;
 		public event FinishHandler MpcFinish;
+		public override ProtocolIds Id { get { return ProtocolIds.BGW; } }
 
 		#endregion Fields
 
@@ -40,7 +43,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 
 			// Mahdi: Changed to the following since n/3 - 1 of players can be dishonest.
 			// degree = n - t, where t is the number of dishonest players
-			PolynomialDeg = (int)Math.Floor(2 * EntityCount / 3.0);
+			PolynomialDeg = (int)Math.Floor(2 * NumParties / 3.0);
 		}
 
 		public BgwProtocol(Entity e, Circuit circuit, ReadOnlyCollection<int> playerIds,
@@ -54,14 +57,14 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 		public override void Run()
 		{
 			// secret-share my input among all parties
-			var sharesValues = ShamirSharing.Share(Input, EntityCount, PolynomialDeg);
+			var sharesValues = ShamirSharing.Share(Input, NumParties, PolynomialDeg);
 			var shareMsgs = new List<ShareMsg<Zp>>();
 			foreach (var shareValue in sharesValues)
 				shareMsgs.Add(new ShareMsg<Zp>(new Share<Zp>(shareValue), Stage.InputReceive));
 
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.InputReceive, EntityCount,
+			OnReceive((int)Stage.InputReceive, NumParties,
 				delegate(List<Msg> shares)
 				{
 					int k = 1;	// TODO: temp only - needed to be index of gate
@@ -76,7 +79,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 					// share the result with all players
 					SendToAll(new ShareMsg<Zp>(new Share<Zp>(Circuit.Output), Stage.ResultReceive));
 
-					OnReceive((int)Stage.ResultReceive, EntityCount,
+					OnReceive((int)Stage.ResultReceive, NumParties,
 						delegate(List<Msg> resMsgs)
 						{
 							Result = GetRecombinedResult(GetZps(resMsgs.OrderBy(s => s.SenderId).Cast<ShareMsg<Zp>>()), Input.Prime);
@@ -221,7 +224,7 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 			// randomize the coeficients
 			// generate a t degree polynomial, hi(x), 
 			// with a free coef that equals 'ab' and create share for users from it.
-			var sharesValues = ShamirSharing.Share(oldSecret, EntityCount, PolynomialDeg);
+			var sharesValues = ShamirSharing.Share(oldSecret, NumParties, PolynomialDeg);
 			var shareMsgs = new List<ShareMsg<Zp>>();
 			foreach (var shareValue in sharesValues)
 				shareMsgs.Add(new ShareMsg<Zp>(new Share<Zp>(shareValue), Stage.RandomizationReceive));
@@ -229,16 +232,16 @@ namespace MpcLib.DistributedSystem.Mpc.Bgw
 			// send to the j-th user hi(j) and receive from every other k player hk(i)
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.RandomizationReceive, EntityCount,
+			OnReceive((int)Stage.RandomizationReceive, NumParties,
 				delegate(List<Msg> shares)
 				{
 					var vanderFirstRow =
-						ZpMatrix.GetSymmetricVanderMondeMatrix(EntityCount, Prime)
+						ZpMatrix.GetSymmetricVanderMondeMatrix(NumParties, Prime)
 							.Transpose.Inverse.GetMatrixRow(0);
 
 					// Calculate the value of the polynomial H(x) at i = H(i) as defined at GRR
 					var tempSecret = new Zp(Prime, 0);
-					for (int i = 0; i < EntityCount; i++)
+					for (int i = 0; i < NumParties; i++)
 						tempSecret.Add(((shares[i] as ShareMsg<Zp>).Share as Share<Zp>).Value.Mul(vanderFirstRow[i]));
 				});
 		}

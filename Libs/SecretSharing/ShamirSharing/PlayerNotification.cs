@@ -1,4 +1,4 @@
-namespace MpcLib.DistributedSystem.SecretSharing
+namespace MpcLib.SecretSharing
 {
 	public class PlayerNotification
 	{

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Linq;
+using MpcLib.Common;
 using MpcLib.Common.StochasticUtils;
 
 namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
@@ -9,9 +10,8 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 	internal class AlmostEverywhereProtocol : Protocol, IQuorumBuilder
 	{
 		public event QbFinishHandler QbFinished;
-
 		public float C { get; private set; }
-
+		public override ProtocolIds Id { get { return ProtocolIds.AE; } }
 		private readonly RandomUtils randUtils = new RandomUtils();
 
 		public AlmostEverywhereProtocol(Entity e, ReadOnlyCollection<int> processorIds, StateKey stateKey)

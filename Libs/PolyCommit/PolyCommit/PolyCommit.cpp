@@ -12,11 +12,13 @@ using namespace System::Runtime::InteropServices;
 using namespace MpcLib::Common;
 using namespace MpcLib::Common::FiniteField;
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
 	public ref class PolyCommit
 	{
 	private:
+		PcParams ^params;
+
 		static String ^toString(const ZZ &a)
 		{
 			ZZ b;
@@ -100,27 +102,31 @@ namespace PolyCommitment
 	public:
 		PolyCommit()
 		{
+			params = nullptr;
 		}
 
-		~PolyCommit()
+		/// <summary>
+		/// Initializes PolyCommit parameters using a deterministic RNG.
+		/// **WARNING** NOT SECURE! Use only for simulations!
+		/// </summary>
+		void Setup(int t, int seed)
 		{
-		}
+			pbc_random_set_deterministic(seed);
 
-		static PcParams ^CreateParams(int t)
-		{
 			// Init PolyCommit parameters
-			PcParams ^params = gcnew PcParams(t);
+			params = gcnew PcParams(t);
 
 			// Initialize the field
 			ZZ_p::init(params->p->get_order());
-
-			return params;
 		}
 
-		// Commit to a polynomial and return the proof and witnesses
-		MG ^Commit(PcParams ^params, array<BigZp^> ^coeffs, array<BigZp^> ^iz,
+		/// <summary>
+		/// Commits to a polynomial and returns the proof and witnesses.
+		/// </summary>
+		MG ^Commit(array<BigZp^> ^coeffs, array<BigZp^> ^iz,
 			array<MG^> ^%witnesses, array<Byte> ^%proof, bool calcProof)
 		{
+			Debug::Assert(params != nullptr, "PolyCommit not initialized yet.");
 			vec_ZZ_p zzpVec;
 
 			// convert the coefficients vector into a polynomial
@@ -149,8 +155,9 @@ namespace PolyCommitment
 			return gcnew MG(C);
 		}
 
-		bool VerifyProof(PcParams ^params, MG ^commitment, array<Byte> ^proof)
+		bool VerifyProof(MG ^commitment, array<Byte> ^proof)
 		{
+			Debug::Assert(params != nullptr, "PolyCommit not initialized yet.");
 			stringstream ss;
 			for each (Byte b in proof)
 				ss << b;
@@ -159,8 +166,9 @@ namespace PolyCommitment
 			return verifier.FS_verify(ss);
 		}
 
-		bool VerifyEval(PcParams ^params, MG ^commitment, BigZp ^i, BigZp ^fi, MG ^wi)
+		bool VerifyEval(MG ^commitment, BigZp ^i, BigZp ^fi, MG ^wi)
 		{
+			Debug::Assert(params != nullptr, "PolyCommit not initialized yet.");
 			return PolyCommitter::verifyEval(params->p, *commitment->g, toZZp(i), toZZp(fi), *wi->g);
 		}
 
@@ -182,4 +190,6 @@ namespace PolyCommitment
 		//		vec[i] = random_ZZ_p();
 		//}
 	};
+}
+}
 }

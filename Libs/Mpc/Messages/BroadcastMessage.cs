@@ -1,6 +1,6 @@
-﻿using MpcLib.DistributedSystem.ByzantineAgreement;
+﻿using MpcLib.ByzantineAgreement;
 
-namespace MpcLib.DistributedSystem.Mpc
+namespace MpcLib.MpcProtocols
 {
 	/// <summary>
 	/// Wraps a Byzantine agreement broadcast message.
@@ -14,7 +14,7 @@ namespace MpcLib.DistributedSystem.Mpc
 		private readonly ByzantineAgreement.BroadcastMessage<TData> baMsg;
 
 		public BroadcastMessage(BroadcastStage stage, TData content, int k)
-			: base(Mpc.Stage.SecureBroadcast)
+			: base(MpcProtocols.Stage.SecureBroadcast)
 		{
 			baMsg = new ByzantineAgreement.BroadcastMessage<TData>(stage, content, k);
 		}

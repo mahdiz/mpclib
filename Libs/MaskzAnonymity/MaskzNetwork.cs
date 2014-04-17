@@ -4,9 +4,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.Mpc.Dkms;
+using MpcLib.MpcProtocols.Dkms;
 using MpcLib.DistributedSystem.QuorumSystem;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 using MpcLib.Simulation.Des;
 
 namespace MpcLib.DistributedSystem.Anonymity.Maskz
@@ -123,7 +123,7 @@ namespace MpcLib.DistributedSystem.Anonymity.Maskz
 			return new Circuit(inputGates.AsReadOnly(), internalGates);
 		}
 
-		protected static Mpc.Dkms.Circuit CreateByzantineCircuit(int numPlayers, int numQuorums, int numSlots, int quorumSize, int prime)
+		protected static MpcProtocols.Dkms.Circuit CreateByzantineCircuit(int numPlayers, int numQuorums, int numSlots, int quorumSize, int prime)
 		{
 			var inputGates = new List<Gate>();
 			var internalGates = new List<Gate>();
@@ -210,8 +210,8 @@ namespace MpcLib.DistributedSystem.Anonymity.Maskz
 			sum_parser.Parse();
 
 			// create t binary trees with n leaves
-			var adder_roots = new Mpc.Dkms.Gate[numSlots];
-			var adder_leaves = new List<Mpc.Dkms.Gate[]>(numSlots);
+			var adder_roots = new MpcProtocols.Dkms.Gate[numSlots];
+			var adder_leaves = new List<MpcProtocols.Dkms.Gate[]>(numSlots);
 			for (int i = 0; i < numSlots; i++)
 			{
 				adder_roots[i] = new Gate(GateType.Internal, quorumIndex++, sum_parser.Circuit);
@@ -229,15 +229,15 @@ namespace MpcLib.DistributedSystem.Anonymity.Maskz
 				for (int j = 0, k = 0; j < numPlayers; j++, k = j / 2)
 					G4_gatesList[j][i].AddEdgeTo(adder_leaves[i][k]);
 			}
-			return new Mpc.Dkms.Circuit(inputGates.AsReadOnly(), internalGates);
+			return new MpcProtocols.Dkms.Circuit(inputGates.AsReadOnly(), internalGates);
 		}
 
-		protected static void CreateGateTree(Mpc.Dkms.Gate root, int numLeaves, Zp quorumIndex, bool topToBottom)
+		protected static void CreateGateTree(MpcProtocols.Dkms.Gate root, int numLeaves, Zp quorumIndex, bool topToBottom)
 		{
 			if (numLeaves > 1)
 			{
-				var left = new Mpc.Dkms.Gate(root.Type, quorumIndex++, root.MpcCircuit);
-				var right = new Mpc.Dkms.Gate(root.Type, quorumIndex++, root.MpcCircuit);
+				var left = new MpcProtocols.Dkms.Gate(root.Type, quorumIndex++, root.MpcCircuit);
+				var right = new MpcProtocols.Dkms.Gate(root.Type, quorumIndex++, root.MpcCircuit);
 				if (topToBottom)
 				{
 					root.AddEdgeTo(left);

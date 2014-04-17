@@ -1,4 +1,4 @@
-﻿namespace MpcLib.DistributedSystem.Mpc.Bgw
+﻿namespace MpcLib.MpcProtocols.Bgw
 {
 	public class Coordinate
 	{

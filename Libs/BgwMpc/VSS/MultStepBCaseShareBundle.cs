@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw.Vss
+namespace MpcLib.MpcProtocols.Bgw.Vss
 {
 	public class MultStepBCaseShareBundle : ShareList<MultStepBCaseShare>
 	{

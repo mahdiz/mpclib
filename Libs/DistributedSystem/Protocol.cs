@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using MpcLib.Common;
 
 namespace MpcLib.DistributedSystem
 {
@@ -21,19 +22,25 @@ namespace MpcLib.DistributedSystem
 		#region Fields
 
 		/// <summary>
+		/// Unique idetifier of the protocol type.
+		/// </summary>
+		public abstract ProtocolIds Id { get; }
+
+		/// <summary>
 		/// The entity associated with this protocol.
 		/// </summary>
 		protected readonly Entity Entity;
 
 		/// <summary>
-		/// Number of entities (nodes) in the network.
+		/// Number of entities (parties) in the network.
 		/// </summary>
-		protected readonly int EntityCount;
+		protected readonly int NumParties;
 		protected readonly StateKey StateKey;
 		protected readonly ReadOnlyCollection<int> EntityIds;
 		private readonly Dictionary<int, IRelayEntry<Msg>> relayDic = new Dictionary<int, IRelayEntry<Msg>>();
 		private event SendHandler sendMsg;
 		private event BroadcastHandler broadcastMsg;
+		private Dictionary<ProtocolIds, Protocol> subProtocols = new Dictionary<ProtocolIds,Protocol>();
 
 		#endregion Fields
 
@@ -89,7 +96,7 @@ namespace MpcLib.DistributedSystem
 		{
 			Entity = e;
 			EntityIds = entityIds;
-			EntityCount = entityIds.Count;
+			NumParties = entityIds.Count;
 			sendMsg += send;
 			broadcastMsg += bcast;
 			StateKey = stateKey;
@@ -101,6 +108,7 @@ namespace MpcLib.DistributedSystem
 		protected virtual void Send(int fromId, int toId, Msg msg)
 		{
 			Debug.Assert(sendMsg != null, "No send method have been set for the protocol!");
+			msg.ProtocolId = Id;
 			sendMsg(fromId, toId, msg);
 		}
 
@@ -112,6 +120,7 @@ namespace MpcLib.DistributedSystem
 		protected void Broadcast(IEnumerable<int> toIds, Msg msg)
 		{
 			Debug.Assert(broadcastMsg != null, "No broadcast method has been set for the protocol!");
+			msg.ProtocolId = Id;
 			broadcastMsg(Entity.Id, toIds, msg);
 		}
 
@@ -138,12 +147,13 @@ namespace MpcLib.DistributedSystem
 			{
 				var b = e.MoveNext();
 				Debug.Assert(b);
+				e.Current.ProtocolId = Id;
 				sendMsg(Entity.Id, toId, e.Current);
 			}
 		}
 
 		/// <summary>
-		/// Sends the i-th message to entity with id i.
+		/// Sends the i-th message to the entity with the i-th smallest id.
 		/// </summary>
 		protected void Send(IEnumerable<Msg> msgs)
 		{
@@ -151,10 +161,11 @@ namespace MpcLib.DistributedSystem
 			Debug.Assert(EntityIds.Count() == msgs.Count());
 			var e = msgs.GetEnumerator();
 
-			foreach (var toId in EntityIds)
+			foreach (var toId in EntityIds.OrderBy(i => i))
 			{
 				var b = e.MoveNext();
 				Debug.Assert(b);
+				e.Current.ProtocolId = Id;
 				sendMsg(Entity.Id, toId, e.Current);
 			}
 		}
@@ -168,15 +179,27 @@ namespace MpcLib.DistributedSystem
 		/// </summary>
 		internal void Receive(Msg msg)
 		{
-			Debug.Assert(msg.SenderId >= 0, "Invalid message!");		
-			var e = relayDic[msg.StageKey];
+			Debug.Assert(msg.SenderId >= 0, "Invalid message!");
 
-			if (e.Count == e.GoalCount - 1)
+			IRelayEntry<Msg> re = null;
+			if (msg.ProtocolId == Id)
+				// it's my message
+				re = relayDic[msg.StageKey];
+			else
 			{
-				e.Add(msg);
-				e.Relay();		// relay the messages to 
+				Debug.Assert(subProtocols.ContainsKey(msg.ProtocolId),
+					"No receiver protocol registered! Have you registered all sub-protocols? If not, do this using RegisterSubProtocol()?");
+
+				// so, the message belongs to one of my sub-protocols
+				re = subProtocols[msg.ProtocolId].relayDic[msg.StageKey];
 			}
-			else e.Add(msg);
+
+			if (re.Count == re.GoalCount - 1)
+			{
+				re.Add(msg);
+				re.Relay();		// relay the messages
+			}
+			else re.Add(msg);
 		}
 
 		/// <summary>
@@ -191,6 +214,15 @@ namespace MpcLib.DistributedSystem
 		{
 			var entry = new RelayEntry<T>() { GoalCount = numMsgToReceive, OnReceive = onRecv };
 			relayDic.Add(stageKey, entry);		// supported via generic covariance
+			Entity.val = 568;
+		}
+
+		/// <summary>
+		/// Registers a sub-protocol to forward corresponding messages to it.
+		/// </summary>
+		protected void RegisterSubProtocol(Protocol sub)
+		{
+			subProtocols.Add(sub.Id, sub);
 		}
 	}
 }

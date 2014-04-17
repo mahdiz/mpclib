@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.Mpc
+namespace MpcLib.MpcProtocols
 {
 	public interface IMpcProtocol<T>
 	{

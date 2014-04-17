@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using MpcLib.Common;
 
 namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 {
@@ -7,8 +8,8 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 	{
 		private int numQuorums;
 		private int quorumSize;
-
 		public event QbFinishHandler QbFinished;
+		public override ProtocolIds Id { get { return ProtocolIds.StaticSampler; } }
 
 		public StaticSampler(Entity e, ReadOnlyCollection<int> entityIds, 
 			int numQuorums, int quorumSize, StateKey stateKey)
@@ -29,7 +30,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 				for (int j = 0; j < quorumSize; j++)
 				{
 					quorumMembers[j] = procIndex;
-					procIndex = (procIndex + 1) % EntityCount;
+					procIndex = (procIndex + 1) % NumParties;
 				}
 				quorumsMap[i] = quorumMembers;
 			}

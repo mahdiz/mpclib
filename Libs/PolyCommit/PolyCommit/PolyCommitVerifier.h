@@ -3,7 +3,7 @@
 
 #include "PolyCommitCommon.h"
 
-namespace PolyCommitment
+namespace MpcLib { namespace Commitments { namespace PolyCommitment
 {
 	bool verifyPoly(const PolyCommitParams &p, const G1 &C, const ZZ_pX &f);
 	bool verifyVec(const PolyCommitParams &p, const G1 &C, const vec_ZZ_p &v);
@@ -13,6 +13,8 @@ namespace PolyCommitment
 	// verify a batch of evaluations (different polys, same evaluation point)
 	bool verifyEval(const PolyCommitParams &p, const vector<G1> &C, const ZZ_p &i,
 		const vec_ZZ_p &fi, const vector<G1> &witness);
+}
+}
 }
 
 #endif

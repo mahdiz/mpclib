@@ -6,7 +6,7 @@
 #include <time.h>
 #include <time.h>
 #include <openssl/sha.h>
-using namespace PolyCommitment;
+using namespace MpcLib::Commitments::PolyCommitment;
 
 static string sha256(const string str)
 {

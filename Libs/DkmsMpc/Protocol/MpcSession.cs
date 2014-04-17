@@ -1,7 +1,7 @@
-﻿using MpcLib.DistributedSystem.Mpc;
-using MpcLib.DistributedSystem.Mpc.Bgw;
+﻿using MpcLib.MpcProtocols;
+using MpcLib.MpcProtocols.Bgw;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
 	public struct GatePlayer
 	{

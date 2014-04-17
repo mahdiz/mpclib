@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using MpcLib.Common.FiniteField;
 
-namespace MpcLib.DistributedSystem.SecretSharing
+namespace MpcLib.SecretSharing
 {
 	/// <summary>
 	/// Implemenets the threshold secret sharing scheme based on Adi Shamir's method.

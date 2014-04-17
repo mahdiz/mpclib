@@ -4,13 +4,15 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using MpcLib.Common.StochasticUtils;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
+using MpcLib.DistributedSystem;
+using MpcLib.Common;
+using MpcLib.Common.FiniteField;
+using MpcLib.MpcProtocols.Bgw;
 
-namespace MpcLib.DistributedSystem.Mpc.Dkms
+namespace MpcLib.MpcProtocols.Dkms
 {
-	using MpcLib.Common.FiniteField;
-	using MpcLib.DistributedSystem.Mpc.Bgw;											// alias
-	using SessionCollector = SessionCollector<MpcSession>;
+	using SessionCollector = SessionCollector<MpcSession>;	// alias
 
 	/// <summary>
 	/// Implements the MPC protocol of Dani, King, Movahedi, and Saia (DKMS'12).
@@ -23,6 +25,7 @@ namespace MpcLib.DistributedSystem.Mpc.Dkms
 		public readonly int Prime;
 		public readonly Circuit Circuit;
 		public readonly int NumSlots;
+		public override ProtocolIds Id { get { return ProtocolIds.DKMS; } }
 
 		public IDictionary<int, int[]> QuorumsMap { set { quorumsMap = value; } }
 		private IDictionary<int, int[]> quorumsMap;
@@ -50,7 +53,7 @@ namespace MpcLib.DistributedSystem.Mpc.Dkms
 		public override void Run()
 		{
 			Debug.Assert(quorumsMap != null);
-			Debug.Assert(Circuit.InputGates.Count == EntityCount * NumSlots);
+			Debug.Assert(Circuit.InputGates.Count == NumParties * NumSlots);
 
 			// TODO: input must be encrypted with a random number and the random must be secret shared.
 			// share my input in a random input gate (random slot) and share zero in others

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
-namespace MpcLib.DistributedSystem.Mpc.Crypto
+namespace MpcLib.MpcProtocols.Crypto
 {
 	/// <summary>
 	/// A fast implementation of the discrete logarithm cryptosystem.

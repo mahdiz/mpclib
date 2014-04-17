@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using MpcLib.Common;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc
+namespace MpcLib.MpcProtocols
 {
 	public class ShareMsg<T> : MpcMsg where T : ISizable
 	{

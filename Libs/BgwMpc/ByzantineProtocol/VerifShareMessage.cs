@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.Mpc.Bgw.Vss;
+using MpcLib.MpcProtocols.Bgw.Vss;
 
-namespace MpcLib.DistributedSystem.Mpc.Bgw
+namespace MpcLib.MpcProtocols.Bgw
 {
 	public class VerifShareMessage : ShareMsg<Zp>
 	{

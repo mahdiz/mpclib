@@ -4,9 +4,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using MpcLib.Common.FiniteField;
-using MpcLib.DistributedSystem.SecretSharing;
+using MpcLib.DistributedSystem;
+using MpcLib.SecretSharing;
 
-namespace MpcLib.DistributedSystem.Mpc
+namespace MpcLib.MpcProtocols
 {
 	/// <summary>
 	/// Defines an abstract MPC protocol.
