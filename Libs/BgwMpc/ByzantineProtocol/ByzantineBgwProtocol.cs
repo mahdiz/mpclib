@@ -98,7 +98,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			var mySecretShares = BgwVss.ShareByzantineCase(Input, NumParties, PolynomialDeg);
 			Send(GetShareMessages(mySecretShares, Stage.InputReceive), BadPlayers);
 
-			//OnReceive((int)Stage.InputReceive, NumEntities,
+			//OnReceive((int)Stage.InputReceive,
 			//    delegate(List<ShareMessage> inputShares)
 			//    {
 			//        SendVerifications(inputShares);

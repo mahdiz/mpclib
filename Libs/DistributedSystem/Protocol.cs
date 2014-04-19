@@ -49,7 +49,7 @@ namespace MpcLib.DistributedSystem
 		// Covariant interface
 		private interface IRelayEntry<out T> where T : Msg
 		{
-			int GoalCount { get; }
+			IList<int> SenderIds { get; }
 			int Count { get; }
 			void Relay();
 			void Add(Msg msg);
@@ -57,14 +57,17 @@ namespace MpcLib.DistributedSystem
 
 		private class RelayEntry<T> : IRelayEntry<T> where T : Msg
 		{
-			public int GoalCount { get; set; }
+			public IList<int> SenderIds { get; set; }
 			public Action<List<T>> OnReceive;
-			private List<T> msgs = new List<T>();
+			private Dictionary<int, T> msgs = new Dictionary<int, T>();
 
 			public void Add(Msg msg)
 			{
 				Debug.Assert(msg is T, "Message type and stage key do not match!");
-				msgs.Add(msg as T);
+
+				// if a message already received from this party, ignore it.
+				if (!msgs.ContainsKey(msg.SenderId))
+					msgs.Add(msg.SenderId, msg as T);
 			}
 
 			public int Count
@@ -74,7 +77,7 @@ namespace MpcLib.DistributedSystem
 
 			public void Relay()
 			{
-				OnReceive(msgs);
+				OnReceive(msgs.Values.ToList());
 			}
 		}
 
@@ -183,8 +186,10 @@ namespace MpcLib.DistributedSystem
 
 			IRelayEntry<Msg> re = null;
 			if (msg.ProtocolId == Id)
-				// it's my message
+			{
+				// the message belongs to me
 				re = relayDic[msg.StageKey];
+			}
 			else
 			{
 				Debug.Assert(subProtocols.ContainsKey(msg.ProtocolId),
@@ -194,27 +199,50 @@ namespace MpcLib.DistributedSystem
 				re = subProtocols[msg.ProtocolId].relayDic[msg.StageKey];
 			}
 
-			if (re.Count == re.GoalCount - 1)
+			// if the sender is not in the list of expected senders, just ignore the message.
+			if (re.SenderIds.Contains(msg.SenderId))
 			{
-				re.Add(msg);
-				re.Relay();		// relay the messages
+				if (re.Count == re.SenderIds.Count - 1)
+				{
+					re.Add(msg);
+					re.Relay();		// relay the messages
+				}
+				else
+					re.Add(msg);
 			}
-			else re.Add(msg);
 		}
 
 		/// <summary>
-		/// Defines a callback method via a delegate to be invoked once a
-		/// specific number of messages of a given protocol stage are received.
+		/// Defines a callback method to be invoked once for every party 
+		/// a message with the given protocol stage is received.
 		/// </summary>
 		/// <typeparam name="T">Type of messages to capture.</typeparam>
 		/// <param name="stageKey">Protocol stage key.</param>
-		/// <param name="numMsgToReceive">Number of messages to be received before the delegate is invoked.</param>
-		/// <param name="onRecv">The delegate method to be invoked once the given number of messages are received.</param>
-		protected void OnReceive<T>(int stageKey, int numMsgToReceive, Action<List<T>> onRecv) where T : Msg
+		/// <param name="onRecv">The delegate method to be invoked once all messages are received.</param>
+		protected void OnReceive<T>(int stageKey, Action<List<T>> onRecv) where T : Msg
 		{
-			var entry = new RelayEntry<T>() { GoalCount = numMsgToReceive, OnReceive = onRecv };
+			OnReceive(stageKey, EntityIds, onRecv);
+		}
+
+		/// <summary>
+		/// Defines a callback method to be invoked once a specific number of messages
+		/// of a given protocol stage are received from a list expected senders.
+		/// </summary>
+		/// <typeparam name="T">Type of messages to capture.</typeparam>
+		/// <param name="stageKey">Protocol stage key.</param>
+		/// <param name="senderIds">List of expected senders.</param>
+		/// <param name="onRecv">The delegate method to be invoked once all messages are received.</param>
+		protected void OnReceive<T>(int stageKey, IList<int> senderIds, Action<List<T>> onRecv) where T : Msg
+		{
+			// WARNING: THIS IS NOT SECURE! ONE MALICIOUS PARTY CAN STAY SILENT TO FREEZE THE ENTIRE PROTOCOL.
+			// SOLUTION: INSTEAD OF THIS REGISTER FOR ALL MSGS RECEIVED IN THE NEXT ROUND.
+			// DEFINE A ROUND TO BE A CERTAIN NUMBER OF UNIT OF TIME. THEN, INVOKE RECEIVE()
+			// FORWARDING ALL MESSAGES RECEIVED IN THIS ROUND NOT FOR EVERY MESSAGE.
+			// ALTERNATIVELY, WE CAN SKIP REGISTERING AND INSTEAD THE LOWER LEVEL ALWAYS
+			// CALLS RECEIVE() IF THE PROTOCOL HAS ANY MESSAGE IN ITS MAILBOX FOR THAT ROUND.
+
+			var entry = new RelayEntry<T>() { SenderIds = senderIds, OnReceive = onRecv };
 			relayDic.Add(stageKey, entry);		// supported via generic covariance
-			Entity.val = 568;
 		}
 
 		/// <summary>

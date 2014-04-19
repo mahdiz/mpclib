@@ -83,7 +83,7 @@ namespace MpcLib.MpcProtocols.Crypto
 			// send the i-th share to the i-th party
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.InputReceive, NumParties,
+			OnReceive((int)Stage.InputReceive,
 				delegate(List<ShareMsg<BigZp>> shares)
 				{
 					RecvShares = shares.OrderBy(s => s.SenderId).ToList();
@@ -94,7 +94,7 @@ namespace MpcLib.MpcProtocols.Crypto
 			// broadcast the commitments 
 			Broadcast(commitMsg);
 
-			OnReceive((int)Stage.CommitBroadcast, NumParties,
+			OnReceive((int)Stage.CommitBroadcast,
 				delegate(List<DlCommitMsg> msgs)
 				{
 					RecvCommitments = msgs.OrderBy(s => s.SenderId).ToList();
@@ -115,7 +115,7 @@ namespace MpcLib.MpcProtocols.Crypto
 			// publish the circuit output
 			Broadcast(new ShareMsg<BigZp>(new Share<BigZp>(Circuit.Output), Stage.ResultReceive));
 
-			OnReceive((int)Stage.ResultReceive, NumParties,
+			OnReceive((int)Stage.ResultReceive,
 				delegate(List<ShareMsg<BigZp>> resultMsgs)
 				{
 					var zpList = new List<BigZp>();

@@ -64,7 +64,7 @@ namespace MpcLib.MpcProtocols.Bgw
 
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.InputReceive, NumParties,
+			OnReceive((int)Stage.InputReceive,
 				delegate(List<Msg> shares)
 				{
 					int k = 1;	// TODO: temp only - needed to be index of gate
@@ -79,7 +79,7 @@ namespace MpcLib.MpcProtocols.Bgw
 					// share the result with all players
 					SendToAll(new ShareMsg<Zp>(new Share<Zp>(Circuit.Output), Stage.ResultReceive));
 
-					OnReceive((int)Stage.ResultReceive, NumParties,
+					OnReceive((int)Stage.ResultReceive,
 						delegate(List<Msg> resMsgs)
 						{
 							Result = GetRecombinedResult(GetZps(resMsgs.OrderBy(s => s.SenderId).Cast<ShareMsg<Zp>>()), Input.Prime);
@@ -232,7 +232,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			// send to the j-th user hi(j) and receive from every other k player hk(i)
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.RandomizationReceive, NumParties,
+			OnReceive((int)Stage.RandomizationReceive,
 				delegate(List<Msg> shares)
 				{
 					var vanderFirstRow =

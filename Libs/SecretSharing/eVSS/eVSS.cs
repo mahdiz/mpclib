@@ -12,6 +12,8 @@ using MpcLib.DistributedSystem;
 
 namespace MpcLib.SecretSharing.eVSS
 {
+	public delegate void ShareFinishHandler(IEnumerable<BigZp> shares);
+
 	public enum Stage
 	{
 		Commit,
@@ -20,13 +22,13 @@ namespace MpcLib.SecretSharing.eVSS
 
 	public class eVSS : Protocol
 	{
-		public IList<BigZp> Shares;
 		protected BigZp Secret;
 		protected readonly int PolyDegree;
 		protected IList<ShareMsg<BigZp>> RecvShares;
 		protected IList<CommitMsg> RecvCommits;
 		protected PolyCommit PolyCommit;
 		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
+		public event ShareFinishHandler OnShareFinish;
 
 		public eVSS(BigZp secret, Entity e, ReadOnlyCollection<int> pIds, int polyDegree, StateKey stateKey)
 			: base(e, pIds, stateKey)
@@ -52,7 +54,7 @@ namespace MpcLib.SecretSharing.eVSS
 			Share();
 		}
 
-		public void Share()
+		protected void Share()
 		{
 			IList<BigZp> coeffs = null;
 
@@ -74,8 +76,8 @@ namespace MpcLib.SecretSharing.eVSS
 			// broadcast the commitment
 			Broadcast(new CommitMsg(mg));
 
-			OnReceive((int)Stage.Commit, NumParties,
-				(List<CommitMsg> msgs) => 
+			OnReceive((int)Stage.Commit,
+				delegate(List<CommitMsg> msgs)
 				{
 					RecvCommits = msgs.OrderBy(s => s.SenderId).ToList();
 					if (RecvShares != null)
@@ -89,8 +91,8 @@ namespace MpcLib.SecretSharing.eVSS
 
 			Send(shareMsgs);
 
-			OnReceive((int)Stage.Share, NumParties,
-				(List<ShareMsg<BigZp>> msgs) => 
+			OnReceive((int)Stage.Share,
+				delegate(List<ShareMsg<BigZp>> msgs)
 				{
 					RecvShares = msgs.OrderBy(s => s.SenderId).ToList();
 					if (RecvCommits != null)
@@ -98,7 +100,7 @@ namespace MpcLib.SecretSharing.eVSS
 				});
 		}
 
-		public void Verify(IList<CommitMsg> commits, IList<ShareMsg<BigZp>> shares)
+		protected void Verify(IList<CommitMsg> commits, IList<ShareMsg<BigZp>> shares)
 		{
 			// find my rank in sorted list of ids
 			int rank = 1;
@@ -119,6 +121,8 @@ namespace MpcLib.SecretSharing.eVSS
 					throw new NotImplementedException();
 				}
 			}
+			if (OnShareFinish != null)
+				OnShareFinish(from s in shares select s.Share);
 		}
 
 		public void Reconstruct()

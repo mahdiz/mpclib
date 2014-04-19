@@ -62,7 +62,12 @@ namespace MpcLib.MpcProtocols.Crypto
 
 			evss.Setup(Seed);
 			evss.Run();
-			Shares = evss.Shares;
+
+			evss.OnShareFinish +=
+				delegate(IEnumerable<BigZp> shares)
+				{
+					throw new NotImplementedException();
+				};
 		}
 
 		protected void Compute()
@@ -74,7 +79,7 @@ namespace MpcLib.MpcProtocols.Crypto
 			// publish the circuit output
 			Broadcast(new ShareMsg<BigZp>(new Share<BigZp>(Circuit.Output), Stage.ResultReceive));
 
-			OnReceive((int)Stage.ResultReceive, NumParties,
+			OnReceive((int)Stage.ResultReceive,
 				delegate(List<ShareMsg<BigZp>> resultMsgs)
 				{
 					var zpList = new List<BigZp>();
