@@ -7,7 +7,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 	public abstract class QuorumSystem<T> : DistributedSystem<T>
 		where T : Entity, new()
 	{
-		public QuorumSystem(Simulator s, int seed)
+		public QuorumSystem(EventSimulator s, int seed)
 			: base(s, seed)
 		{
 		}

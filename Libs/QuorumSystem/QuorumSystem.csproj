@@ -88,9 +88,9 @@
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DiscreteEventScheduler\DiscreteEventScheduler.csproj">
+    <ProjectReference Include="..\DiscreteEventScheduler\Simulation.csproj">
       <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>DiscreteEventScheduler</Name>
+      <Name>Simulation</Name>
     </ProjectReference>
     <ProjectReference Include="..\DistributedSystem\DistributedSystem.csproj">
       <Project>{FB8DD953-2188-41F9-9B81-B5FCB509F2BA}</Project>

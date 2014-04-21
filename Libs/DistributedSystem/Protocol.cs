@@ -19,8 +19,6 @@ namespace MpcLib.DistributedSystem
 	/// </summary>
 	public abstract class Protocol
 	{
-		#region Fields
-
 		/// <summary>
 		/// Unique idetifier of the protocol type.
 		/// </summary>
@@ -37,76 +35,46 @@ namespace MpcLib.DistributedSystem
 		protected readonly int NumParties;
 		protected readonly StateKey StateKey;
 		protected readonly ReadOnlyCollection<int> EntityIds;
-		private readonly Dictionary<int, IRelayEntry<Msg>> relayDic = new Dictionary<int, IRelayEntry<Msg>>();
+
 		private event SendHandler sendMsg;
+		private event SendRecvHandler sendRecvMsg;
 		private event BroadcastHandler broadcastMsg;
-		private Dictionary<ProtocolIds, Protocol> subProtocols = new Dictionary<ProtocolIds,Protocol>();
-
-		#endregion Fields
-
-		#region RelayEntry definitions
-
-		// Covariant interface
-		private interface IRelayEntry<out T> where T : Msg
-		{
-			IList<int> SenderIds { get; }
-			int Count { get; }
-			void Relay();
-			void Add(Msg msg);
-		}
-
-		private class RelayEntry<T> : IRelayEntry<T> where T : Msg
-		{
-			public IList<int> SenderIds { get; set; }
-			public Action<List<T>> OnReceive;
-			private Dictionary<int, T> msgs = new Dictionary<int, T>();
-
-			public void Add(Msg msg)
-			{
-				Debug.Assert(msg is T, "Message type and stage key do not match!");
-
-				// if a message already received from this party, ignore it.
-				if (!msgs.ContainsKey(msg.SenderId))
-					msgs.Add(msg.SenderId, msg as T);
-			}
-
-			public int Count
-			{
-				get { return msgs.Count; }
-			}
-
-			public void Relay()
-			{
-				OnReceive(msgs.Values.ToList());
-			}
-		}
-
-		#endregion OnReceive definitions
+		private readonly Dictionary<int, IRelayEntry<Msg>> relayDic = new Dictionary<int, IRelayEntry<Msg>>();
+		private Dictionary<ProtocolIds, Protocol> subProtocols = new Dictionary<ProtocolIds, Protocol>();
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds, StateKey stateKey)
-			: this(e, entityIds, e.Send, e.Broadcast, stateKey)
+			: this(e, entityIds, e.Send, e.SendReceive, e.Broadcast, stateKey)
 		{
 		}
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
 			SendHandler send, StateKey stateKey)
-			: this(e, entityIds, send, null, stateKey)
+			: this(e, entityIds, send, null, null, stateKey)
 		{
 		}
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
-			SendHandler send, BroadcastHandler bcast, StateKey stateKey)
+			SendRecvHandler sendRecv, StateKey stateKey)
+			: this(e, entityIds, null, sendRecv, null, stateKey)
+		{
+		}
+
+		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
+			SendHandler send, SendRecvHandler sendRecv, BroadcastHandler bcast, StateKey stateKey)
 		{
 			Entity = e;
 			EntityIds = entityIds;
 			NumParties = entityIds.Count;
+			StateKey = stateKey;
 			sendMsg += send;
 			broadcastMsg += bcast;
-			StateKey = stateKey;
+			sendRecvMsg += sendRecv;
 #if !SIMULATION
 			RandGen = new CryptoRandom();
 #endif
 		}
+
+		public abstract void Run();
 
 		protected virtual void Send(int fromId, int toId, Msg msg)
 		{
@@ -172,8 +140,6 @@ namespace MpcLib.DistributedSystem
 				sendMsg(Entity.Id, toId, e.Current);
 			}
 		}
-
-		public abstract void Run();
 
 		/// <summary>
 		/// Collects a specific number of messages of a given type and 
@@ -252,5 +218,30 @@ namespace MpcLib.DistributedSystem
 		{
 			subProtocols.Add(sub.Id, sub);
 		}
+
+		/// <summary>
+		/// Synchronous send and receive. 
+		/// Sends each given message to a given party and returns the reply messages.
+		/// If a party does not respond after a timeout, then it is ignored.
+		/// This method must be used in a muti-threaded/multi-process setting otherwise
+		/// this method may put the single thread/process into an endless sleep.
+		/// </summary>
+		protected IList<Msg> SendReceive(IList<int> toIds, IList<Msg> msgs)
+		{
+			Debug.Assert(toIds.Count == msgs.Count);
+
+			var recvMsgs = new List<Msg>();
+			for (int i = 0; i < toIds.Count; i++)
+				recvMsgs.Add(sendRecvMsg(Entity.Id, toIds[i], msgs[i]));
+
+			return recvMsgs;
+		}
+
+		// IN TauMPC architecture:
+		// A ConnectionController class handles sends/receives.
+		// ConnectionController.Send() sends a message and returns the respond messages.
+		// it writes to a network stream and then immediately reads from the network stream.
+		// the only thread waits for each expected message and adds it to a list.
+		// then the Send function returns with the list of received messages.
 	}
 }

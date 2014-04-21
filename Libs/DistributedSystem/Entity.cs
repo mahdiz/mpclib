@@ -5,6 +5,7 @@ using MpcLib.Simulation.Des;
 namespace MpcLib.DistributedSystem
 {
 	public delegate void SendHandler(int fromId, int toId, Msg msg);
+	public delegate Msg SendRecvHandler(int fromId, int toId, Msg msg);
 	public delegate void BroadcastHandler(int fromId, IEnumerable<int> toIds, Msg msg);
 
 	/// <summary>
@@ -18,11 +19,12 @@ namespace MpcLib.DistributedSystem
 		public int Id { get; internal set; }
 
 		/// <summary>
-		/// Runs the entity.
+		/// Runs the entity protocol.
 		/// </summary>
 		public abstract void Run();
 
 		internal event SendHandler SendMsg;
+		internal event SendRecvHandler SendRecvMsg;
 		internal event BroadcastHandler BroadcastMsg;
 
 		internal abstract void Receive(Msg msg);
@@ -31,6 +33,12 @@ namespace MpcLib.DistributedSystem
 		{
 			Debug.Assert(SendMsg != null, "No send method has been set for the entity!");
 			SendMsg(fromId, toId, msg);
+		}
+
+		public Msg SendReceive(int fromId, int toId, Msg msg)
+		{
+			Debug.Assert(SendMsg != null, "No send method has been set for the entity!");
+			return SendRecvMsg(fromId, toId, msg);
 		}
 
 		public void Broadcast(int fromId, IEnumerable<int> toIds, Msg msg)

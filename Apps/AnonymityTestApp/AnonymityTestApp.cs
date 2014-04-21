@@ -51,7 +51,7 @@ namespace MpcLib.Apps
 		{
 			// Initialize a discrete-event simulator
 			//var des = new ConcurrentSimulator();
-			var des = new SequentialSimulator();
+			var des = new SequentialEventSimulator();
 
 			// Create an MPC network, add parties, and init them with random inputs
 			var mpcNet = new DistributedSystem<Entity<CryptoMpc>>(des, seed);
@@ -110,7 +110,7 @@ namespace MpcLib.Apps
 		{
 			// Initialize a discrete-event simulator
 			//var des = new ConcurrentSimulator();
-			var des = new SequentialSimulator();
+			var des = new SequentialEventSimulator();
 
 			// Create an MPC network, add parties, and init them with random inputs
 			var mpcNet = new DistributedSystem<Entity<DlCryptoMpc>>(des, seed);
@@ -170,7 +170,7 @@ namespace MpcLib.Apps
 			int quorumSize, bool byzantineCase, int prime, int seed)
 		{
 			// initialize a discrete-event simulator
-			var des = new SequentialSimulator();
+			var des = new SequentialEventSimulator();
 
 			var anonymMpc = new MaskzNetwork(des, seed);
 

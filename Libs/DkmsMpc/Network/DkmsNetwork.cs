@@ -14,7 +14,7 @@ namespace MpcLib.MpcProtocols.Dkms
 
 		public Circuit Circuit { get; protected set; }
 
-		public DkmsNetwork(Simulator s, int seed)
+		public DkmsNetwork(EventSimulator s, int seed)
 			: base(s, seed)
 		{
 		}

@@ -103,9 +103,9 @@
       <Project>{f2b03162-2f5c-4518-87a5-41db45b7f22a}</Project>
       <Name>CryptoMpc</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Libs\DiscreteEventScheduler\DiscreteEventScheduler.csproj">
+    <ProjectReference Include="..\..\Libs\DiscreteEventScheduler\Simulation.csproj">
       <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>DiscreteEventScheduler</Name>
+      <Name>Simulation</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Libs\DistributedSystem\DistributedSystem.csproj">
       <Project>{fb8dd953-2188-41f9-9b81-b5fcb509f2ba}</Project>

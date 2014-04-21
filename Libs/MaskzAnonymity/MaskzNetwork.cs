@@ -14,7 +14,7 @@ namespace MpcLib.DistributedSystem.Anonymity.Maskz
 	// Represents a network for protocol of Zamani, Saia, Movahedi, and Khoury (MaSKZ'13).
 	public class MaskzNetwork : DkmsNetwork
 	{
-		public MaskzNetwork(Simulator s, int seed)
+		public MaskzNetwork(EventSimulator s, int seed)
 			: base(s, seed)
 		{
 		}

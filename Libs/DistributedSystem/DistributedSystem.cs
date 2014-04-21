@@ -36,7 +36,7 @@ namespace MpcLib.DistributedSystem
 		public BigInteger SentByteCount { get; private set; }
 
 		private int idGen = 0;
-		private Simulator simulator;
+		private EventSimulator simulator;
 		private Object myLock = new Object();
 
 		public double SimulationTime
@@ -59,7 +59,7 @@ namespace MpcLib.DistributedSystem
 			}
 		}
 
-		public DistributedSystem(Simulator scheduler, int seed)
+		public DistributedSystem(EventSimulator scheduler, int seed)
 		{
 			StaticRandom.Init(seed);
 			this.simulator = scheduler;
@@ -97,6 +97,8 @@ namespace MpcLib.DistributedSystem
 			var e = new TEntity();
 			e.SendMsg += Send;
 			e.BroadcastMsg += Broadcast;
+			e.SendRecvMsg += SendReceive;
+
 			e.Id = idGen++;
 			return e;
 		}
@@ -107,23 +109,6 @@ namespace MpcLib.DistributedSystem
 		}
 
 		#region Send Methods
-
-		private void Send(int fromId, Entity toEntity, Msg msg, int delay)
-		{
-			lock (myLock)
-			{
-				// For more information, search "atomicity of variable references" in MSDN
-				SentMessageCount++;
-				SentByteCount += msg.Size;
-			}
-			simulator.Schedule(toEntity.Id, toEntity.Receive, delay, msg);
-
-			Debug.WriteLine("t=" + simulator.Clock + ": Send from " + 
-				fromId + " to " + toEntity.Id + "  Msg=(" + msg.ToString() + ")");
-
-			if (MessageSent != null)
-				MessageSent(this, new EventArgs());
-		}
 
 		private void Send(int fromId, int toId, Msg msg, int delay)
 		{
@@ -145,6 +130,40 @@ namespace MpcLib.DistributedSystem
 		{
 			// TODO: Fixed delay for the synchronous model only. Must estimate message delay for the async model.
 			Send(fromId, toId, msg, 1);
+		}
+
+		private void Send(int fromId, Entity toEntity, Msg msg, int delay)
+		{
+			lock (myLock)
+			{
+				// For more information, search "atomicity of variable references" in MSDN
+				SentMessageCount++;
+				SentByteCount += msg.Size;
+			}
+			simulator.Schedule(toEntity.Id, toEntity.Receive, delay, msg);
+
+			Debug.WriteLine("t=" + simulator.Clock + ": Send from " +
+				fromId + " to " + toEntity.Id + "  Msg=(" + msg.ToString() + ")");
+
+			if (MessageSent != null)
+				MessageSent(this, new EventArgs());
+		}
+
+		private Msg SendReceive(int fromId, int toId, Msg msg)
+		{
+			lock (myLock)
+			{
+				// For more information, search "atomicity of variable references" in MSDN
+				SentMessageCount++;
+				SentByteCount += msg.Size;
+			}
+			
+
+			Debug.WriteLine("t=" + simulator.Clock + ": Send from " +
+				fromId + " to " + toId + "  Msg=(" + msg.ToString() + ")");
+
+			if (MessageSent != null)
+				MessageSent(this, new EventArgs());
 		}
 
 		/// <summary>
