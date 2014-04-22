@@ -23,7 +23,7 @@ namespace MpcLib.Apps
 		Equal
 	}
 
-	public class AnonymityTestApp
+	public class TestApp
 	{
 		const int seed = 0;
 		const int min_logn = 2;		// min log number of parties
