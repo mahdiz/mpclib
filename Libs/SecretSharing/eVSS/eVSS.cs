@@ -24,11 +24,10 @@ namespace MpcLib.SecretSharing.eVSS
 	{
 		protected BigZp Secret;
 		protected readonly int PolyDegree;
-		protected IList<ShareMsg<BigZp>> RecvShares;
-		protected IList<CommitMsg> RecvCommits;
 		protected PolyCommit PolyCommit;
 		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
-		public event ShareFinishHandler OnShareFinish;
+		public List<BigZp> Shares;
+		private static object myLock = new object();
 
 		public eVSS(BigZp secret, Entity e, ReadOnlyCollection<int> pIds, int polyDegree, StateKey stateKey)
 			: base(e, pIds, stateKey)
@@ -45,16 +44,18 @@ namespace MpcLib.SecretSharing.eVSS
 		public void Setup(int seed)
 		{
 			PolyCommit = new PolyCommit();
-			PolyCommit.Setup(PolyDegree, seed);
+
+			lock (myLock)
+				PolyCommit.Setup(PolyDegree, seed);
 		}
 		 
 		public override void Run()
 		{
 			Debug.Assert(PolyCommit != null, "eVSS is not initialized yet.");
-			Share();
+			Shares = Share();
 		}
 
-		protected void Share()
+		protected List<BigZp> Share()
 		{
 			IList<BigZp> coeffs = null;
 
@@ -70,34 +71,28 @@ namespace MpcLib.SecretSharing.eVSS
 			byte[] proof = null;
 			MG[] witnesses = null;
 
-			var mg = PolyCommit.Commit(
-				coeffs.ToArray(), iz, ref witnesses, ref proof, false);
+			MG mg = null;
+			lock (myLock)	// because NTL is not thread-safe
+			{
+				mg = PolyCommit.Commit(
+					coeffs.ToArray(), iz, ref witnesses, ref proof, false);
+			}
+
+			Debug.Assert(PolyCommit.VerifyEval(mg,
+				new BigZp(Secret.Prime, Entity.Id + 1), shares[Entity.Id], witnesses[Entity.Id]));
 
 			// broadcast the commitment
-			Broadcast(new CommitMsg(mg));
-
-			OnReceive((int)Stage.Commit,
-				delegate(List<CommitMsg> msgs)
-				{
-					RecvCommits = msgs.OrderBy(s => s.SenderId).ToList();
-					if (RecvShares != null)
-						Verify(RecvCommits, RecvShares);
-				});
+			var recvCommits = BroadcastReceive(EntityIds, new CommitMsg(mg)).OrderBy(s => s.SenderId).ToList();
 
 			// send the i-th share and witness to the i-th party
 			var shareMsgs = new ShareMsg<BigZp>[NumParties];
 			for (int i = 0; i < NumParties; i++)
 				shareMsgs[i] = new ShareMsg<BigZp>(shares[i], witnesses[i]);
 
-			Send(shareMsgs);
+			var recvShares = SendReceive(EntityIds, shareMsgs).OrderBy(s => s.SenderId).ToList();
+			Verify(recvCommits, recvShares);
 
-			OnReceive((int)Stage.Share,
-				delegate(List<ShareMsg<BigZp>> msgs)
-				{
-					RecvShares = msgs.OrderBy(s => s.SenderId).ToList();
-					if (RecvCommits != null)
-						Verify(RecvCommits, RecvShares);
-				});
+			return (from s in recvShares select s.Share).ToList();
 		}
 
 		protected void Verify(IList<CommitMsg> commits, IList<ShareMsg<BigZp>> shares)
@@ -114,15 +109,16 @@ namespace MpcLib.SecretSharing.eVSS
 
 			for (int i = 0; i < commits.Count; i++)
 			{
-				if (!PolyCommit.VerifyEval(commits[i].Commitment, 
-					rankZp, shares[i].Share, shares[i].Witness))
+				lock (myLock)	// because NTL is not thread-safe
 				{
-					// broadcast an accusation against the i-th party.
-					throw new NotImplementedException();
+					if (!PolyCommit.VerifyEval(commits[i].Commitment,
+						rankZp, shares[i].Share, shares[i].Witness))
+					{
+						// broadcast an accusation against the i-th party.
+						throw new NotImplementedException();
+					}
 				}
 			}
-			if (OnShareFinish != null)
-				OnShareFinish(from s in shares select s.Share);
 		}
 
 		public void Reconstruct()

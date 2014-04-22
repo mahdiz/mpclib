@@ -7,6 +7,7 @@ namespace MpcLib.DistributedSystem
 	public delegate void SendHandler(int fromId, int toId, Msg msg);
 	public delegate Msg SendRecvHandler(int fromId, int toId, Msg msg);
 	public delegate void BroadcastHandler(int fromId, IEnumerable<int> toIds, Msg msg);
+	public delegate List<Msg> BroadcastRecvHandler(int fromId, IEnumerable<int> toIds, Msg msg);
 
 	/// <summary>
 	/// Represents an abstract network entity.
@@ -26,25 +27,28 @@ namespace MpcLib.DistributedSystem
 		internal event SendHandler SendMsg;
 		internal event SendRecvHandler SendRecvMsg;
 		internal event BroadcastHandler BroadcastMsg;
+		internal event BroadcastRecvHandler BroadcastRecvMsg;
 
 		internal abstract void Receive(Msg msg);
 
 		public void Send(int fromId, int toId, Msg msg)
 		{
-			Debug.Assert(SendMsg != null, "No send method has been set for the entity!");
 			SendMsg(fromId, toId, msg);
 		}
 
 		public Msg SendReceive(int fromId, int toId, Msg msg)
 		{
-			Debug.Assert(SendMsg != null, "No send method has been set for the entity!");
 			return SendRecvMsg(fromId, toId, msg);
 		}
 
 		public void Broadcast(int fromId, IEnumerable<int> toIds, Msg msg)
 		{
-			Debug.Assert(BroadcastMsg != null, "No broadcast method has been set for the entity!");
 			BroadcastMsg(fromId, toIds, msg);
+		}
+
+		public List<Msg> BroadcastRecv(int fromId, IEnumerable<int> toIds, Msg msg)
+		{
+			return BroadcastRecvMsg(fromId, toIds, msg);
 		}
 
 		public override int GetHashCode()

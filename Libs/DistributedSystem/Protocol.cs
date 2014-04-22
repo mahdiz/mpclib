@@ -39,28 +39,30 @@ namespace MpcLib.DistributedSystem
 		private event SendHandler sendMsg;
 		private event SendRecvHandler sendRecvMsg;
 		private event BroadcastHandler broadcastMsg;
+		private event BroadcastRecvHandler broadcastRecvMsg;
+
 		private readonly Dictionary<int, IRelayEntry<Msg>> relayDic = new Dictionary<int, IRelayEntry<Msg>>();
 		private Dictionary<ProtocolIds, Protocol> subProtocols = new Dictionary<ProtocolIds, Protocol>();
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds, StateKey stateKey)
-			: this(e, entityIds, e.Send, e.SendReceive, e.Broadcast, stateKey)
+			: this(e, entityIds, e.Send, e.SendReceive, e.Broadcast, e.BroadcastRecv, stateKey)
 		{
 		}
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
 			SendHandler send, StateKey stateKey)
-			: this(e, entityIds, send, null, null, stateKey)
+			: this(e, entityIds, send, null, null, null, stateKey)
 		{
 		}
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
 			SendRecvHandler sendRecv, StateKey stateKey)
-			: this(e, entityIds, null, sendRecv, null, stateKey)
+			: this(e, entityIds, null, sendRecv, null, null, stateKey)
 		{
 		}
 
 		public Protocol(Entity e, ReadOnlyCollection<int> entityIds,
-			SendHandler send, SendRecvHandler sendRecv, BroadcastHandler bcast, StateKey stateKey)
+			SendHandler send, SendRecvHandler sendRecv, BroadcastHandler bcast, BroadcastRecvHandler bcastRecv, StateKey stateKey)
 		{
 			Entity = e;
 			EntityIds = entityIds;
@@ -69,6 +71,7 @@ namespace MpcLib.DistributedSystem
 			sendMsg += send;
 			broadcastMsg += bcast;
 			sendRecvMsg += sendRecv;
+			broadcastRecvMsg += bcastRecv;
 #if !SIMULATION
 			RandGen = new CryptoRandom();
 #endif
@@ -221,20 +224,45 @@ namespace MpcLib.DistributedSystem
 
 		/// <summary>
 		/// Synchronous send and receive. 
-		/// Sends each given message to a given party and returns the reply messages.
+		/// Sends each given message to a given party and returns the corresponding messages.
 		/// If a party does not respond after a timeout, then it is ignored.
 		/// This method must be used in a muti-threaded/multi-process setting otherwise
 		/// this method may put the single thread/process into an endless sleep.
 		/// </summary>
-		protected IList<Msg> SendReceive(IList<int> toIds, IList<Msg> msgs)
+		protected IList<T> SendReceive<T>(IList<int> toIds, IList<T> msgs) where T : Msg
 		{
 			Debug.Assert(toIds.Count == msgs.Count);
 
-			var recvMsgs = new List<Msg>();
+			var recvMsgs = new List<T>();
 			for (int i = 0; i < toIds.Count; i++)
-				recvMsgs.Add(sendRecvMsg(Entity.Id, toIds[i], msgs[i]));
+				recvMsgs.Add(sendRecvMsg(Entity.Id, toIds[i], msgs[i]) as T);
 
 			return recvMsgs;
+		}
+
+		/// <summary>
+		/// Synchronous send and receive. 
+		/// Sends each given message to a given party and returns the corresponding messages.
+		/// If a party does not respond after a timeout, then it is ignored.
+		/// This method must be used in a muti-threaded/multi-process setting otherwise
+		/// this method may put the single thread/process into an endless sleep.
+		/// </summary>
+		protected T SendReceive<T>(int toId, T msg) where T : Msg
+		{
+			return sendRecvMsg(Entity.Id, toId, msg) as T;
+		}
+
+		/// <summary>
+		/// Synchronous broadcast. 
+		/// Broadcasts a message to the specified set of entities and returns the corresponding messages.
+		/// Currently does not support the malicious model (active adversary), 
+		/// which requires Byzantine agreement to ensure consistency.
+		/// </summary>
+		protected List<T> BroadcastReceive<T>(IEnumerable<int> toIds, T msg) where T : Msg
+		{
+			Debug.Assert(broadcastMsg != null, "No broadcast method has been set for the protocol!");
+			msg.ProtocolId = Id;
+			return broadcastRecvMsg(Entity.Id, toIds, msg).Cast<T>().ToList();
 		}
 
 		// IN TauMPC architecture:

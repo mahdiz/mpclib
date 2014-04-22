@@ -60,6 +60,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <TargetMachine />
     </Link>
     <PostBuildEvent>
       <Command>echo Copying openssl\lib\libeay32.lib to "$(SolutionDir)$(Configuration)"...
@@ -77,6 +78,10 @@ xcopy "..\..\openssl\libeay32.dll" "$(SolutionDir)$(Configuration)" /Y /F</Comma
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>true</Profile>
     </Link>
+    <PostBuildEvent>
+      <Command>echo Copying openssl\lib\libeay32.lib to "$(SolutionDir)$(Configuration)"...
+xcopy "..\..\openssl\libeay32.dll" "$(SolutionDir)$(Configuration)" /Y /F</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Reference Include="System" />

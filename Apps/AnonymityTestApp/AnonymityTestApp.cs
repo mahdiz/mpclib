@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 using MpcLib.Common.FiniteField.Circuits;
 using MpcLib.Common.StochasticUtils;
@@ -10,6 +11,7 @@ using MpcLib.DistributedSystem.QuorumSystem;
 using MpcLib.MpcProtocols;
 using MpcLib.MpcProtocols.Crypto;
 using MpcLib.MpcProtocols.Dkms;
+using MpcLib.Simulation;
 using MpcLib.Simulation.Des;
 
 namespace MpcLib.Apps
@@ -24,8 +26,8 @@ namespace MpcLib.Apps
 	public class AnonymityTestApp
 	{
 		const int seed = 0;
-		const int min_logn = 3;		// min log number of parties
-		const int max_logn = 3;		// max log number of parties
+		const int min_logn = 2;		// min log number of parties
+		const int max_logn = 2;		// max log number of parties
 		
 		static readonly BigInteger encPrime = NumTheoryUtils.DHPrime1536;
 		static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
@@ -50,37 +52,34 @@ namespace MpcLib.Apps
 		private static void TestCryptoMpc_eVSS(int n, int maxInput, BigInteger prime, int seed)
 		{
 			// Initialize a discrete-event simulator
-			//var des = new ConcurrentSimulator();
-			var des = new SequentialEventSimulator();
+			//var des = new ConcurrentEventSimulator();
+			//var des = new SequentialEventSimulator();
 
 			// Create an MPC network, add parties, and init them with random inputs
-			var mpcNet = new DistributedSystem<Entity<CryptoMpc>>(des, seed);
+			var mpcSim = new SyncSimController<Entity<CryptoMpc>>(seed);
 			var parser = new BigParser(FunctionType.Sum, n, prime);
 			parser.Parse();
 
-			var parties = mpcNet.AddNewEntities(n);
+			var parties = mpcSim.AddNewEntities(n);
 
 			foreach (var party in parties)
 			{
 				var randInput = new BigZp(prime, StaticRandom.Next(0, maxInput));
 
 				party.Protocol = new CryptoMpc(party, parser.Circuit,
-					mpcNet.EntityIds, randInput, null, seed);
+					mpcSim.EntityIds, randInput, null, seed);
 			}
 			Console.WriteLine(n + " players initialized. Running simulation...");
 
 			// run the MPC network
-			var startTime = DateTime.Now.TimeOfDay;
-			mpcNet.Run();
-			var endTime = DateTime.Now.TimeOfDay;
-			var elapsedTime = endTime - startTime;
+			var elapsedTime = Timex.Run(() => mpcSim.Run());
 
 			var realSum = new BigZp(prime);
-			foreach (var player in mpcNet.Entities)
+			foreach (var player in mpcSim.Entities)
 				realSum += (player.Protocol as IMpcProtocol<BigZp>).Input;
 
 			var hasError = false;
-			foreach (var party in mpcNet.Entities)
+			foreach (var party in mpcSim.Entities)
 			{
 				var p = party.Protocol as IMpcProtocol<BigZp>;
 				//Console.WriteLine("P" + party.Id + " input = " + p.Input + "\t\tRes = " + p.Result);
@@ -98,9 +97,9 @@ namespace MpcLib.Apps
 			}
 
 			Console.WriteLine("# parties    = " + n);
-			Console.WriteLine("# msgs sent  = " + mpcNet.SentMessageCount);
-			Console.WriteLine("# bits sent  = " + (mpcNet.SentByteCount * 8).ToString("0.##E+00"));
-			Console.WriteLine("# rounds     = " + mpcNet.SimulationTime);
+			Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
+			Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
+			//Console.WriteLine("# rounds     = " + mpcSim.SimulationTime);
 			Console.WriteLine("DH key size  = " + NumTheoryUtils.GetBitLength(encPrime) + " bits");
 			Console.WriteLine("Seed         = " + seed + "\n");
 			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
@@ -113,7 +112,7 @@ namespace MpcLib.Apps
 			var des = new SequentialEventSimulator();
 
 			// Create an MPC network, add parties, and init them with random inputs
-			var mpcNet = new DistributedSystem<Entity<DlCryptoMpc>>(des, seed);
+			var mpcNet = new AsyncSimController<Entity<DlCryptoMpc>>(des, seed);
 			var parser = new BigParser(FunctionType.Sum, n, prime);
 			parser.Parse();
 

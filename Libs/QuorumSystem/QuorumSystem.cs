@@ -1,10 +1,12 @@
-﻿using MpcLib.Simulation.Des;
+﻿using MpcLib.Simulation;
+using MpcLib.Simulation.Des;
+
 namespace MpcLib.DistributedSystem.QuorumSystem
 {
 	/// <summary>
 	/// Represents a quorum-based distributed system.
 	/// </summary>
-	public abstract class QuorumSystem<T> : DistributedSystem<T>
+	public abstract class QuorumSystem<T> : AsyncSimController<T>
 		where T : Entity, new()
 	{
 		public QuorumSystem(EventSimulator s, int seed)

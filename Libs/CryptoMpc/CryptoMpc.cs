@@ -58,16 +58,10 @@ namespace MpcLib.MpcProtocols.Crypto
 		public override void Run()
 		{
 			var evss = new eVSS(Input, Entity, EntityIds, ShamirPolyDegree, StateKey);
-			RegisterSubProtocol(evss);
 
 			evss.Setup(Seed);
+			Console.WriteLine("Party " + Entity.Id + " eVSS setup finished.");
 			evss.Run();
-
-			evss.OnShareFinish +=
-				delegate(IEnumerable<BigZp> shares)
-				{
-					throw new NotImplementedException();
-				};
 		}
 
 		protected void Compute()

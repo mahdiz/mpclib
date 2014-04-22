@@ -80,11 +80,13 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SimController.cs" />
+    <Compile Include="SyncSimController.cs" />
     <Compile Include="Protocol.cs" />
     <Compile Include="RelayEntry.cs" />
     <Compile Include="SessionCollector.cs" />
     <Compile Include="StateKey.cs" />
-    <Compile Include="DistributedSystem.cs" />
+    <Compile Include="AsyncSimController.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Msg.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -94,7 +96,7 @@
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DiscreteEventScheduler\Simulation.csproj">
+    <ProjectReference Include="..\Simulation\Simulation.csproj">
       <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
       <Name>Simulation</Name>
     </ProjectReference>

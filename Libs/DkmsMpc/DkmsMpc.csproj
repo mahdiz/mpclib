@@ -104,10 +104,6 @@
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DiscreteEventScheduler\Simulation.csproj">
-      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>Simulation</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DistributedSystem\DistributedSystem.csproj">
       <Project>{FB8DD953-2188-41F9-9B81-B5FCB509F2BA}</Project>
       <Name>DistributedSystem</Name>
@@ -127,6 +123,10 @@
     <ProjectReference Include="..\Mpc\Mpc.csproj">
       <Project>{3010BD08-601E-4123-86A5-93ACE9E4BF64}</Project>
       <Name>Mpc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Simulation\Simulation.csproj">
+      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
+      <Name>Simulation</Name>
     </ProjectReference>
     <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
       <Project>{4966DB10-9B4A-426F-8D36-D56D47CBE0AC}</Project>
