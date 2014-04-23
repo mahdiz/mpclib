@@ -16,8 +16,8 @@ namespace MpcLib.Simulation
 	/// <summary>
 	/// Represents an synchronous network simulation controller.
 	/// </summary>
-	/// <typeparam name="T">Type of network entities.</typeparam>
-	public class SyncSimController<T> : SimController<T> where T : Entity, new()
+	/// <typeparam name="T">Type of network parties.</typeparam>
+	public class SyncSimController<T> : SimController<T> where T : SyncParty, new()
 	{
 		private Object myLock = new Object();
 		public event EventHandler MessageSent;
@@ -29,28 +29,26 @@ namespace MpcLib.Simulation
 
 		public override void Run()
 		{
-			if (entities.Count == 0)
-				throw new Exception("At least one entity must be added before running the simulation.");
+			if (parties.Count == 0)
+				throw new Exception("At least one party must be added before running the simulation.");
 
-			int numActive = entities.Count;
-			var tasks = new Task[entities.Count];
-
-			for (int i = 0; i < entities.Count; i++)
+			var tasks = new Task[parties.Count];
+			for (int i = 0; i < parties.Count; i++)
 			{
-				var entity = entities[i];
-				tasks[i] = Task.Run(() => entity.Run());
+				var party = parties[i];
+				tasks[i] = Task.Run(() => party.Run());
 			}
 			Task.WaitAll(tasks);
 		}
 
-		protected override T CreateEntity()
+		protected override T CreateParty()
 		{
-			var e = new T();
-			e.SendRecvMsg += SendReceive;
-			e.BroadcastRecvMsg += BroadcastReceive;
+			var p = new T();
+			p.SendRecvMsg += SendReceive;
+			p.BroadcastRecvMsg += BroadcastReceive;
 
-			e.Id = idGen++;
-			return e;
+			p.Id = idGen++;
+			return p;
 		}
 
 		private Msg SendReceive(int fromId, int toId, Msg msg)

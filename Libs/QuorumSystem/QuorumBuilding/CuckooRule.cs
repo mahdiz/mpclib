@@ -4,12 +4,12 @@ using MpcLib.Common;
 
 namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 {
-	internal class CuckooRule : Protocol//, IQuorumBuilder
+	internal class CuckooRule : AsyncProtocol//, IQuorumBuilder
 	{
 		public event QbFinishHandler QbFinished;
 		public override ProtocolIds Id { get { return ProtocolIds.Cuckoo; } }
 
-		public CuckooRule(Entity e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
+		public CuckooRule(Party e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
 			: base(e, processorIds, stateKey)
 		{
 		}

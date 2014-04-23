@@ -8,6 +8,7 @@ using System.Numerics;
 using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 using MpcLib.Common.FiniteField.Circuits;
+using MpcLib.Common.StochasticUtils;
 using MpcLib.DistributedSystem;
 using MpcLib.SecretSharing;
 using MpcLib.SecretSharing.eVSS;
@@ -17,26 +18,20 @@ namespace MpcLib.MpcProtocols.Crypto
 	/// <summary>
 	/// Implements the MPC protocol of Zamani-Movahedi-Saia 2014 with eVSS.
 	/// </summary>
-	public class CryptoMpc : MpcProtocol<BigZp>
+	public class CryptoMpc : SyncMpc<BigZp>
 	{
-		#region Fields
-
-		protected readonly BigCircuit Circuit;
-
 		/// <summary>
 		/// MPC field modulus. Party's input is an element of this field.
 		/// </summary>
 		protected readonly BigInteger Prime;
+		protected readonly BigCircuit Circuit;
 		protected readonly int ShamirPolyDegree;
 		protected IList<BigZp> Shares;
 		protected int Seed;
 		public override ProtocolIds Id { get { return ProtocolIds.ZMS; } }
 
-		#endregion Fields
-
-		public CryptoMpc(Entity e, BigCircuit circuit, ReadOnlyCollection<int> pIds,
-			BigZp input, StateKey stateKey, int seed)
-			: base(e, pIds, input, stateKey)
+		public CryptoMpc(Party e, BigCircuit circuit, ReadOnlyCollection<int> pIds, BigZp input, int seed)
+			: base(e, pIds, input)
 		{
 			Debug.Assert(circuit.InputCount == pIds.Count);
 			Circuit = circuit;
@@ -53,15 +48,32 @@ namespace MpcLib.MpcProtocols.Crypto
 			ShamirPolyDegree = (int)Math.Ceiling(NumParties / 3.0);
 		}
 
-		#region Methods
-		
 		public override void Run()
 		{
-			var evss = new eVSS(Input, Entity, EntityIds, ShamirPolyDegree, StateKey);
+			var evss = new eVSS(Party, PartyIds, Prime, ShamirPolyDegree);
 
 			evss.Setup(Seed);
-			Console.WriteLine("Party " + Entity.Id + " eVSS setup finished.");
-			evss.Run();
+			Console.WriteLine("Party " + Party.Id + " eVSS setup finished.");
+
+			// generate a random triple
+			var a_i = GenRand(evss);
+			var b_i = GenRand(evss);
+			var c_i = a_i * b_i;
+
+			Console.WriteLine("Party " + Party.Id + " triple generation finished.");
+
+			//var shares = evss.Share(Input);
+		}
+
+		protected BigZp GenRand(eVSS evss)
+		{
+			var shares = evss.Share(new BigZp(Prime, StaticRandom.Next(Prime - 1)));
+
+			var sumShares = new BigZp(Prime);
+			foreach (var share in shares)
+				sumShares += share;
+
+			return sumShares;
 		}
 
 		protected void Compute()
@@ -71,17 +83,13 @@ namespace MpcLib.MpcProtocols.Crypto
 				ComputeGate(gate, Shares);
 
 			// publish the circuit output
-			Broadcast(new ShareMsg<BigZp>(new Share<BigZp>(Circuit.Output), Stage.ResultReceive));
+			var resultMsgs = BroadcastReceive(new ShareMsg<BigZp>(new Share<BigZp>(Circuit.Output), Stage.ResultReceive));
 
-			OnReceive((int)Stage.ResultReceive,
-				delegate(List<ShareMsg<BigZp>> resultMsgs)
-				{
-					var zpList = new List<BigZp>();
-					foreach (var resultMsg in resultMsgs.OrderBy(s => s.SenderId))
-						zpList.Add(resultMsg.Share.Value);
+			var zpList = new List<BigZp>();
+			foreach (var resultMsg in resultMsgs.OrderBy(s => s.SenderId))
+				zpList.Add(resultMsg.Share.Value);
 
-					Result = BigShamirSharing.Recombine(zpList, ShamirPolyDegree, Prime);
-				});
+			Result = BigShamirSharing.Recombine(zpList, ShamirPolyDegree, Prime);
 		}
 
 		/// <summary>
@@ -117,7 +125,5 @@ namespace MpcLib.MpcProtocols.Crypto
 			}
 			gate.OutputValue = result;
 		}
-
-		#endregion Methods
 	}
 }

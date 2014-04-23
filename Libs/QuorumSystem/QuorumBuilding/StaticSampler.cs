@@ -4,16 +4,16 @@ using MpcLib.Common;
 
 namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 {
-	public class StaticSampler : Protocol, IQuorumBuilder
+	public class StaticSampler : AsyncProtocol, IQuorumBuilder
 	{
 		private int numQuorums;
 		private int quorumSize;
 		public event QbFinishHandler QbFinished;
 		public override ProtocolIds Id { get { return ProtocolIds.StaticSampler; } }
 
-		public StaticSampler(Entity e, ReadOnlyCollection<int> entityIds, 
+		public StaticSampler(Party e, ReadOnlyCollection<int> partyIds, 
 			int numQuorums, int quorumSize, StateKey stateKey)
-			: base(e, entityIds, stateKey)
+			: base(e, partyIds, stateKey)
 		{
 			this.numQuorums = numQuorums;
 			this.quorumSize = quorumSize;

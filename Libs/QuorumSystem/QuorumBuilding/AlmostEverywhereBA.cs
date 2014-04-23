@@ -7,19 +7,19 @@ using MpcLib.Common.StochasticUtils;
 
 namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 {
-	internal class AlmostEverywhereProtocol : Protocol, IQuorumBuilder
+	internal class AlmostEverywhereProtocol : AsyncProtocol, IQuorumBuilder
 	{
 		public event QbFinishHandler QbFinished;
 		public float C { get; private set; }
 		public override ProtocolIds Id { get { return ProtocolIds.AE; } }
 		private readonly RandomUtils randUtils = new RandomUtils();
 
-		public AlmostEverywhereProtocol(Entity e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
+		public AlmostEverywhereProtocol(Party e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
 			: this(e, processorIds, null, stateKey)
 		{
 		}
 
-		public AlmostEverywhereProtocol(Entity e, ReadOnlyCollection<int> processorIds, SafeRandom randGen, StateKey stateKey)
+		public AlmostEverywhereProtocol(Party e, ReadOnlyCollection<int> processorIds, SafeRandom randGen, StateKey stateKey)
 			: base(e, processorIds, stateKey)
 		{
 			if (randGen == null)
@@ -38,10 +38,10 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 
 		private void SetupCandidateList()
 		{
-			int n = EntityIds.Count();
+			int n = PartyIds.Count();
 
 			var sampleList = randUtils.PickRandomElements(
-				EntityIds.ToList(), (int)(C * Math.Sqrt(n) * Math.Log(n, 2)));
+				PartyIds.ToList(), (int)(C * Math.Sqrt(n) * Math.Log(n, 2)));
 
 			int candStr = AlmostEverywhere();
 			Broadcast(sampleList, new QsMessage<int>() { Data = candStr });

@@ -8,7 +8,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 {
 	public delegate void QbFinishHandler(Dictionary<int, int[]> quorumsMap);
 
-	public abstract class Processor<T> : Entity<T> where T : Protocol
+	public abstract class Processor<T> : AsyncParty<T> where T : AsyncProtocol
 	{
 		/// <summary>
 		/// Computes this processor's quorums

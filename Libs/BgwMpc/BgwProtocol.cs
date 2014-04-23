@@ -17,7 +17,7 @@ namespace MpcLib.MpcProtocols.Bgw
 	/// <summary>
 	/// Implements the MPC protocol of BenOr-Goldwasser-Wigderson (1988) for non-Byzantine case.
 	/// </summary>
-	public class BgwProtocol : MpcProtocol<Zp>
+	public class BgwProtocol : AsyncMpc<Zp>
 	{
 		#region Fields
 
@@ -30,7 +30,7 @@ namespace MpcLib.MpcProtocols.Bgw
 		#endregion Fields
 
 		public BgwProtocol(Circuit circuit, ReadOnlyCollection<int> pIds,
-			Entity e, Zp pInput, SendHandler send, StateKey stateKey)
+			Party e, Zp pInput, SendHandler send, StateKey stateKey)
 			: base(e, pIds, pInput, send, stateKey)
 		{
 			Debug.Assert(circuit.InputCount == pIds.Count);
@@ -46,7 +46,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			PolynomialDeg = (int)Math.Floor(2 * NumParties / 3.0);
 		}
 
-		public BgwProtocol(Entity e, Circuit circuit, ReadOnlyCollection<int> playerIds,
+		public BgwProtocol(AsyncParty e, Circuit circuit, ReadOnlyCollection<int> playerIds,
 			Zp playerInput, StateKey stateKey)
 			: this(circuit, playerIds, e, playerInput, e.Send, stateKey)
 		{
@@ -74,7 +74,7 @@ namespace MpcLib.MpcProtocols.Bgw
 						k++;
 					}
 					var resultList = new SortedDictionary<int, Zp>();
-					FilterPlayers(EntityIds);		// remove unwanted players if necessary
+					FilterPlayers(PartyIds);		// remove unwanted players if necessary
 
 					// share the result with all players
 					SendToAll(new ShareMsg<Zp>(new Share<Zp>(Circuit.Output), Stage.ResultReceive));
@@ -291,14 +291,14 @@ namespace MpcLib.MpcProtocols.Bgw
 			where T : MpcMsg
 		{
 			foreach (var msg in msgList)
-				Send(Entity.Id, msg.Key, msg.Value);
+				Send(Party.Id, msg.Key, msg.Value);
 		}
 
 		protected void Send<T>(IList<T> msgList)
 			where T : MpcMsg
 		{
 			for (int i = 0; i < msgList.Count; i++)
-				Send(Entity.Id, EntityIds[i], msgList[i]);
+				Send(Party.Id, PartyIds[i], msgList[i]);
 		}
 
 		protected void Send<T>(IList<T> msgList, HashSet<int> exceptPlayers)
@@ -306,8 +306,8 @@ namespace MpcLib.MpcProtocols.Bgw
 		{
 			for (int i = 0; i < msgList.Count; i++)
 			{
-				if (!exceptPlayers.Contains(EntityIds[i]))
-					Send(Entity.Id, EntityIds[i], msgList[i]);
+				if (!exceptPlayers.Contains(PartyIds[i]))
+					Send(Party.Id, PartyIds[i], msgList[i]);
 			}
 		}
 
@@ -315,7 +315,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			where T : MpcMsg
 		{
 			var sendDic = new Dictionary<int, T>();
-			foreach (var pId in EntityIds)
+			foreach (var pId in PartyIds)
 				sendDic[pId] = msg;
 
 			Send(sendDic as IDictionary<int, T>);
@@ -325,7 +325,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			where T : MpcMsg
 		{
 			var sendDic = new Dictionary<int, T>();
-			foreach (var pId in EntityIds)
+			foreach (var pId in PartyIds)
 			{
 				if (!exceptPlayers.Contains(pId))
 					sendDic[pId] = msg;

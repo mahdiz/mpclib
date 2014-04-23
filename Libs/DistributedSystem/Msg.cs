@@ -2,7 +2,7 @@
 namespace MpcLib.DistributedSystem
 {
 	/// <summary>
-	/// Represents a message sent/received to/from network entities.
+	/// Represents a message sent/received to/from network parties.
 	/// </summary>
 	public abstract class Msg : ISizable
 	{
@@ -10,7 +10,7 @@ namespace MpcLib.DistributedSystem
 		public abstract int StageKey { get; }
 		public ProtocolIds ProtocolId = ProtocolIds.NotSet;
 
-#if DEBUG && SIMULATION
+#if DEBUG && SIM
 		private static ulong idGen = 0;
 
 		/// <summary>
@@ -29,7 +29,7 @@ namespace MpcLib.DistributedSystem
 		{
 			SenderId = -1;
 
-#if DEBUG && SIMULATION
+#if DEBUG && SIM
 			Id = idGen++;
 #endif
 		}

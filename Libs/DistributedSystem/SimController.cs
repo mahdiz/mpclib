@@ -14,69 +14,69 @@ namespace MpcLib.Simulation
 	/// <summary>
 	/// Represents an abstract network simulation controller.
 	/// </summary>
-	/// <typeparam name="T">Type of network entities.</typeparam>
-	public abstract class SimController<T> where T : Entity, new()
+	/// <typeparam name="T">Type of network parties.</typeparam>
+	public abstract class SimController<T> where T : Party, new()
 	{
-		public int EntityCount { get { return entities.Count; } }
+		public int PartyCount { get { return parties.Count; } }
 
-		public ReadOnlyCollection<int> EntityIds { get { return entities.Select(e => e.Id).ToList().AsReadOnly(); } }
+		public ReadOnlyCollection<int> PartyIds { get { return parties.Select(e => e.Id).ToList().AsReadOnly(); } }
 
-		public ReadOnlyCollection<T> Entities { get { return entities.AsReadOnly(); } }
+		public ReadOnlyCollection<T> Parties { get { return parties.AsReadOnly(); } }
 
-		protected List<T> entities;
+		protected List<T> parties;
 
 		/// <summary>
-		/// Total number of messages sent by all entities in the network.
+		/// Total number of messages sent by all parties in the network.
 		/// </summary>
 		public BigInteger SentMessageCount { get; protected set; }
 
 		/// <summary>
-		/// Total number of bytes sent by all entities in the network.
+		/// Total number of bytes sent by all parties in the network.
 		/// </summary>
 		public BigInteger SentByteCount { get; protected set; }
 
 		protected int idGen = 0;
 
 		/// <summary>
-		/// Returns the entity specified by 'entityId'. This is an O(n) operation.
-		/// Throws InvalidOperationException if the entity does not exist.
+		/// Returns the party specified by 'partyId'. This is an O(n) operation.
+		/// Throws InvalidOperationException if the party does not exist.
 		/// </summary>
-		public T this[int entityId]
+		public T this[int partyId]
 		{
 			get
 			{
-				return entities.First(e => e.Id == entityId);
+				return parties.First(p => p.Id == partyId);
 			}
 		}
 
 		public SimController(int seed)
 		{
 			StaticRandom.Init(seed);
-			entities = new List<T>();
+			parties = new List<T>();
 		}
 
 		public abstract void Run();
 
-		public T AddNewEntity()
+		public T AddNewParty()
 		{
-			var entity = CreateEntity();
-			entities.Add(entity);
-			return entity;
+			var party = CreateParty();
+			parties.Add(party);
+			return party;
 		}
 
-		public ReadOnlyCollection<T> AddNewEntities(int num)
+		public ReadOnlyCollection<T> AddNewParties(int num)
 		{
 			for (int i = 0; i < num; i++)
-				AddNewEntity();
+				AddNewParty();
 
-			return entities.AsReadOnly();
+			return parties.AsReadOnly();
 		}
 
-		protected abstract T CreateEntity();
+		protected abstract T CreateParty();
 
-		protected T FindEntity(int id)
+		protected T FindParty(int id)
 		{
-			return entities.First(e => e.Id == id);
+			return parties.First(p => p.Id == id);
 		}
 	}
 }

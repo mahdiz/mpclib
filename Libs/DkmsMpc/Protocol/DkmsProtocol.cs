@@ -17,7 +17,7 @@ namespace MpcLib.MpcProtocols.Dkms
 	/// <summary>
 	/// Implements the MPC protocol of Dani, King, Movahedi, and Saia (DKMS'12).
 	/// </summary>
-	public class DkmsProtocol : Protocol		// TODO: Shouldn't this inherit MpcProtocol?
+	public class DkmsProtocol : AsyncProtocol		// TODO: Shouldn't this inherit MpcProtocol?
 	{
 		#region Fields and Properties
 
@@ -38,7 +38,7 @@ namespace MpcLib.MpcProtocols.Dkms
 
 		#endregion Fields and Properties
 
-		public DkmsProtocol(Circuit circuit, Entity e, ReadOnlyCollection<int> playerIds,
+		public DkmsProtocol(Circuit circuit, Party e, ReadOnlyCollection<int> playerIds,
 			Zp playerInput, int numSlots, StateKey stateKey)
 			: base(e, playerIds, stateKey)
 		{
@@ -62,7 +62,7 @@ namespace MpcLib.MpcProtocols.Dkms
 			for (int s = 0; s < NumSlots; s++)
 			{
 				// TODO: IMPORTANT: EntityId's are assumed to be continous integers with option base 0. Not other parts of the code have this assumption.
-				var gate = Circuit.InputGates[Entity.Id * NumSlots + s];
+				var gate = Circuit.InputGates[Party.Id * NumSlots + s];
 				var quorum = quorumsMap[gate.QuorumIndex];
 
 				// in the byzantine case, we have to secret share the input among 'quorum' members but
@@ -84,10 +84,10 @@ namespace MpcLib.MpcProtocols.Dkms
 					{
 						var rand = StaticRandom.Next(0, Prime);
 						mask += rand;
-						Send(Entity.Id, player, new InputMsg(new Zp(Prime, rand), stateKey));
+						Send(Party.Id, player, new InputMsg(new Zp(Prime, rand), stateKey));
 					}
 				}
-				Send(Entity.Id, minPlayer, new InputMsg(Input + mask, stateKey));
+				Send(Party.Id, minPlayer, new InputMsg(Input + mask, stateKey));
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace MpcLib.MpcProtocols.Dkms
 				foreach (var playerId in quorumsMap[gate.QuorumIndex])
 					virtualIds.Add((gate.Id << 16) + playerId);
 			}
-			var myVirtualId = (myGateId << 16) + Entity.Id;
+			var myVirtualId = (myGateId << 16) + Party.Id;
 
 			// run the protocol and keep it in a the session state
 			var key = new MpcKey(myGateId, anchor.Id);
@@ -189,12 +189,12 @@ namespace MpcLib.MpcProtocols.Dkms
 				foreach (var playerId in quorumsMap[childGate.QuorumIndex])
 					virtualIds.Add((childGate.Id << 16) + playerId);
 			}
-			var myVirtualId = (anchor.Id << 16) + Entity.Id;
+			var myVirtualId = (anchor.Id << 16) + Party.Id;
 
 			// if my id is the minimum in my quorum, then I should just SMPC with a zero, otherwise just SMPC with a random number (r_g).
 			// save this random number in the session because it will be my input in next level's SMPC.
 			BgwProtocol mpc;
-			if (Entity.Id == myQuorum.Min())
+			if (Party.Id == myQuorum.Min())
 			{
 				// run the protocol and keep it in a the session state
 				var key = new MpcKey(anchor.Id, anchor.Id);
@@ -249,7 +249,7 @@ namespace MpcLib.MpcProtocols.Dkms
 					throw new NotImplementedException();
 
 				// forward the result up if I am the min player otherwise forward my share of r_g up
-				if (Entity.Id == myQuorum.Min())
+				if (Party.Id == myQuorum.Min())
 					RunChildMpc(myGate.OutNodes[0], myGate, mpc.Result);
 				else
 

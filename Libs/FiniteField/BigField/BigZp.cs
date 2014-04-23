@@ -57,9 +57,13 @@ namespace MpcLib.Common.FiniteField
 			this.num = Modulo(num, prime);
 		}
 
+		/// <summary>
+		/// Initializes to zero.
+		/// </summary>
 		public BigZp(BigInteger prime)
 		{
 			this.Prime = prime;
+			num = 0;
 		}
 
 		public BigZp(BigZp toCopy)

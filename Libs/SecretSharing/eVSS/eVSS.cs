@@ -20,20 +20,19 @@ namespace MpcLib.SecretSharing.eVSS
 		Share
 	}
 
-	public class eVSS : Protocol
+	public class eVSS : SyncProtocol
 	{
-		protected BigZp Secret;
+		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
+		protected readonly BigInteger Prime;
 		protected readonly int PolyDegree;
 		protected PolyCommit PolyCommit;
-		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
-		public List<BigZp> Shares;
 		private static object myLock = new object();
 
-		public eVSS(BigZp secret, Entity e, ReadOnlyCollection<int> pIds, int polyDegree, StateKey stateKey)
-			: base(e, pIds, stateKey)
+		public eVSS(Party e, ReadOnlyCollection<int> pIds, BigInteger prime, int polyDegree)
+			: base(e, pIds)
 		{
+			Prime = prime;
 			PolyCommit = null;
-			Secret = secret;
 			PolyDegree = polyDegree;
 		}
 
@@ -48,24 +47,20 @@ namespace MpcLib.SecretSharing.eVSS
 			lock (myLock)
 				PolyCommit.Setup(PolyDegree, seed);
 		}
-		 
-		public override void Run()
+
+		public List<BigZp> Share(BigZp secret)
 		{
 			Debug.Assert(PolyCommit != null, "eVSS is not initialized yet.");
-			Shares = Share();
-		}
-
-		protected List<BigZp> Share()
-		{
+			Debug.Assert(Prime == secret.Prime);
 			IList<BigZp> coeffs = null;
 
 			// generate a random polynomial
-			var shares = BigShamirSharing.Share(Secret, NumParties, PolyDegree - 1, out coeffs);
+			var shares = BigShamirSharing.Share(secret, NumParties, PolyDegree - 1, out coeffs);
 
 			// generate evaluation points x = {1,...,n}
 			var iz = new BigZp[NumParties];
 			for (int i = 0; i < NumParties; i++)
-				iz[i] = new BigZp(Secret.Prime, new BigInteger(i + 1));
+				iz[i] = new BigZp(Prime, new BigInteger(i + 1));
 			
 			// calculate the commitment and witnesses
 			byte[] proof = null;
@@ -79,17 +74,17 @@ namespace MpcLib.SecretSharing.eVSS
 			}
 
 			Debug.Assert(PolyCommit.VerifyEval(mg,
-				new BigZp(Secret.Prime, Entity.Id + 1), shares[Entity.Id], witnesses[Entity.Id]));
+				new BigZp(Prime, Party.Id + 1), shares[Party.Id], witnesses[Party.Id]));
 
 			// broadcast the commitment
-			var recvCommits = BroadcastReceive(EntityIds, new CommitMsg(mg)).OrderBy(s => s.SenderId).ToList();
+			var recvCommits = BroadcastReceive(PartyIds, new CommitMsg(mg)).OrderBy(s => s.SenderId).ToList();
 
 			// send the i-th share and witness to the i-th party
 			var shareMsgs = new ShareMsg<BigZp>[NumParties];
 			for (int i = 0; i < NumParties; i++)
 				shareMsgs[i] = new ShareMsg<BigZp>(shares[i], witnesses[i]);
 
-			var recvShares = SendReceive(EntityIds, shareMsgs).OrderBy(s => s.SenderId).ToList();
+			var recvShares = SendReceive(PartyIds, shareMsgs).OrderBy(s => s.SenderId).ToList();
 			Verify(recvCommits, recvShares);
 
 			return (from s in recvShares select s.Share).ToList();
@@ -99,13 +94,13 @@ namespace MpcLib.SecretSharing.eVSS
 		{
 			// find my rank in sorted list of ids
 			int rank = 1;
-			foreach (var id in EntityIds.OrderBy(e => e))
+			foreach (var id in PartyIds.OrderBy(e => e))
 			{
-				if (id == Entity.Id)
+				if (id == Party.Id)
 					break;
 				rank++;
 			}
-			var rankZp = new BigZp(Secret.Prime, rank);
+			var rankZp = new BigZp(Prime, rank);
 
 			for (int i = 0; i < commits.Count; i++)
 			{

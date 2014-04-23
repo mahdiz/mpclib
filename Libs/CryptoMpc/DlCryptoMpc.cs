@@ -16,7 +16,7 @@ namespace MpcLib.MpcProtocols.Crypto
 	/// <summary>
 	/// Implements the MPC protocol of Zamani-Movahedi-Saia 2014 with discrete log commitment (Feldman 87).
 	/// </summary>
-	public class DlCryptoMpc : MpcProtocol<BigZp>
+	public class DlCryptoMpc : AsyncMpc<BigZp>
 	{
 		#region Fields
 
@@ -42,7 +42,7 @@ namespace MpcLib.MpcProtocols.Crypto
 
 		#endregion Fields
 
-		public DlCryptoMpc(Entity e, BigCircuit circuit, ReadOnlyCollection<int> pIds,
+		public DlCryptoMpc(Party e, BigCircuit circuit, ReadOnlyCollection<int> pIds,
 			BigZp input, StateKey stateKey, DiscreteLogCrypto dlCrypto)
 			: base(e, pIds, input, stateKey)
 		{
@@ -144,7 +144,7 @@ namespace MpcLib.MpcProtocols.Crypto
 			{
 				BigInteger pr = 1;
 				var commitMsg = RecvCommitments[i];				
-				int k = Entity.Id + 1;
+				int k = Party.Id + 1;
 
 				Debug.Assert(commitMsg.SenderId == RecvShares[i].SenderId);
 

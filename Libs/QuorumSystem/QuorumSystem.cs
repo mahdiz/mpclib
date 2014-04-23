@@ -7,7 +7,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 	/// Represents a quorum-based distributed system.
 	/// </summary>
 	public abstract class QuorumSystem<T> : AsyncSimController<T>
-		where T : Entity, new()
+		where T : AsyncParty, new()
 	{
 		public QuorumSystem(EventSimulator s, int seed)
 			: base(s, seed)

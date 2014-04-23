@@ -18,7 +18,7 @@ namespace MpcLib.ByzantineAgreement
 	/// the same message to every player in the network.
 	/// </summary>
 	/// <typeparam name="TData">Type of data to broadcast.</typeparam>
-	public class SecureBroadcaster<TData> : Protocol
+	public class SecureBroadcaster<TData> : AsyncProtocol
 	{
 		private int k;
 		private int N;
@@ -33,7 +33,7 @@ namespace MpcLib.ByzantineAgreement
 		private Dictionary<BroadcastMessage<TData>, int> collectedMessages = 
 			new Dictionary<BroadcastMessage<TData>, int>();
 
-		public SecureBroadcaster(Entity e, TData data, ReadOnlyCollection<int> playerIds, 
+		public SecureBroadcaster(Party e, TData data, ReadOnlyCollection<int> playerIds, 
 			bool isDealer, int prime, StateKey stateKey, int seed)
 			: base(e, playerIds, stateKey)
 		{
@@ -57,13 +57,13 @@ namespace MpcLib.ByzantineAgreement
 					var polynomialDeg = NumParties % 4 == 0 ? (NumParties / 4 - 1) : (NumParties / 4);
 
 					// TODO: uncomment for non-simulation use. (use a directive to disable in simulation use)
-					// var shares = Shamir.Share(new Zp(prime, RandGen.Next(0, 2)), NumEntities, polynomialDeg);
+					// var shares = Shamir.Share(new Zp(prime, RandGen.Next(0, 2)), NumParties, polynomialDeg);
 
 					var randomSecret = new Zp(prime, StaticRandom.Next(0, 2));
 					var shares = ShamirSharing.Share(randomSecret, NumParties, polynomialDeg);
 
 					for (int j = 0; j < NumParties; j++)
-						Send(Entity.Id, EntityIds[j], new ShareMessage(BroadcastStage.DealerLotteryShare, shares[j], round));		// TODO: Message delay needed. These messages must be received after DealerDataSend.
+						Send(Party.Id, PartyIds[j], new ShareMessage(BroadcastStage.DealerLotteryShare, shares[j], round));		// TODO: Message delay needed. These messages must be received after DealerDataSend.
 				}
 			}
 		}

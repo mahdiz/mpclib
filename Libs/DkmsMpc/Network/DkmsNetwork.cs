@@ -22,9 +22,9 @@ namespace MpcLib.MpcProtocols.Dkms
 		public void Init(int numPlayers, int numQuorums, int numSlots, int quorumSize, QuorumBuildingMethod qbMethod, Circuit circuit, Zp[] inputs, int prime)
 		{
 			// create and init players
-			var players = AddNewEntities(numPlayers);
+			var players = AddNewParties(numPlayers);
 			for (int i = 0; i < numPlayers; i++)
-				players[i].Init(circuit, inputs[i], numSlots, EntityIds, numQuorums, quorumSize, qbMethod);
+				players[i].Init(circuit, inputs[i], numSlots, PartyIds, numQuorums, quorumSize, qbMethod);
 
 			IsInitialized = true;
 		}

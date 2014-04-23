@@ -507,26 +507,26 @@ vector<G1> PolyCommitter::createWitness(const vector<PolyCommitter> &commits, co
 bool PolyCommitter::verifyEval(const PolyCommitParams *p, 
 	const G1 &C, const ZZ_p &i,	const ZZ_p &fi, const G1 &witness)
 {
-	//const Pairing &e = p->get_pairing();
-	//const G1 &g = p->get_galphai(0);
-	//const G2 &ghat = p->get_ghatalphai(0);
-	//const G2 &ghatalpha = p->get_ghatalphai(1);
-
-	//Zr ir = to_Zr(e, i);
-	//Zr fir = to_Zr(e, fi);
-
-	//GT LHS = e(C, ghat);
-	//GT RHS = e(witness, ghatalpha / (ghat^ir)) * e(g, ghat^fir);
-
 	const Pairing &e = p->get_pairing();
 	const G1 &g = p->get_galphai(0);
-	const G1 &g_alpha = p->get_galphai(1);
+	const G2 &ghat = p->get_ghatalphai(0);
+	const G2 &ghatalpha = p->get_ghatalphai(1);
 
 	Zr ir = to_Zr(e, i);
 	Zr fir = to_Zr(e, fi);
 
-	GT LHS = e(C, g);
-	GT RHS = e(witness, g_alpha / (g^ir)) * (e(g, g) ^ fir);
+	GT LHS = e(C, ghat);
+	GT RHS = e(witness, ghatalpha / (ghat^ir)) * e(g, ghat^fir);
+
+	//const Pairing &e = p->get_pairing();
+	//const G1 &g = p->get_galphai(0);
+	//const G1 &g_alpha = p->get_galphai(1);
+
+	//Zr ir = to_Zr(e, i);
+	//Zr fir = to_Zr(e, fi);
+
+	//GT LHS = e(C, g);
+	//GT RHS = e(witness, g_alpha / (g^ir)) * (e(g, g) ^ fir);
 
 	bool r = (LHS == RHS);
 	return r;

@@ -42,13 +42,13 @@ namespace MpcLib.MpcProtocols.Bgw
 
 		#endregion Fields
 
-		public ByzantineBgwProtocol(Entity e, Circuit circuit, ReadOnlyCollection<int> playerIds,
+		public ByzantineBgwProtocol(AsyncParty e, Circuit circuit, ReadOnlyCollection<int> playerIds,
 			Zp playerInput, StateKey stateKey)
 			: base(e, circuit, playerIds, playerInput, stateKey)
 		{
 			throw new NotImplementedException();
 
-			// PolynomialDeg = NumEntities % 4 == 0 ? (NumEntities / 4 - 1) : (NumEntities / 4);
+			// PolynomialDeg = NumParties % 4 == 0 ? (NumParties / 4 - 1) : (NumParties / 4);
 			// Mahdi: Changed to the following since n/3 - 1 of players can be dishonest.
 			// degree = n - t, where t is the number of dishonest players
 			PolynomialDeg = (int)Math.Floor(2 * NumParties / 3.0);
@@ -84,7 +84,7 @@ namespace MpcLib.MpcProtocols.Bgw
 					var g_jVal = g_jValues[f_iValue.SenderId];
 					var f_iVal = f_iValues[f_iValue.SenderId];
 					if ((f_iVal == null) || (g_jVal == null) || (!f_iVal.Equals(g_jVal)))
-						wrongCoords.Add(new Coordinate(f_iValue.SenderId, Entity.Id));
+						wrongCoords.Add(new Coordinate(f_iValue.SenderId, Party.Id));
 				}
 			}
 			return wrongCoords;
@@ -645,7 +645,7 @@ namespace MpcLib.MpcProtocols.Bgw
 				recvShare_i = new Zp(Prime, 0);
 			}
 
-			if (verifShares[0].PlayerToVerify == Entity.Id)	// am I the dealer?
+			if (verifShares[0].PlayerToVerify == Party.Id)	// am I the dealer?
 			{
 				Debug.Assert(MyInputShares != null);
 				HandleDealer(MyInputShares, recvShare_i);
@@ -683,7 +683,7 @@ namespace MpcLib.MpcProtocols.Bgw
 		{
 			if ((recvPublicPolysList != null))
 			{
-				var newRecvSercretPoly = recvPublicPolysList[Entity.Id];
+				var newRecvSercretPoly = recvPublicPolysList[Party.Id];
 				if (newRecvSercretPoly != null)
 				{
 					var recvShare = newRecvSercretPoly.Fi_xPolynomial[0];
@@ -783,7 +783,7 @@ namespace MpcLib.MpcProtocols.Bgw
 				return false;
 			}
 			int w = NumTheoryUtils.GetFieldMinimumPrimitive(Prime);
-			var w_InMyIndex = new Zp(Prime, NumTheoryUtils.ModPow(w, Entity.Id, Prime));
+			var w_InMyIndex = new Zp(Prime, NumTheoryUtils.ModPow(w, Party.Id, Prime));
 			Zp RjFromPublicPolynomial = Zp.EvalutePolynomialAtPoint(RxPolynomial, w_InMyIndex);
 
 			Zp temp = recvShareFromPlayer_i.AShare.ConstMul(recvShareFromPlayer_i.BShare).ConstSub(recvShareFromPlayer_i.AbShare);
@@ -856,7 +856,7 @@ namespace MpcLib.MpcProtocols.Bgw
 					if (!playerKNewFk_x_w_iValues[k].Equals(playerKNewGk_y_w_iValues[k]))
 						return true;
 
-					if (k == Entity.Id)
+					if (k == Party.Id)
 					{
 						// Verify that the new public polynomials equals the old polynomials
 						if (!IsSecretPolynomialsLegal(myRecvPolys) || !myRecvPolys.Equals(playerKNewPolys))
@@ -866,7 +866,7 @@ namespace MpcLib.MpcProtocols.Bgw
 					{
 						// Verify that the public information doesn't contradict the old information :
 						// f(w^j, w^k) = fk(w^j) = gj(w^k) = f(w^j, w^k) && f(w^k, w^j) = fj(w^k) = gk(w^j) = f(w^k, w^j)
-						if ((!myG_j_w_iValues[k].Equals(playerKNewFk_x_w_iValues[Entity.Id])) || (!myF_j_w_iValues[k].Equals(playerKNewGk_y_w_iValues[Entity.Id])))
+						if ((!myG_j_w_iValues[k].Equals(playerKNewFk_x_w_iValues[Party.Id])) || (!myF_j_w_iValues[k].Equals(playerKNewGk_y_w_iValues[Party.Id])))
 							return true;
 					}
 				}

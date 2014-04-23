@@ -14,8 +14,8 @@ namespace MpcLib.Simulation
 	/// <summary>
 	/// Represents an asynchronous network simulation controller.
 	/// </summary>
-	/// <typeparam name="T">Type of network entities.</typeparam>
-	public class AsyncSimController<T> : SimController<T> where T : Entity, new()
+	/// <typeparam name="T">Type of network parties.</typeparam>
+	public class AsyncSimController<T> : SimController<T> where T : AsyncParty, new()
 	{
 		private EventSimulator simulator;
 		private Object myLock = new Object();
@@ -37,16 +37,16 @@ namespace MpcLib.Simulation
 
 		public override void Run()
 		{
-			if (entities.Count == 0)
-				throw new Exception("At least one entity must be added before running the network.");
+			if (parties.Count == 0)
+				throw new Exception("At least one party must be added before running the network.");
 
-			foreach (var e in entities)
+			foreach (var e in parties)
 				simulator.Schedule(e.Id, new Handler(e.Run), 1);
 
 			simulator.Run();
 		}
 
-		protected override T CreateEntity()
+		protected override T CreateParty()
 		{
 			var e = new T();
 			e.SendMsg += Send;
@@ -60,18 +60,18 @@ namespace MpcLib.Simulation
 
 		private void Send(int fromId, int toId, Msg msg, int delay)
 		{
-			var entity = FindEntity(toId);
-			if (entity == null)
-				throw new Exception("No entity found with entityId = " + toId + ".");
+			var party = FindParty(toId);
+			if (party == null)
+				throw new Exception("No party found with partyId = " + toId + ".");
 
 			msg.SenderId = fromId;
-			Send(fromId, entity, msg, delay);
+			Send(fromId, party, msg, delay);
 		}
 
-		private void Send(int fromId, Entity toEntity, Msg msg)
+		private void Send(int fromId, AsyncParty toParty, Msg msg)
 		{
 			// TODO: Fixed delay for the synchronous model only. Must estimate message delay for the async model.
-			Send(fromId, toEntity, msg, 1);
+			Send(fromId, toParty, msg, 1);
 		}
 
 		private void Send(int fromId, int toId, Msg msg)
@@ -80,7 +80,7 @@ namespace MpcLib.Simulation
 			Send(fromId, toId, msg, 1);
 		}
 
-		private void Send(int fromId, Entity toEntity, Msg msg, int delay)
+		private void Send(int fromId, AsyncParty toParty, Msg msg, int delay)
 		{
 			lock (myLock)
 			{
@@ -88,17 +88,17 @@ namespace MpcLib.Simulation
 				SentMessageCount++;
 				SentByteCount += msg.Size;
 			}
-			simulator.Schedule(toEntity.Id, toEntity.Receive, delay, msg);
+			simulator.Schedule(toParty.Id, toParty.Receive, delay, msg);
 
 			Debug.WriteLine("t=" + simulator.Clock + ": Send from " +
-				fromId + " to " + toEntity.Id + "  Msg=(" + msg.ToString() + ")");
+				fromId + " to " + toParty.Id + "  Msg=(" + msg.ToString() + ")");
 
 			if (MessageSent != null)
 				MessageSent(this, new EventArgs());
 		}
 
 		/// <summary>
-		/// Broadcasts a message to the specified set of entities.
+		/// Broadcasts a message to the specified set of parties.
 		/// WARNING: Currently does not support the malicious model (active adversary), 
 		/// which requires a method Byzantine agreement to ensure message consistency.
 		/// </summary>
