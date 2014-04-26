@@ -13,12 +13,10 @@ namespace MpcLib.SecretSharing.eVSS
 	public class ShareMsg<T> : Msg where T : ISizable
 	{
 		public readonly T Share;
-		public readonly MG Witness;
 
-		public ShareMsg(T share, MG witness)
+		public ShareMsg(T share)
 		{
 			Share = share;
-			Witness = witness;
 		}
 
 		public override string ToString()
@@ -30,13 +28,32 @@ namespace MpcLib.SecretSharing.eVSS
 		{
 			get
 			{
-				return base.Size + Share.Size + Witness.Size;
+				return base.Size + Share.Size;
 			}
 		}
 
 		public override int StageKey
 		{
 			get { return (int)Stage.Share; }
+		}
+	}
+
+	public class ShareWitnessMsg<T> : ShareMsg<T> where T : ISizable
+	{
+		public readonly MG Witness;
+
+		public ShareWitnessMsg(T share, MG witness)
+			: base(share)
+		{
+			Witness = witness;
+		}
+
+		public override int Size
+		{
+			get
+			{
+				return base.Size + Witness.Size;
+			}
 		}
 	}
 }

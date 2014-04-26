@@ -33,7 +33,7 @@ namespace MpcLib.SecretSharing
 		/// <summary>
 		/// Evaluates the shares of secret with polynomial of degree 'polynomDeg' and 'numPlayers' players.
 		/// </summary>
-		private static IList<BigZp> Share(BigZp secret, int numPlayers, int polynomDeg, bool usePrimitiveShare, out IList<BigZp> coeffs)
+		private static IList<BigZp> Share(BigZp secret, int numPlayers, int polyDeg, bool usePrimitiveShare, out IList<BigZp> coeffs)
 		{
 #if NO_COMPUTATION
 			// send some dummy shares
@@ -42,11 +42,11 @@ namespace MpcLib.SecretSharing
 				shares[i] = new BigZp(secret.Prime);
 			return shares;
 #else
-			Debug.Assert(numPlayers > polynomDeg, "Polynomial degree cannot be greater than or equal to the number of players!");
+			Debug.Assert(numPlayers > polyDeg, "Polynomial degree cannot be greater than or equal to the number of players!");
 
 			// Create a random polynomial - f(x)
 			// Note: Polynomial of degree d has d+1 coefficients
-			var randomMatrix = BigZpMatrix.GetRandomMatrix(1, polynomDeg + 1, secret.Prime);
+			var randomMatrix = BigZpMatrix.GetRandomMatrix(1, polyDeg + 1, secret.Prime);
 
 			// The free variable in the Random Polynomial (i.e.	f(x)) is the secret
 			randomMatrix.SetMatrixCell(0, 0, secret);
@@ -55,7 +55,7 @@ namespace MpcLib.SecretSharing
 			coeffs = randomMatrix.GetMatrixRow(0);
 
 			// Create vanderMonde matrix
-			var vanderMonde = BigZpMatrix.GetVandermondeMatrix(polynomDeg + 1, numPlayers, secret.Prime);
+			var vanderMonde = BigZpMatrix.GetVandermondeMatrix(polyDeg + 1, numPlayers, secret.Prime);
 
 			// Compute f(i) for the i-th  player
 			var sharesArr = randomMatrix.Times(vanderMonde).ZpVector;
@@ -97,7 +97,7 @@ namespace MpcLib.SecretSharing
 		}
 
 		// Mahdi's recombine method based on Lagrange interpolation for finite fields.
-		public static BigZp SimpleRecombine(IList<BigZp> sharedSecrets, int polyDeg, BigInteger prime)
+		private static BigZp SimpleRecombine(IList<BigZp> sharedSecrets, int polyDeg, BigInteger prime)
 		{
 			if (sharedSecrets.Count < polyDeg)
 				throw new System.ArgumentException("Polynomial degree cannot be bigger or equal to the number of  shares");
@@ -140,9 +140,9 @@ namespace MpcLib.SecretSharing
 			return truncVec;
 		}
 
-		public static BigZp Recombine(IList<BigZp> sharedSecrets, int polynomDeg, BigInteger prime)
+		public static BigZp Recombine(IList<BigZp> sharedSecrets, int polyDeg, BigInteger prime)
 		{
-			return Recombine(sharedSecrets, polynomDeg, prime, false);
+			return Recombine(sharedSecrets, polyDeg, prime, false);
 		}
 	}
 }

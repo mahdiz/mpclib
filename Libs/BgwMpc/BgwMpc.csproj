@@ -75,7 +75,6 @@
     <Compile Include="VSS\SecretPolynomials.cs" />
     <Compile Include="VSS\SecretPolynomialsBundle.cs" />
     <Compile Include="VSS\ShareList.cs" />
-    <Compile Include="WelchBerlekampDecoder.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

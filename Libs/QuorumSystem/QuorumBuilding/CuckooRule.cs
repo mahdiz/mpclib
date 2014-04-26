@@ -9,7 +9,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 		public event QbFinishHandler QbFinished;
 		public override ProtocolIds Id { get { return ProtocolIds.Cuckoo; } }
 
-		public CuckooRule(Party e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
+		public CuckooRule(AsyncParty e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
 			: base(e, processorIds, stateKey)
 		{
 		}

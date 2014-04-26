@@ -33,9 +33,9 @@ namespace MpcLib.ByzantineAgreement
 		private Dictionary<BroadcastMessage<TData>, int> collectedMessages = 
 			new Dictionary<BroadcastMessage<TData>, int>();
 
-		public SecureBroadcaster(Party e, TData data, ReadOnlyCollection<int> playerIds, 
+		public SecureBroadcaster(AsyncParty p, TData data, ReadOnlyCollection<int> playerIds, 
 			bool isDealer, int prime, StateKey stateKey, int seed)
-			: base(e, playerIds, stateKey)
+			: base(p, playerIds, stateKey)
 		{
 			this.data = data;
 			this.prime = prime;

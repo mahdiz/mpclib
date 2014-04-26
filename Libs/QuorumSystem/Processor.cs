@@ -25,7 +25,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 			switch (method)
 			{
 				case QuorumBuildingMethod.RandomSampler:
-					qbuilder = new StaticSampler(this, processors, numQuorums, quorumSize, null);
+					//qbuilder = new StaticSampler(this, processors, numQuorums, quorumSize);
 					break;
 
 				case QuorumBuildingMethod.AlmostEverywhereBA:

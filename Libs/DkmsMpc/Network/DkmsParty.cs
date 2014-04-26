@@ -8,8 +8,6 @@ namespace MpcLib.MpcProtocols.Dkms
 {
 	public class DkmsParty : Processor<DkmsProtocol>
 	{
-		#region Fields and Properties
-
 		public Zp Input
 		{
 			get
@@ -29,8 +27,6 @@ namespace MpcLib.MpcProtocols.Dkms
 				return Protocol.Result;
 			}
 		}
-
-		#endregion Fields and Properties
 
 		public DkmsParty()
 		{

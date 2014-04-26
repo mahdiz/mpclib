@@ -23,13 +23,13 @@ namespace MpcLib.SecretSharing.eVSS
 	public class eVSS : SyncProtocol
 	{
 		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
-		protected readonly BigInteger Prime;
-		protected readonly int PolyDegree;
+		public readonly BigInteger Prime;
+		public readonly int PolyDegree;
 		protected PolyCommit PolyCommit;
-		private static object myLock = new object();
+		private static Object myLock = new Object();
 
-		public eVSS(Party e, ReadOnlyCollection<int> pIds, BigInteger prime, int polyDegree)
-			: base(e, pIds)
+		public eVSS(SyncParty p, IList<int> pIds, BigInteger prime, int polyDegree)
+			: base(p, pIds)
 		{
 			Prime = prime;
 			PolyCommit = null;
@@ -48,7 +48,7 @@ namespace MpcLib.SecretSharing.eVSS
 				PolyCommit.Setup(PolyDegree, seed);
 		}
 
-		public List<BigZp> Share(BigZp secret)
+		public List<BigZp> ShareVerify(BigZp secret, bool reciprocal)
 		{
 			Debug.Assert(PolyCommit != null, "eVSS is not initialized yet.");
 			Debug.Assert(Prime == secret.Prime);
@@ -73,34 +73,33 @@ namespace MpcLib.SecretSharing.eVSS
 					coeffs.ToArray(), iz, ref witnesses, ref proof, false);
 			}
 
-			Debug.Assert(PolyCommit.VerifyEval(mg,
-				new BigZp(Prime, Party.Id + 1), shares[Party.Id], witnesses[Party.Id]));
-
 			// broadcast the commitment
-			var recvCommits = BroadcastReceive(PartyIds, new CommitMsg(mg)).OrderBy(s => s.SenderId).ToList();
+			IList<CommitMsg> recvCommits = null;
+			if (reciprocal)
+				recvCommits = BroadcastReceive(PartyIds, new CommitMsg(mg)).OrderBy(s => s.SenderId).ToList();
+			else
+				Broadcast(PartyIds, new CommitMsg(mg));
 
-			// send the i-th share and witness to the i-th party
-			var shareMsgs = new ShareMsg<BigZp>[NumParties];
+			// create share messages
+			var shareMsgs = new ShareWitnessMsg<BigZp>[NumParties];
 			for (int i = 0; i < NumParties; i++)
-				shareMsgs[i] = new ShareMsg<BigZp>(shares[i], witnesses[i]);
+				shareMsgs[i] = new ShareWitnessMsg<BigZp>(shares[i], witnesses[i]);
 
-			var recvShares = SendReceive(PartyIds, shareMsgs).OrderBy(s => s.SenderId).ToList();
-			Verify(recvCommits, recvShares);
+			// send the i-th share message to the i-th party
+			if (reciprocal)
+			{
+				var recvShares = SendReceive(PartyIds, shareMsgs).OrderBy(s => s.SenderId).ToList();
+				Verify(recvCommits, recvShares);
+				return (from s in recvShares select s.Share).ToList();
+			}
 
-			return (from s in recvShares select s.Share).ToList();
+			Send(PartyIds, shareMsgs);
+			return null;
 		}
 
-		protected void Verify(IList<CommitMsg> commits, IList<ShareMsg<BigZp>> shares)
+		public void Verify(IList<CommitMsg> commits, IList<ShareWitnessMsg<BigZp>> shares)
 		{
-			// find my rank in sorted list of ids
-			int rank = 1;
-			foreach (var id in PartyIds.OrderBy(e => e))
-			{
-				if (id == Party.Id)
-					break;
-				rank++;
-			}
-			var rankZp = new BigZp(Prime, rank);
+			var rankZp = new BigZp(Prime, MyRank(Party.Id, PartyIds));
 
 			for (int i = 0; i < commits.Count; i++)
 			{
@@ -116,9 +115,54 @@ namespace MpcLib.SecretSharing.eVSS
 			}
 		}
 
-		public void Reconstruct()
+		public void Verify(CommitMsg commit, ShareWitnessMsg<BigZp> share)
 		{
-			throw new NotImplementedException();
+			var rankZp = new BigZp(Prime, MyRank(Party.Id, PartyIds));
+
+			lock (myLock)	// because NTL is not thread-safe
+			{
+				if (!PolyCommit.VerifyEval(commit.Commitment,
+					rankZp, share.Share, share.Witness))
+				{
+					// broadcast an accusation against the i-th party.
+					throw new NotImplementedException();
+				}
+			}
+		}
+
+		public BigZp Reconst(BigZp ui)
+		{
+			// send the share to every party
+			var recvShares = SendReceive(new ShareMsg<BigZp>(ui))
+				.OrderBy(s => s.SenderId).Select(s => s.Share).ToList();
+
+			return BigShamirSharing.Recombine(recvShares, PolyDegree, Prime);
+
+			// *WARNING*: Not for the malicious case. If any point is not on
+			// the interpolated polynomial, then must use Welch-Berlekamp
+			// error recovery to fix errors. This is how it should be done:
+			//
+			//var xValues = new List<BigZp>();
+			//for (int i = 1; i <= recvShares.Count; i++)
+			//	xValues.Add(new BigZp(Prime, i));
+			//
+			//var fixedShares = WelchBerlekampDecoder.Decode(xValues, recvShares, PolyDegree, PolyDegree, Prime);
+			//
+			// interpolate again
+			// return BigShamirSharing.Recombine(fixedShares, PolyDegree, Prime);
+		}
+
+		protected static int MyRank(int myId, IList<int> ids)
+		{
+			// find my rank in sorted list of ids
+			int rank = 1;
+			foreach (var id in ids.OrderBy(p => p))
+			{
+				if (id == myId)
+					break;
+				rank++;
+			}
+			return rank;
 		}
 	}
 }

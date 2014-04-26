@@ -17,7 +17,8 @@ namespace MpcLib.DistributedSystem
 	/// <summary>
 	/// Represents an abstract network protocol.
 	/// </summary>
-	public abstract class Protocol
+	/// <typeparam name="T">Type of network parties.</typeparam>
+	public abstract class Protocol<T> where T : Party
 	{
 		/// <summary>
 		/// Unique idetifier of the protocol type.
@@ -27,19 +28,22 @@ namespace MpcLib.DistributedSystem
 		/// <summary>
 		/// The party associated with this protocol.
 		/// </summary>
-		protected readonly Party Party;
+		public readonly T Party;
 
 		/// <summary>
 		/// Number of parties in the network.
 		/// </summary>
 		protected readonly int NumParties;
-		protected readonly ReadOnlyCollection<int> PartyIds;
+		protected readonly IList<int> PartyIds;
 
-		public Protocol(Party e, ReadOnlyCollection<int> partyIds)
+		public Protocol(T p, IList<int> partyIds)
 		{
-			this.Party = e;
+			this.Party = p;
 			PartyIds = partyIds;
 			NumParties = partyIds.Count;
+
+			//// make sure I am among the parties.
+			//Debug.Assert(partyIds.Contains(p.Id), "The party must be in the list of parties.");
 		}
 
 		/// <summary>

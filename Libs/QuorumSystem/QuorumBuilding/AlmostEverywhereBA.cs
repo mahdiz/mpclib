@@ -14,12 +14,12 @@ namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
 		public override ProtocolIds Id { get { return ProtocolIds.AE; } }
 		private readonly RandomUtils randUtils = new RandomUtils();
 
-		public AlmostEverywhereProtocol(Party e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
+		public AlmostEverywhereProtocol(AsyncParty e, ReadOnlyCollection<int> processorIds, StateKey stateKey)
 			: this(e, processorIds, null, stateKey)
 		{
 		}
 
-		public AlmostEverywhereProtocol(Party e, ReadOnlyCollection<int> processorIds, SafeRandom randGen, StateKey stateKey)
+		public AlmostEverywhereProtocol(AsyncParty e, ReadOnlyCollection<int> processorIds, SafeRandom randGen, StateKey stateKey)
 			: base(e, processorIds, stateKey)
 		{
 			if (randGen == null)

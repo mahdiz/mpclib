@@ -18,8 +18,8 @@ namespace MpcLib.MpcProtocols
 		public T Input { get; protected set; }
 		public T Result { get; protected set; }
 
-		public SyncMpc(Party e, ReadOnlyCollection<int> pIds, T pInput)
-			: base(e, pIds)
+		public SyncMpc(SyncParty p, IList<int> pIds, T pInput)
+			: base(p, pIds)
 		{
 			Input = pInput;
 		}
@@ -34,14 +34,14 @@ namespace MpcLib.MpcProtocols
 		public T Input { get; protected set; }
 		public T Result { get; protected set; }
 
-		public AsyncMpc(Party e, ReadOnlyCollection<int> pIds, T pInput, SendHandler send, StateKey stateKey)
+		public AsyncMpc(AsyncParty e, IList<int> pIds, T pInput, SendHandler send, StateKey stateKey)
 			: base(e, pIds, send, stateKey)
 		{
 			Input = pInput;
 		}
 
-		public AsyncMpc(Party e, ReadOnlyCollection<int> pIds, T pInput, StateKey stateKey)
-			: base(e, pIds, stateKey)
+		public AsyncMpc(AsyncParty p, IList<int> pIds, T pInput, StateKey stateKey)
+			: base(p, pIds, stateKey)
 		{
 			Input = pInput;
 		}

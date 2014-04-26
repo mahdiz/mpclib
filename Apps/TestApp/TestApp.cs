@@ -26,8 +26,8 @@ namespace MpcLib.Apps
 	public class TestApp
 	{
 		const int seed = 1234;
-		const int min_logn = 2;		// min log number of parties
-		const int max_logn = 2;		// max log number of parties
+		const int min_logn = 6;		// min log number of parties
+		const int max_logn = 6;		// max log number of parties
 		
 		static readonly BigInteger encPrime = NumTheoryUtils.DHPrime1536;
 		static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
@@ -62,32 +62,40 @@ namespace MpcLib.Apps
 				party.Protocol = new CryptoMpc(party, parser.Circuit,
 					mpcSim.PartyIds, randInput, seed);
 			}
-			Console.WriteLine(n + " players initialized. Running simulation...");
+			Console.WriteLine(n + " parties initialized. Running simulation...\n");
 
 			// run the MPC network
 			var elapsedTime = Timex.Run(() => mpcSim.Run());
 
-			var realSum = new BigZp(prime);
-			foreach (var player in mpcSim.Parties)
-				realSum += (player.Protocol as IMpcProtocol<BigZp>).Input;
+			var realProduct = new BigZp(prime, 1);
+			//foreach (var player in mpcSim.Parties)
+			//	realProduct += (player.Protocol as IMpcProtocol<BigZp>).Input;
 
-			var hasError = false;
-			foreach (var party in mpcSim.Parties)
+			realProduct *= mpcSim.Parties[12].Protocol.Input;
+			realProduct *= mpcSim.Parties[13].Protocol.Input;
+			realProduct *= mpcSim.Parties[13].Protocol.Input;
+			realProduct *= mpcSim.Parties[12].Protocol.Input;
+			realProduct *= mpcSim.Parties[13].Protocol.Input;
+			realProduct += mpcSim.Parties[12].Protocol.Input;
+
+			Console.WriteLine("");
+			//var hasError = false;
+			for (int i = 0; i < 6; i++)
 			{
-				var p = party.Protocol as IMpcProtocol<BigZp>;
-				//Console.WriteLine("P" + party.Id + " input = " + p.Input + "\t\tRes = " + p.Result);
-				if (p.Result != realSum)
-					hasError = true;
+				Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res = " + mpcSim.Parties[i].Protocol.Result);
+
+				//if (party.Protocol.Result != realProduct)
+				//	hasError = true;
 			}
 
-			Console.WriteLine("\nSum result   = " + realSum);
-			if (hasError)
-			{
-				var prevColor = Console.ForegroundColor;
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("ERROR: Some or all player outputs do not match the real sum!\n");
-				Console.ForegroundColor = prevColor;
-			}
+			Console.WriteLine("\nResult  = " + realProduct);
+			//if (hasError)
+			//{
+			//	var prevColor = Console.ForegroundColor;
+			//	Console.ForegroundColor = ConsoleColor.Red;
+			//	Console.WriteLine("ERROR: Some or all player outputs do not match the real sum!\n");
+			//	Console.ForegroundColor = prevColor;
+			//}
 
 			Console.WriteLine("# parties    = " + n);
 			Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);

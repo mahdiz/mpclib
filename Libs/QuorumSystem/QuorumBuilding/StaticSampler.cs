@@ -2,41 +2,33 @@
 using System.Collections.ObjectModel;
 using MpcLib.Common;
 
-namespace MpcLib.DistributedSystem.QuorumSystem.QuorumBuilding
+namespace MpcLib.DistributedSystem.QuorumBuilding
 {
-	public class StaticSampler : AsyncProtocol, IQuorumBuilder
+	public class StaticSampler : SyncProtocol
 	{
-		private int numQuorums;
-		private int quorumSize;
-		public event QbFinishHandler QbFinished;
 		public override ProtocolIds Id { get { return ProtocolIds.StaticSampler; } }
 
-		public StaticSampler(Party e, ReadOnlyCollection<int> partyIds, 
-			int numQuorums, int quorumSize, StateKey stateKey)
-			: base(e, partyIds, stateKey)
+		public StaticSampler(SyncParty p, IList<int> partyIds)
+			: base(p, partyIds)
 		{
-			this.numQuorums = numQuorums;
-			this.quorumSize = quorumSize;
 		}
 
-		public override void Run()
+		public List<int[]> CreateQuorums(int numQuorums, int quorumSize)
 		{
-			var quorumsMap = new Dictionary<int, int[]>();
+			var quorums = new List<int[]>();
 			int procIndex = 0;
 
 			for (int i = 0; i < numQuorums; i++)
 			{
-				var quorumMembers = new int[quorumSize];
+				var qParties = new int[quorumSize];
 				for (int j = 0; j < quorumSize; j++)
 				{
-					quorumMembers[j] = procIndex;
+					qParties[j] = procIndex;
 					procIndex = (procIndex + 1) % NumParties;
 				}
-				quorumsMap[i] = quorumMembers;
+				quorums.Add(qParties);
 			}
-
-			if (QbFinished != null)
-				QbFinished(quorumsMap);
+			return quorums;
 		}
 	}
 }

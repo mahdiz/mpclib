@@ -30,7 +30,7 @@ namespace MpcLib.MpcProtocols.Bgw
 		#endregion Fields
 
 		public BgwProtocol(Circuit circuit, ReadOnlyCollection<int> pIds,
-			Party e, Zp pInput, SendHandler send, StateKey stateKey)
+			AsyncParty e, Zp pInput, SendHandler send, StateKey stateKey)
 			: base(e, pIds, pInput, send, stateKey)
 		{
 			Debug.Assert(circuit.InputCount == pIds.Count);
@@ -46,9 +46,9 @@ namespace MpcLib.MpcProtocols.Bgw
 			PolynomialDeg = (int)Math.Floor(2 * NumParties / 3.0);
 		}
 
-		public BgwProtocol(AsyncParty e, Circuit circuit, ReadOnlyCollection<int> playerIds,
+		public BgwProtocol(AsyncParty p, Circuit circuit, ReadOnlyCollection<int> playerIds,
 			Zp playerInput, StateKey stateKey)
-			: this(circuit, playerIds, e, playerInput, e.Send, stateKey)
+			: this(circuit, playerIds, p, playerInput, p.Send, stateKey)
 		{
 		}
 

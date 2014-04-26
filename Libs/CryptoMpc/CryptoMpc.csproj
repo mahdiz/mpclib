@@ -85,6 +85,10 @@
       <Project>{3010bd08-601e-4123-86a5-93ace9e4bf64}</Project>
       <Name>Mpc</Name>
     </ProjectReference>
+    <ProjectReference Include="..\QuorumSystem\QuorumSystem.csproj">
+      <Project>{53392685-e75c-478b-ac7c-a22c704b19e6}</Project>
+      <Name>QuorumSystem</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
       <Project>{2279ad83-89cc-439f-a198-4e6c1c73f668}</Project>
       <Name>SecretSharing</Name>

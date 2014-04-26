@@ -20,7 +20,7 @@ namespace MpcLib.DistributedSystem
 
 		public override string ToString()
 		{
-			return "ID=" + Id + ", From=" + SenderId;
+			return "From=" + SenderId + ", Protocol=" + ProtocolId;
 		}
 
 #endif

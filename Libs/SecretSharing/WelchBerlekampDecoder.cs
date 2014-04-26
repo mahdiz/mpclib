@@ -1,19 +1,18 @@
 using System.Collections.Generic;
 using MpcLib.Common.FiniteField;
-using MpcLib.SecretSharing;
 
-namespace MpcLib.MpcProtocols.Bgw
+namespace MpcLib.SecretSharing
 {
 	public class WelchBerlekampDecoder
 	{
-		public static IList<Zp> decode(IList<Zp> XVlaues, IList<Zp> YVlaues, int e, int polynomDeg, int prime)
+		public static IList<Zp> Decode(IList<Zp> XValues, IList<Zp> YValues, int e, int polyDeg, int prime)
 		{
-			var pPolynomial = interpolatePolynomial(XVlaues, YVlaues, e, polynomDeg, prime);
+			var pPolynomial = interpolatePolynomial(XValues, YValues, e, polyDeg, prime);
 			if (pPolynomial != null)
 			{
 				var fixedCodWord = new List<Zp>();
-				for (int i = 0; i < XVlaues.Count; i++)
-					fixedCodWord.Add(pPolynomial.Sample(XVlaues[i]));
+				for (int i = 0; i < XValues.Count; i++)
+					fixedCodWord.Add(pPolynomial.Sample(XValues[i]));
 
 				return fixedCodWord;
 			}
@@ -30,7 +29,7 @@ namespace MpcLib.MpcProtocols.Bgw
 			var b = getWelchBerlekampConstraintVector(XVlaues, YVlaues, n, e, prime);
 
 			// coefficients of N and E as one vector
-			var NE = LinearSolve(A, new ZpMatrix(b, VectorType.Column), prime);
+			var NE = linearSolve(A, new ZpMatrix(b, VectorType.Column), prime);
 
 			if (NE != null)
 			{
@@ -84,7 +83,7 @@ namespace MpcLib.MpcProtocols.Bgw
 		* Note : matrix A changes (gets converted to row echelon form).
 		*/
 
-		private static Zp[] LinearSolve(ZpMatrix A, ZpMatrix B, int prime)
+		private static Zp[] linearSolve(ZpMatrix A, ZpMatrix B, int prime)
 		{
 			var invArray = NumTheoryUtils.GetFieldInverse(prime);
 			var C = ZpMatrix.GetConcatenationMatrix(A, B);		// augmented matrix

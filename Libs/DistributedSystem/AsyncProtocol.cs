@@ -17,7 +17,7 @@ namespace MpcLib.DistributedSystem
 	/// <summary>
 	/// Represents an abstract asynchronous network protocol.
 	/// </summary>
-	public abstract class AsyncProtocol : Protocol
+	public abstract class AsyncProtocol : Protocol<AsyncParty>
 	{
 		protected readonly StateKey StateKey;
 		private event SendHandler sendMsg;
@@ -29,20 +29,20 @@ namespace MpcLib.DistributedSystem
 		private Dictionary<ProtocolIds, AsyncProtocol> subProtocols = 
 			new Dictionary<ProtocolIds, AsyncProtocol>();
 
-		public AsyncProtocol(Party e, ReadOnlyCollection<int> partyIds, StateKey stateKey)
-			: base(e, partyIds)
+		public AsyncProtocol(AsyncParty p, IList<int> partyIds, StateKey stateKey)
+			: this(p, partyIds, p.Send, p.Broadcast, stateKey)
 		{
 		}
 
-		public AsyncProtocol(Party e, ReadOnlyCollection<int> partyIds,
+		public AsyncProtocol(AsyncParty p, IList<int> partyIds,
 			SendHandler send, StateKey stateKey)
-			: this(e, partyIds, send, null, stateKey)
+			: this(p, partyIds, send, null, stateKey)
 		{
 		}
 
-		public AsyncProtocol(Party e, ReadOnlyCollection<int> partyIds,
+		public AsyncProtocol(AsyncParty p, IList<int> partyIds,
 			SendHandler send, BroadcastHandler bcast, StateKey stateKey)
-			: base(e, partyIds)
+			: base(p, partyIds)
 		{
 			StateKey = stateKey;
 			sendMsg += send;

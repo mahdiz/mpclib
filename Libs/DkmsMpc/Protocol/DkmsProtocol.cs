@@ -38,9 +38,9 @@ namespace MpcLib.MpcProtocols.Dkms
 
 		#endregion Fields and Properties
 
-		public DkmsProtocol(Circuit circuit, Party e, ReadOnlyCollection<int> playerIds,
+		public DkmsProtocol(Circuit circuit, AsyncParty p, ReadOnlyCollection<int> playerIds,
 			Zp playerInput, int numSlots, StateKey stateKey)
-			: base(e, playerIds, stateKey)
+			: base(p, playerIds, stateKey)
 		{
 			Circuit = circuit;
 			Input = playerInput;

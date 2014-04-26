@@ -42,9 +42,9 @@ namespace MpcLib.MpcProtocols.Crypto
 
 		#endregion Fields
 
-		public DlCryptoMpc(Party e, BigCircuit circuit, ReadOnlyCollection<int> pIds,
+		public DlCryptoMpc(AsyncParty p, BigCircuit circuit, ReadOnlyCollection<int> pIds,
 			BigZp input, StateKey stateKey, DiscreteLogCrypto dlCrypto)
-			: base(e, pIds, input, stateKey)
+			: base(p, pIds, input, stateKey)
 		{
 			Debug.Assert(circuit.InputCount == pIds.Count);
 			Circuit = circuit;

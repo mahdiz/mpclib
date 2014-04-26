@@ -5,8 +5,10 @@ using MpcLib.Simulation.Des;
 namespace MpcLib.DistributedSystem
 {
 	public delegate void SendHandler(int fromId, int toId, Msg msg);
-	public delegate Msg SendRecvHandler(int fromId, int toId, Msg msg);
+	public delegate Msg ReceiveHandler(int myId);
 	public delegate void BroadcastHandler(int fromId, IEnumerable<int> toIds, Msg msg);
+
+	public delegate Msg SendRecvHandler(int fromId, int toId, Msg msg);
 	public delegate List<Msg> BroadcastRecvHandler(int fromId, IEnumerable<int> toIds, Msg msg);
 
 	/// <summary>
@@ -40,12 +42,30 @@ namespace MpcLib.DistributedSystem
 	/// </summary>
 	public abstract class SyncParty : Party
 	{
+		internal event SendHandler SendMsg;
+		internal event ReceiveHandler ReceiveMsg;
 		internal event SendRecvHandler SendRecvMsg;
+		internal event BroadcastHandler BroadcastMsg;
 		internal event BroadcastRecvHandler BroadcastRecvMsg;
+
+		public void Send(int fromId, int toId, Msg msg)
+		{
+			SendMsg(fromId, toId, msg);
+		}
+
+		public Msg Receive()
+		{
+			return ReceiveMsg(Id);
+		}
 
 		public Msg SendReceive(int fromId, int toId, Msg msg)
 		{
 			return SendRecvMsg(fromId, toId, msg);
+		}
+
+		public void Broadcast(int fromId, IEnumerable<int> toIds, Msg msg)
+		{
+			BroadcastMsg(fromId, toIds, msg);
 		}
 
 		public List<Msg> BroadcastRecv(int fromId, IEnumerable<int> toIds, Msg msg)

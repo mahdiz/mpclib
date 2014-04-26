@@ -179,7 +179,7 @@ namespace MpcLib.MpcProtocols.Bgw
 				xVlaues.Add(new Zp(prime, NumTheoryUtils.ModPow(w, i, prime)));
 
 			// Should call Welch-Berlekamp Decoder to fix error at last stage
-			var fixedShares = WelchBerlekampDecoder.decode(xVlaues, recvList, PolynomialDeg, PolynomialDeg, prime);
+			var fixedShares = WelchBerlekampDecoder.Decode(xVlaues, recvList, PolynomialDeg, PolynomialDeg, prime);
 			if (fixedShares == null)
 				throw new Exception("There were more then polynomialDegree = " + PolynomialDeg + " Cheaters - cannot extract results.");
 

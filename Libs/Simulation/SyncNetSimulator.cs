@@ -16,6 +16,8 @@ namespace MpcLib.Simulation
 
 		public static void Send(int toId, T msg)
 		{
+			Debug.Assert(msg != null);
+
 			if (!sockets.ContainsKey(toId))
 				sockets[toId] = new ConcurrentQueue<T>();
 
@@ -25,15 +27,12 @@ namespace MpcLib.Simulation
 		public static T Receive(int myId)
 		{
 			T msg = default(T);
-			if (!sockets.ContainsKey(myId) || !sockets[myId].TryDequeue(out msg))		// read from the socket
-			{
-				while (msg == null)		// WARNING: Not for the malicious case!
-				{
-					Thread.Sleep(TimeOut);					// wait
-					if (sockets.ContainsKey(myId))
-						sockets[myId].TryDequeue(out msg);	// retry
-				}
-			}
+
+			// WARNING: Not for the malicious case! This loop will never end if any party remains silent!
+			while (!sockets.ContainsKey(myId) || !sockets[myId].TryDequeue(out msg))
+				Thread.Sleep(TimeOut);		// wait
+
+			Debug.Assert(msg != null);
 			return msg;
 		}
 	}

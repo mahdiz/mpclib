@@ -14,7 +14,7 @@ using MpcLib.Simulation.Des;
 namespace MpcLib.Simulation
 {
 	/// <summary>
-	/// Represents an synchronous network simulation controller.
+	/// Represents a synchronous network simulation controller.
 	/// </summary>
 	/// <typeparam name="T">Type of network parties.</typeparam>
 	public class SyncSimController<T> : SimController<T> where T : SyncParty, new()
@@ -32,26 +32,47 @@ namespace MpcLib.Simulation
 			if (parties.Count == 0)
 				throw new Exception("At least one party must be added before running the simulation.");
 
-			var tasks = new Task[parties.Count];
-			for (int i = 0; i < parties.Count; i++)
+			int numActive = parties.Count;
+			foreach (var party in parties)
 			{
-				var party = parties[i];
-				tasks[i] = Task.Run(() => party.Run());
+				ThreadPool.QueueUserWorkItem(new WaitCallback(
+					delegate(Object s)
+					{
+						party.Run();
+
+						lock (myLock)
+							numActive--;
+					}));
 			}
-			Task.WaitAll(tasks);
+
+			// wait until all parties finish running
+			while (numActive > 0)
+				Thread.Sleep(10);
+
+			//var tasks = new Task[parties.Count];
+			//for (int i = 0; i < parties.Count; i++)
+			//{
+			//	var party = parties[i];
+			//	tasks[i] = Task.Run(() => party.Run());
+			//}
+			//Task.WaitAll(tasks);
 		}
 
 		protected override T CreateParty()
 		{
 			var p = new T();
-			p.SendRecvMsg += SendReceive;
-			p.BroadcastRecvMsg += BroadcastReceive;
+
+			p.SendMsg += send;
+			p.ReceiveMsg += receive;
+			p.SendRecvMsg += sendReceive;
+			p.BroadcastMsg += broadcast;
+			p.BroadcastRecvMsg += broadcastReceive;
 
 			p.Id = idGen++;
 			return p;
 		}
 
-		private Msg SendReceive(int fromId, int toId, Msg msg)
+		private void send(int fromId, int toId, Msg msg)
 		{
 			lock (myLock)
 			{
@@ -64,11 +85,20 @@ namespace MpcLib.Simulation
 
 			if (MessageSent != null)
 				MessageSent(this, new EventArgs());
+		}
 
+		private Msg receive(int myId)
+		{
+			return SyncNetSimulator<Msg>.Receive(myId);
+		}
+
+		private Msg sendReceive(int fromId, int toId, Msg msg)
+		{
+			send(fromId, toId, msg);
 			return SyncNetSimulator<Msg>.Receive(fromId);
 		}
 
-		private List<Msg> BroadcastReceive(int fromId, IEnumerable<int> toIds, Msg msg)
+		private void broadcast(int fromId, IEnumerable<int> toIds, Msg msg)
 		{
 			msg.SenderId = fromId;
 			foreach (var toId in toIds)
@@ -93,6 +123,11 @@ namespace MpcLib.Simulation
 				// CKS sends a total of 65536*n^2 bits so the total number of bits sent is n + 65536*n^2.
 				SentByteCount += 65536 * nSquared;
 			}
+		}
+
+		private List<Msg> broadcastReceive(int fromId, IEnumerable<int> toIds, Msg msg)
+		{
+			broadcast(fromId, toIds, msg);
 
 			var retMsgs = new List<Msg>();
 			for (int i = 0; i < toIds.Count(); i++)
