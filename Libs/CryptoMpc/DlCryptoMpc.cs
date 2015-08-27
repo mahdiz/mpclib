@@ -42,7 +42,7 @@ namespace MpcLib.MpcProtocols.Crypto
 
 		#endregion Fields
 
-		public DlCryptoMpc(AsyncParty p, BigCircuit circuit, ReadOnlyCollection<int> pIds,
+		public DlCryptoMpc(AsyncParty p, BigCircuit circuit, IList<int> pIds,
 			BigZp input, StateKey stateKey, DiscreteLogCrypto dlCrypto)
 			: base(p, pIds, input, stateKey)
 		{

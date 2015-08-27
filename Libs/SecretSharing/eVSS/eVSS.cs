@@ -99,7 +99,7 @@ namespace MpcLib.SecretSharing.eVSS
 
 		public void Verify(IList<CommitMsg> commits, IList<ShareWitnessMsg<BigZp>> shares)
 		{
-			var rankZp = new BigZp(Prime, MyRank(Party.Id, PartyIds));
+			var rankZp = new BigZp(Prime, GetRank(Party.Id, PartyIds));
 
 			for (int i = 0; i < commits.Count; i++)
 			{
@@ -117,7 +117,7 @@ namespace MpcLib.SecretSharing.eVSS
 
 		public void Verify(CommitMsg commit, ShareWitnessMsg<BigZp> share)
 		{
-			var rankZp = new BigZp(Prime, MyRank(Party.Id, PartyIds));
+			var rankZp = new BigZp(Prime, GetRank(Party.Id, PartyIds));
 
 			lock (myLock)	// because NTL is not thread-safe
 			{
@@ -136,7 +136,7 @@ namespace MpcLib.SecretSharing.eVSS
 			var recvShares = SendReceive(new ShareMsg<BigZp>(ui))
 				.OrderBy(s => s.SenderId).Select(s => s.Share).ToList();
 
-			return BigShamirSharing.Recombine(recvShares, PolyDegree, Prime);
+			return BigShamirSharing.Recombine(recvShares, PolyDegree - 1, Prime);
 
 			// *WARNING*: Not for the malicious case. If any point is not on
 			// the interpolated polynomial, then must use Welch-Berlekamp
@@ -152,7 +152,7 @@ namespace MpcLib.SecretSharing.eVSS
 			// return BigShamirSharing.Recombine(fixedShares, PolyDegree, Prime);
 		}
 
-		protected static int MyRank(int myId, IList<int> ids)
+		public static int GetRank(int myId, IList<int> ids)
 		{
 			// find my rank in sorted list of ids
 			int rank = 1;

@@ -19,9 +19,9 @@ namespace MpcLib.Simulation
 	{
 		public int PartyCount { get { return parties.Count; } }
 
-		public ReadOnlyCollection<int> PartyIds { get { return parties.Select(e => e.Id).ToList().AsReadOnly(); } }
+		public IList<int> PartyIds { get { return parties.Select(e => e.Id).ToList(); } }
 
-		public ReadOnlyCollection<T> Parties { get { return parties.AsReadOnly(); } }
+		public IList<T> Parties { get { return parties; } }
 
 		protected List<T> parties;
 

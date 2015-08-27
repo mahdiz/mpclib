@@ -61,6 +61,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine />
+      <Profile>true</Profile>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying openssl\lib\libeay32.lib to "$(SolutionDir)$(Configuration)"...

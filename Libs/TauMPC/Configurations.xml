@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<Configurations>	
+<PlayersConfigurations>
+        <Player> <ip>127.0.0.1</ip> <port>3000</port> <index>0</index> <outputs>0</outputs> </Player>		
+        <Player> <ip>127.0.0.1</ip> <port>3001</port> <index>1</index> <outputs>0</outputs> </Player>		
+        <Player> <ip>127.0.0.1</ip> <port>3002</port> <index>2</index> <outputs>0</outputs> </Player>		
+</PlayersConfigurations>
+<SSL_Configurations>
+	<SSL_Key_File_Path>C:\123456.keystore</SSL_Key_File_Path>
+</SSL_Configurations>
+</Configurations>

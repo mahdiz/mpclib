@@ -59,7 +59,8 @@ namespace MpcLib.Common.StochasticUtils
 		public static BigInteger Next(BigInteger maxValue)
 		{
 			Debug.Assert(randGen != null, "StaticRandom is not initialized yet.");
-			Debug.Assert(maxValue > int.MaxValue);
+			//Debug.Assert(maxValue > int.MaxValue);
+
 			var r = StaticRandom.Next(0, int.MaxValue);
 			var k = (double)maxValue / int.MaxValue;
 			Debug.Assert((int)(k * r) < maxValue);

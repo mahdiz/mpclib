@@ -25,7 +25,7 @@ namespace MpcLib.DistributedSystem
 		protected void Send<T>(int toId, T msg) where T : Msg
 		{
 			msg.ProtocolId = Id;
-			Party.Send(Party.Id, toId, msg);
+			Party.Send(toId, msg);
 		}
 
 		protected void Send<T>(IList<int> toIds, IList<T> msgs) where T : Msg
@@ -35,11 +35,11 @@ namespace MpcLib.DistributedSystem
 			for (int i = 0; i < toIds.Count; i++)
 			{
 				msgs[i].ProtocolId = Id;
-				Party.Send(Party.Id, toIds[i], msgs[i]);
+				Party.Send(toIds[i], msgs[i]);
 			}
 		}
 
-		public T Receive<T>() where T : Msg
+		protected T Receive<T>() where T : Msg
 		{
 			return Party.Receive() as T;
 		}
@@ -76,7 +76,7 @@ namespace MpcLib.DistributedSystem
 			msg.ProtocolId = Id;
 
 			foreach (var toId in PartyIds)
-				Party.Send(Party.Id, toId, msg);
+				Party.Send(toId, msg);
 
 			var recvMsgs = new List<T>();
 			foreach (var toId in PartyIds)
@@ -113,7 +113,8 @@ namespace MpcLib.DistributedSystem
 		protected List<T> BroadcastReceive<T>(IEnumerable<int> toIds, T msg) where T : Msg
 		{
 			msg.ProtocolId = Id;
-			return Party.BroadcastRecv(Party.Id, toIds, msg).Cast<T>().ToList();
+			var recv = Party.BroadcastRecv(Party.Id, toIds, msg);
+			return recv.Cast<T>().ToList();
 		}
 
 		/// <summary>

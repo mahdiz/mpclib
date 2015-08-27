@@ -19,7 +19,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 		{
 		}
 
-		protected void Init(ReadOnlyCollection<int> processors, int numQuorums, int quorumSize, QuorumBuildingMethod method)
+		protected void Init(IList<int> processors, int numQuorums, int quorumSize, QuorumBuildingMethod method)
 		{
 			Debug.Assert(processors != null && processors.Count > 0, "Processors have not been created yet.");
 			switch (method)

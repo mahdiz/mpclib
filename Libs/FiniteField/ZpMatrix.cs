@@ -22,6 +22,18 @@ namespace MpcLib.Common.FiniteField
 
 		private int[][] data;
 
+		public Zp this[int i, int j]
+		{
+			get
+			{
+				return new Zp(Prime, data[i][j]);
+			}
+			set
+			{
+				data[i][j] = value.Value;
+			}
+		}
+
 		/// <summary>
 		/// Returns the inverse matrix of the invoking matrix.
 		/// </summary>
@@ -75,7 +87,24 @@ namespace MpcLib.Common.FiniteField
 			for (int i = 0; i < RowCount; i++)
 			{
 				for (int j = 0; j < ColCount; j++)
-					this.data[i][j] = data[i][j];
+					this.data[i][j] = Modulo(data[i][j]);
+			}
+		}
+
+		/// <summary>
+		/// Creates matrix based on 2d array of integers.
+		/// </summary>
+		public ZpMatrix(int[,] data, int prime)
+		{
+			RowCount = data.GetLength(0);
+			ColCount = data.GetLength(1);
+			Prime = prime;
+			this.data = initMatrix<int>(RowCount, ColCount);
+
+			for (int i = 0; i < RowCount; i++)
+			{
+				for (int j = 0; j < ColCount; j++)
+					this.data[i][j] = Modulo(data[i,j]);
 			}
 		}
 
@@ -149,8 +178,6 @@ namespace MpcLib.Common.FiniteField
 			return wantedRow;
 		}
 
-		/* Create and return the transpose of the invoking matrix */
-
 		public ZpMatrix Transpose
 		{
 			get
@@ -164,8 +191,6 @@ namespace MpcLib.Common.FiniteField
 				return A;
 			}
 		}
-
-		/* return C = A + B */
 
 		public ZpMatrix Plus(ZpMatrix B)
 		{
@@ -184,8 +209,6 @@ namespace MpcLib.Common.FiniteField
 			}
 			return C;
 		}
-
-		/* return C = A * B     : matrix    multiplication*/
 
 		public ZpMatrix Times(ZpMatrix B)
 		{
@@ -207,8 +230,6 @@ namespace MpcLib.Common.FiniteField
 			return C;
 		}
 
-		/* does A = B ? */
-
 		public bool Eq(ZpMatrix B)
 		{
 			var A = this;
@@ -224,6 +245,16 @@ namespace MpcLib.Common.FiniteField
 				}
 			}
 			return true;
+		}
+
+		public static ZpMatrix operator +(ZpMatrix m1, ZpMatrix m2)
+		{
+			return (new ZpMatrix(m1)).Plus(m2);
+		}
+
+		public static ZpMatrix operator *(ZpMatrix m1, ZpMatrix m2)
+		{
+			return (new ZpMatrix(m1)).Times(m2);
 		}
 
 		public Zp[] Solve(Zp[] vector)

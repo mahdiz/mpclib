@@ -13,6 +13,8 @@ using MpcLib.Simulation.Des;
 
 namespace MpcLib.Simulation
 {
+	public delegate void SentHandler(int fromId, int toId, int msgSize);
+
 	/// <summary>
 	/// Represents a synchronous network simulation controller.
 	/// </summary>
@@ -20,7 +22,7 @@ namespace MpcLib.Simulation
 	public class SyncSimController<T> : SimController<T> where T : SyncParty, new()
 	{
 		private Object myLock = new Object();
-		public event EventHandler MessageSent;
+		public event SentHandler MessageSent;
 
 		public SyncSimController(int seed)
 			: base(seed)
@@ -84,7 +86,7 @@ namespace MpcLib.Simulation
 			SyncNetSimulator<Msg>.Send(toId, msg);
 
 			if (MessageSent != null)
-				MessageSent(this, new EventArgs());
+				MessageSent(fromId, toId, msg.Size);
 		}
 
 		private Msg receive(int myId)
@@ -106,7 +108,7 @@ namespace MpcLib.Simulation
 				SyncNetSimulator<Msg>.Send(toId, msg);
 
 				if (MessageSent != null)
-					MessageSent(this, new EventArgs());
+					MessageSent(fromId, toId, msg.Size);
 			}
 
 			lock (myLock)
@@ -120,8 +122,9 @@ namespace MpcLib.Simulation
 				var nSquared = (int)Math.Pow(toIds.Count(), 2);
 				SentMessageCount += 4 * nSquared;
 
-				// CKS sends a total of 65536*n^2 bits so the total number of bits sent is n + 65536*n^2.
-				SentByteCount += 65536 * nSquared;
+				// For 80 bit security (i.e., RSA 1024), CKS sends 4*n^2 messages, where each message is of at most
+				// two RSA signatures (i.e., 2048 bit messages). So, the total number of bits sent is 8192*n^2 (or 1024*n^2 bytes).
+				SentByteCount += 1024 * nSquared;
 			}
 		}
 

@@ -48,9 +48,9 @@ namespace MpcLib.DistributedSystem
 		internal event BroadcastHandler BroadcastMsg;
 		internal event BroadcastRecvHandler BroadcastRecvMsg;
 
-		public void Send(int fromId, int toId, Msg msg)
+		public void Send(int toId, Msg msg)
 		{
-			SendMsg(fromId, toId, msg);
+			SendMsg(Id, toId, msg);
 		}
 
 		public Msg Receive()

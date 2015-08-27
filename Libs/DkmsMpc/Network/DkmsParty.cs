@@ -33,7 +33,7 @@ namespace MpcLib.MpcProtocols.Dkms
 		}
 
 		public virtual void Init(Circuit circuit, Zp input, int numSlots,
-			ReadOnlyCollection<int> players, int numQuorums, int quorumSize, QuorumBuildingMethod qbMethod)
+			IList<int> players, int numQuorums, int quorumSize, QuorumBuildingMethod qbMethod)
 		{
 			base.Init(players, numQuorums, quorumSize, qbMethod);
 			Protocol = new DkmsProtocol(circuit, this, players, input, numSlots, null);
