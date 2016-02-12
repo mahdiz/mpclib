@@ -23,7 +23,8 @@ namespace MpcLib.SecretSharing.eVSS
 	public class eVSS : SyncProtocol
 	{
 		public override ProtocolIds Id { get { return ProtocolIds.eVSS; } }
-		public readonly BigInteger Prime;
+
+        public readonly BigInteger Prime;
 		public readonly int PolyDegree;
 		protected PolyCommit PolyCommit;
 		private static Object myLock = new Object();

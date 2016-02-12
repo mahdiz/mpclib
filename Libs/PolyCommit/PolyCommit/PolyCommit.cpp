@@ -79,7 +79,7 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 
 		static ZZ toZZ(BigInteger bi)
 		{
-			array<unsigned char> ^arr = bi.ToByteArray();
+			cli::array<unsigned char> ^arr = bi.ToByteArray();
 			pin_ptr<unsigned char> ptr = &arr[0];
 			return ZZFromBytes(ptr, arr->Length);
 		}
@@ -92,7 +92,7 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 			return conv<ZZ_p>(toZZ(bi->Value));
 		}
 
-		static void toZZpVec(array<BigZp^> ^zpList, vec_ZZ_p &zzpVec)
+		static void toZZpVec(cli::array<BigZp^> ^zpList, vec_ZZ_p &zzpVec)
 		{
 			zzpVec.SetLength(zpList->Length);
 			for (int i = 0; i < zpList->Length; i++)
@@ -123,8 +123,8 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 		/// <summary>
 		/// Commits to a polynomial and returns the proof and witnesses.
 		/// </summary>
-		MG ^Commit(array<BigZp^> ^coeffs, array<BigZp^> ^iz,
-			array<MG^> ^%witnesses, array<Byte> ^%proof, bool calcProof)
+		MG ^Commit(cli::array<BigZp^> ^coeffs, cli::array<BigZp^> ^iz,
+			cli::array<MG^> ^%witnesses, cli::array<Byte> ^%proof, bool calcProof)
 		{
 			Debug::Assert(params != nullptr, "PolyCommit not initialized yet.");
 			vec_ZZ_p zzpVec;
@@ -137,7 +137,7 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 			G1 C = pc.get_C_fast();		// computes the commitment value
 
 			// compute witnesses
-			witnesses = gcnew array<MG^>(iz->Length);
+			witnesses = gcnew cli::array<MG^>(iz->Length);
 			for (int i = 0; i < iz->Length; i++)
 				witnesses[i] = gcnew MG(pc.createWitness(toZZp(iz[i])));
 
@@ -149,13 +149,13 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 				prover.FS_proof(ss);
 
 				string s = ss.str();
-				proof = gcnew array<Byte>(s.size());
+				proof = gcnew cli::array<Byte>(s.size());
 				Marshal::Copy(IntPtr(&s[0]), proof, 0, s.size());
 			}
 			return gcnew MG(C);
 		}
 
-		bool VerifyProof(MG ^commitment, array<Byte> ^proof)
+		bool VerifyProof(MG ^commitment, cli::array<Byte> ^proof)
 		{
 			Debug::Assert(params != nullptr, "PolyCommit not initialized yet.");
 			stringstream ss;
@@ -172,7 +172,7 @@ namespace MpcLib { namespace Commitments { namespace PolyCommitment
 			return PolyCommitter::verifyEval(params->p, *commitment->g, toZZp(i), toZZp(fi), *wi->g);
 		}
 
-		static BigZp ^Eval(array<BigZp^> ^coeffs, BigZp ^i)
+		static BigZp ^Eval(cli::array<BigZp^> ^coeffs, BigZp ^i)
 		{
 			vec_ZZ_p zzpVec;
 
