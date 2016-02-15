@@ -178,6 +178,18 @@ namespace MpcLib.Common.FiniteField
 			return wantedRow;
 		}
 
+        public IList<Zp> GetMatrixColumn(int colNumber)
+        {
+            if (ColCount <= colNumber)
+                throw new ArgumentException("Illegal matrix column number.");
+
+            var wantedCol = new List<Zp>();
+            for (int i = 0; i < RowCount; i++)
+                wantedCol.Add(new Zp(Prime, data[i][colNumber]));
+
+            return wantedCol;
+        }
+
 		public ZpMatrix Transpose
 		{
 			get
@@ -221,11 +233,11 @@ namespace MpcLib.Common.FiniteField
 
 			// create initialized matrix (zero value to all elements)
 			var C = new ZpMatrix(A.RowCount, B.ColCount, A.Prime);
-			for (int i = 0; i < C.RowCount; i++)
-			{
-				for (int j = 0; j < C.ColCount; j++)
-					for (int k = 0; k < A.ColCount; k++)
-						C.data[i][j] = Modulo(C.data[i][j] + A.data[i][k] * B.data[k][j]);
+            for (int i = 0; i < C.RowCount; i++)
+            {
+                for (int j = 0; j < C.ColCount; j++)
+                    for (int k = 0; k < A.ColCount; k++)
+                        C.data[i][j] = Modulo(C.data[i][j] + A.data[i][k] * B.data[k][j]);
 			}
 			return C;
 		}
