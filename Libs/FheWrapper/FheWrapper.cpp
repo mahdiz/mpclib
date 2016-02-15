@@ -90,7 +90,7 @@ long long FheLib::FheWrapper::Decrypt(FheLib::CtxtWrapper ^cipher)
 	return SolveCrt(plaintext, mods);
 }
 
-vector<long> FheLib::FheWrapper::FindMods(long long x, array<int> ^ms, int size)
+vector<long> FheLib::FheWrapper::FindMods(long long x, cli::array<int> ^ms, int size)
 {
 	vector<long> v(size);
 	for (int i = 0; i < ms->Length; i++)
@@ -98,7 +98,7 @@ vector<long> FheLib::FheWrapper::FindMods(long long x, array<int> ^ms, int size)
 	return v;
 }
 
-long long FheLib::FheWrapper::SolveCrt(vector<long> v, array<int> ^ms)
+long long FheLib::FheWrapper::SolveCrt(vector<long> v, cli::array<int> ^ms)
 {
 	long long x = 0, m = 1;
 	for (int i = 0; i < ms->Length; i++)
