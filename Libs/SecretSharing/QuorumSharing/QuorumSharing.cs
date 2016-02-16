@@ -9,7 +9,6 @@ namespace MpcLib.SecretSharing
 {
     public class QuorumSharing
     {
-
         /// <summary>
         /// Creates new shares that should be distributed to each of the parties in the new quorum
         /// </summary>
@@ -18,7 +17,6 @@ namespace MpcLib.SecretSharing
             IList<Zp> coeffs;
             return ShamirSharing.Share(secret, newQuorumSize, polyDeg, out coeffs);
         }
-
         
         public static IList<Zp> CreateReshares(Zp secret, int newQuorumSize, int polyDeg, out IList<Zp> coeffs)
         {
@@ -32,20 +30,15 @@ namespace MpcLib.SecretSharing
         {
             int oldQuorumSize = reshares.Count;
             if (oldQuorumSize != newQuorumSize)
-            {
                 throw new System.ArgumentException("Do not support case where quorums are of different sizes");
-            }
 
             // Compute the first row of the inverse Vandermonde matrix
             var vandermonde = ZpMatrix.GetVandermondeMatrix(oldQuorumSize, newQuorumSize, prime);
             var vandermondeInv = vandermonde.Inverse.GetMatrixColumn(0);
             
             var S = new Zp(prime);
-
             for (var i = 0; i < newQuorumSize; i++)
-            {
                 S += vandermondeInv[i] * reshares[i];
-            }
 
             return S;
         }

@@ -414,9 +414,10 @@ namespace MpcLib.Common.FiniteField
 				if (j < RowCount & LUArr[j][j] != 0)
 				{
 					for (int i = j + 1; i < RowCount; i++)
-						LUArr[i][j] = Modulo(LUArr[i][j] * fieldInv[Modulo(LUArr[j][j])]);
-				}
-			}
+                        //LUArr[i][j] = Modulo(LUArr[i][j] * fieldInv[Modulo(LUArr[j][j])]);
+                        LUArr[i][j] = Modulo(LUArr[i][j] * NumTheoryUtils.MultiplicativeInverse(Modulo(LUArr[j][j]), Prime));
+                }
+            }
 			return LU;
 		}
 
