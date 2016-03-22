@@ -45,51 +45,51 @@ namespace MpcLib.Apps
 			Console.ReadLine();
 		}
 
-		private static void TestQuorumMpc(BigInteger n, BigInteger maxInput, BigInteger prime, int seed)
-		{
-			var N = (int)BigInteger.Log(n, 2);
-			//var numParties = 2 * N;		// two quorums only
-			var numParties = N;		// one quorums only
+        private static void TestQuorumMpc(BigInteger n, BigInteger maxInput, BigInteger prime, int seed)
+        {
+            var N = (int)BigInteger.Log(n, 2);
+            //var numParties = 2 * N;		// two quorums only
+            var numParties = N;     // one quorums only
 
-			var mpcSim = new SyncSimController<SyncParty<CryptoMpc>>(seed);
-			var parties = mpcSim.AddNewParties(numParties);
+            var mpcSim = new SyncSimController<SyncParty<CryptoMpc>>(seed);
+            var parties = mpcSim.AddNewParties(numParties);
 
-			foreach (var party in parties)
-			{
-				var randInput = new BigZp(prime, StaticRandom.Next(maxInput));
-				party.Protocol = new CryptoMpc(party, mpcSim.PartyIds, randInput, seed);
-			}
-			//Console.WriteLine(numParties + " parties initialized. Running simulation...\n");
+            foreach (var party in parties)
+            {
+                var randInput = new BigZp(prime, StaticRandom.Next(maxInput));
+                party.Protocol = new CryptoMpc(party, mpcSim.PartyIds, randInput, seed);
+            }
+            //Console.WriteLine(numParties + " parties initialized. Running simulation...\n");
 
-			// run the simulator
-			var elapsedTime = Timex.Run(() => mpcSim.Run());
+            // run the simulator
+            var elapsedTime = Timex.Run(() => mpcSim.Run());
 
-			//var realProduct = new BigZp(prime, 1);
-			//var d1 = N;
-			//var d2 = N + 1;
+            //var realProduct = new BigZp(prime, 1);
+            //var d1 = N;
+            //var d2 = N + 1;
 
-			//Console.WriteLine("Input parties are " + d1 + " and " + d2 + "\n");
-			//realProduct = mpcSim.Parties[d1].Protocol.Input *
-			//	mpcSim.Parties[d2].Protocol.Input * mpcSim.Parties[d2].Protocol.Input + 
-			//	mpcSim.Parties[d1].Protocol.Input;
+            //Console.WriteLine("Input parties are " + d1 + " and " + d2 + "\n");
+            //realProduct = mpcSim.Parties[d1].Protocol.Input *
+            //	mpcSim.Parties[d2].Protocol.Input * mpcSim.Parties[d2].Protocol.Input + 
+            //	mpcSim.Parties[d1].Protocol.Input;
 
-			//Console.WriteLine("");
-			//for (int i = 0; i < N; i++)
-			//	Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res\t = " + mpcSim.Parties[i].Protocol.Result);
+            //Console.WriteLine("");
+            //for (int i = 0; i < N; i++)
+            //	Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res\t = " + mpcSim.Parties[i].Protocol.Result);
 
-			//Console.WriteLine("\nResult\t = " + realProduct + "\n");
+            //Console.WriteLine("\nResult\t = " + realProduct + "\n");
 
-			//Console.WriteLine("# parties    = " + n);
-			//Console.WriteLine("Quorum size  = " + N);
-			//Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
-			//Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
-			//Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
-			//Console.WriteLine("Seed         = " + seed + "\n");
-			//Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-			Console.WriteLine(n + " \t " + mpcSim.SentMessageCount + " \t " + (mpcSim.SentByteCount * 8));
-		}
+            //Console.WriteLine("# parties    = " + n);
+            //Console.WriteLine("Quorum size  = " + N);
+            //Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
+            //Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
+            //Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
+            //Console.WriteLine("Seed         = " + seed + "\n");
+            //Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
+            Console.WriteLine(n + " \t " + mpcSim.SentMessageCount + " \t " + (mpcSim.SentByteCount * 8));
+        }
 
-		private static void TestCryptoMpc_eVSS(int n, BigInteger maxInput, BigInteger prime, int seed)
+        private static void TestCryptoMpc_eVSS(int n, BigInteger maxInput, BigInteger prime, int seed)
 		{
 			// Create an MPC network, add parties, and init them with random inputs
 			var mpcSim = new SyncSimController<SyncParty<CryptoMpc>>(seed);
@@ -121,7 +121,6 @@ namespace MpcLib.Apps
 				Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res\t = " + mpcSim.Parties[i].Protocol.Result);
 
 			Console.WriteLine("\nResult\t = " + realProduct + "\n");
-
 			Console.WriteLine("# parties    = " + n);
 			Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
 			Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
@@ -181,6 +180,7 @@ namespace MpcLib.Apps
 				Console.ForegroundColor = prevColor;
 			}
 
+            // write the log to the console
 			Console.WriteLine("# parties    = " + n);
 			Console.WriteLine("# msgs sent  = " + mpcNet.SentMessageCount);
 			Console.WriteLine("# bits sent  = " + (mpcNet.SentByteCount * 8).ToString("0.##E+00"));
