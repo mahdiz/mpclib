@@ -1,5 +1,4 @@
 ﻿using MpcLib.Simulation;
-using MpcLib.Simulation.Des;
 
 namespace MpcLib.DistributedSystem.QuorumSystem
 {

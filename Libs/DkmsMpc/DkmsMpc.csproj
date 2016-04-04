@@ -112,10 +112,6 @@
       <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
       <Name>FiniteField</Name>
     </ProjectReference>
-    <ProjectReference Include="..\QuorumSystem\QuorumSystem.csproj">
-      <Project>{53392685-E75C-478B-AC7C-A22C704B19E6}</Project>
-      <Name>QuorumSystem</Name>
-    </ProjectReference>
     <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
       <Project>{2279AD83-89CC-439F-A198-4E6C1C73F668}</Project>
       <Name>SecretSharing</Name>
@@ -123,10 +119,6 @@
     <ProjectReference Include="..\Mpc\Mpc.csproj">
       <Project>{3010BD08-601E-4123-86A5-93ACE9E4BF64}</Project>
       <Name>Mpc</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Simulation\Simulation.csproj">
-      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>Simulation</Name>
     </ProjectReference>
     <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
       <Project>{4966DB10-9B4A-426F-8D36-D56D47CBE0AC}</Project>

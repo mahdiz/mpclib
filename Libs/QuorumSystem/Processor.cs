@@ -54,7 +54,7 @@ namespace MpcLib.DistributedSystem.QuorumSystem
 		/// </param>
 		protected abstract void OnQbFinish(Dictionary<int, int[]> quorumsMap);
 
-		public override void Run()
+		public override void Start()
 		{
 			qbuilder.Run();
 		}

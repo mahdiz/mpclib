@@ -72,16 +72,18 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncSimController.cs" />
     <Compile Include="ConcurrentEventQueue.cs" />
     <Compile Include="ConcurrentEventSimulator.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SequentialEventSimulator.cs" />
     <Compile Include="EventSimulator.cs" />
     <Compile Include="EventQueue.cs" />
     <Compile Include="SyncNetSimulator.cs" />
+    <Compile Include="SyncSimController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

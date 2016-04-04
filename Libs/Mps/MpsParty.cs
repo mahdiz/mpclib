@@ -1,0 +1,160 @@
+﻿using MpcLib.Commitments.PolyCommitment;
+using MpcLib.Common.FiniteField;
+using MpcLib.DistributedSystem;
+using MpcLib.SecretSharing;
+using MpcLib.SecretSharing.eVSS;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MpcLib.MultiPartyShuffling
+{
+    public class MpsParty : Party
+    {
+        public readonly BigInteger Prime;
+        public readonly int NumParties;
+        public readonly int PolyDegree;
+        public readonly BigZp Input;
+        public BigZp Output { get; private set; }
+        protected PolyCommit PolyCommit;
+
+        private int numSharesRecv;
+        private bool scheduledReconst;
+        private Dictionary<int, CommitMsg> commitsRecv = new Dictionary<int, CommitMsg>();
+        private Dictionary<int, ShareWitnessMsg<BigZp>> sharesRecv = new Dictionary<int, ShareWitnessMsg<BigZp>>();
+        private Dictionary<int, BigZp> reconstRecv = new Dictionary<int, BigZp>();
+
+        public MpsParty(int numParties, BigZp input, BigInteger prime, int seed)
+        {
+            Prime = prime;
+            NumParties = numParties;
+            Input = input;
+            PolyDegree = (int)Math.Ceiling(NumParties / 3.0);
+            PolyCommit = new PolyCommit();
+            PolyCommit.Setup(PolyDegree, seed);
+        }
+
+        public override void Start()
+        {
+            // secret-share my input
+            Share(Input);
+        }
+
+        public override void Receive(int fromId, Msg msg)
+        {
+            switch (msg.Type)
+            {
+                case MsgType.Commit:
+                    // collect commitments from parties
+                    commitsRecv[fromId] = msg as CommitMsg;
+                    break;
+
+                case MsgType.Share:
+                    // collect shares from parties
+                    sharesRecv[fromId] = msg as ShareWitnessMsg<BigZp>;
+
+                    if (commitsRecv.ContainsKey(fromId))
+                    {
+                        // verify the share
+                        if (!PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, Id + 1), 
+                            sharesRecv[fromId].Share, sharesRecv[fromId].Witness))
+                        {
+                            // broadcast an accusation against the i-th party.
+                            throw new NotImplementedException();
+                        }
+
+                        // add the share to the shares received from all parties
+                        if (Output == null)
+                            Output = new BigZp(Prime, 0);
+
+                        Output += sharesRecv[fromId].Share;
+
+                        if (++numSharesRecv >= Math.Ceiling(2.0 * NumParties / 3.0) && !scheduledReconst)
+                        {
+                            // send a loopback message to notify the end of this round. This is done to
+                            // ensure we receive the inputs of "all" honest parties in this round and 
+                            // bad parties cannot prevent us from receiving honest input by sending bad inputs sooner.
+                            Send(Id, new Msg(MsgType.NextRound));
+                            scheduledReconst = true;
+                            Console.WriteLine("Party " + Id + " scheduled reconst round.");
+                        }
+                    }
+                    else Console.WriteLine("No commitment received for party " + fromId);
+                    break;
+
+                case MsgType.NextRound:
+                    if (fromId != Id)
+                        Console.WriteLine("Invalid next round message received. Party " + fromId + " seems to be cheating!");
+
+                    // broadcast output share for reconstruction
+                    Broadcast(new ShareMsg<BigZp>(Output, MsgType.Reconst));
+                    break;
+
+                case MsgType.Reconst:
+                    // collect added shares from parties
+                    reconstRecv[fromId] = (msg as ShareMsg<BigZp>).Share;
+
+                    //if (reconstRecv.Count >= Math.Ceiling(2.0 * NumParties / 3.0))
+                    if (reconstRecv.Count == NumParties)
+                    {
+                        // reconstruct the output
+                        var orderedShares = reconstRecv.OrderBy(p => p.Key).Select(p => p.Value).ToList();
+                        Output = BigShamirSharing.Recombine(orderedShares, PolyDegree - 1, Prime);
+
+                        // Error-correction procedure
+                        //var xValues = new List<BigZp>();
+                        //for (int i = 1; i <= reconstRecv.Count; i++)
+                        //    xValues.Add(new BigZp(Prime, i));
+
+                        //var fixedShares = WelchBerlekampDecoder.Decode(xValues, reconstRecv, PolyDegree, PolyDegree, Prime);
+
+                        //// interpolate again
+                        //return BigShamirSharing.Recombine(fixedShares, PolyDegree, Prime);
+                    }
+                    break;
+            }
+        }
+
+        public void Share(BigZp secret)
+        {
+            Debug.Assert(PolyCommit != null, "PolyCommit is not initialized yet.");
+            Debug.Assert(Prime == secret.Prime);
+            IList<BigZp> coeffs = null;
+
+            // generate a random polynomial
+            var shares = BigShamirSharing.Share(secret, NumParties, PolyDegree - 1, out coeffs);
+
+            // generate evaluation points x = {1,...,n}
+            var iz = new BigZp[NumParties];
+            for (int i = 0; i < NumParties; i++)
+                iz[i] = new BigZp(Prime, new BigInteger(i + 1));
+
+            // calculate the commitment and witnesses
+            byte[] proof = null;
+            MG[] witnesses = null;
+
+            MG mg = null;
+            mg = PolyCommit.Commit(coeffs.ToArray(), iz, ref witnesses, ref proof, false);
+
+            // broadcast the commitment
+            var commitMsg = new CommitMsg(mg);
+            Broadcast(commitMsg);
+
+            // create share messages
+            var shareMsgs = new ShareWitnessMsg<BigZp>[NumParties];
+            for (int i = 0; i < NumParties; i++)
+                shareMsgs[i] = new ShareWitnessMsg<BigZp>(shares[i], witnesses[i]);
+
+            Debug.Assert(PolyCommit.VerifyEval(commitMsg.Commitment, new BigZp(Prime, 2), shareMsgs[1].Share, shareMsgs[1].Witness));
+            Debug.Assert(BigShamirSharing.Recombine(shares, PolyDegree - 1, Prime) == secret);
+
+            // send the i-th share message to the i-th party
+            // the delay is to ensure my shares are distributed after my commits
+            Send(shareMsgs, 1);
+        }
+    }
+}

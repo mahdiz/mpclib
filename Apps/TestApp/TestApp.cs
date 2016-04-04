@@ -6,247 +6,93 @@ using MpcLib.Common.FiniteField;
 using MpcLib.Common.FiniteField.Circuits;
 using MpcLib.Common.StochasticUtils;
 using MpcLib.DistributedSystem;
-using MpcLib.DistributedSystem.Anonymity.Maskz;
-using MpcLib.DistributedSystem.QuorumSystem;
 using MpcLib.MpcProtocols;
 using MpcLib.MpcProtocols.Crypto;
-using MpcLib.MpcProtocols.Dkms;
-using MpcLib.Simulation;
-using MpcLib.Simulation.Des;
+using MpcLib.MultiPartyShuffling;
+using System.Collections.Generic;
+using MpcLib.SecretSharing;
 
 namespace MpcLib.Apps
 {
-	public enum FunctionTypes
-	{
-		Sum,
-		Mul,
-		Equal
-	}
+    public enum FunctionTypes
+    {
+        Sum,
+        Mul,
+        Equal
+    }
 
-	public class TestApp
-	{
-		const int seed = 1234;
-		const int min_logn = 10;		// min log number of parties
-		const int max_logn = 30;		// max log number of parties
-		
-		static readonly BigInteger encPrime = NumTheoryUtils.DHPrime1536;
-		static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
+    public class TestApp
+    {
+        const int seed = 1234;
+        const int min_logn = 10;        // min log number of parties
+        const int max_logn = 30;        // max log number of parties
 
-		public static void Main(string[] args)
-		{
-			Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);		// must be a prime
-			//Debug.Assert(BigInteger.ModPow(2, prime, encPrime) == 1);			// check 2^prime mod p = 1
+        static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
 
-			for (var i = min_logn; i <= max_logn; i++)
-			{
-				var n = BigInteger.Pow(2, i);
-				TestQuorumMpc(n, prime, prime, seed);
-			}
-			Console.ReadLine();
-		}
-
-        private static void TestQuorumMpc(BigInteger n, BigInteger maxInput, BigInteger prime, int seed)
+        public static void Main(string[] args)
         {
-            var N = (int)BigInteger.Log(n, 2);
-            //var numParties = 2 * N;		// two quorums only
-            var numParties = N;     // one quorums only
+            Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
+            int n = 4;      // number of parties
 
-            var mpcSim = new SyncSimController<SyncParty<CryptoMpc>>(seed);
-            var parties = mpcSim.AddNewParties(numParties);
+            // Create an MPC network, add parties, and init them with random inputs
+            NetSimulator.Init(seed);
 
-            foreach (var party in parties)
+            // create honest users
+            var parties = new List<MpsParty>(n);
+            for (int i = 0; i < n; i++)
             {
-                var randInput = new BigZp(prime, StaticRandom.Next(maxInput));
-                party.Protocol = new CryptoMpc(party, mpcSim.PartyIds, randInput, seed);
+                var randInput = new BigZp(prime, StaticRandom.Next(1000000));
+                parties.Add(new MpsParty(n, randInput, prime, seed));
             }
-            //Console.WriteLine(numParties + " parties initialized. Running simulation...\n");
+            Console.WriteLine(n + " parties initialized. Running simulation...\n");
 
             // run the simulator
-            var elapsedTime = Timex.Run(() => mpcSim.Run());
+            var elapsedTime = Timex.Run(() => NetSimulator.Run());
 
-            //var realProduct = new BigZp(prime, 1);
-            //var d1 = N;
-            //var d2 = N + 1;
+            // print each party's input/outputs
+            var validOuput = new BigZp(prime);
+            for (int i = 0; i < n; i++)
+            {
+                Console.WriteLine("Party " + parties[i].Id + ": Input = " + parties[i].Input + ", Output = " + parties[i].Output);
+                validOuput += parties[i].Input;
+            }
 
-            //Console.WriteLine("Input parties are " + d1 + " and " + d2 + "\n");
-            //realProduct = mpcSim.Parties[d1].Protocol.Input *
-            //	mpcSim.Parties[d2].Protocol.Input * mpcSim.Parties[d2].Protocol.Input + 
-            //	mpcSim.Parties[d1].Protocol.Input;
-
-            //Console.WriteLine("");
-            //for (int i = 0; i < N; i++)
-            //	Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res\t = " + mpcSim.Parties[i].Protocol.Result);
-
-            //Console.WriteLine("\nResult\t = " + realProduct + "\n");
-
-            //Console.WriteLine("# parties    = " + n);
-            //Console.WriteLine("Quorum size  = " + N);
-            //Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
-            //Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
-            //Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
-            //Console.WriteLine("Seed         = " + seed + "\n");
-            //Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-            Console.WriteLine(n + " \t " + mpcSim.SentMessageCount + " \t " + (mpcSim.SentByteCount * 8));
+            Console.WriteLine("\nValid Output = " + validOuput + "\n");
+            Console.WriteLine("# parties    = " + n);
+            Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount);
+            Console.WriteLine("# bits sent  = " + (NetSimulator.SentByteCount * 8).ToString("0.##E+00"));
+            Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
+            Console.WriteLine("Seed         = " + seed + "\n");
+            Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
         }
 
-        private static void TestCryptoMpc_eVSS(int n, BigInteger maxInput, BigInteger prime, int seed)
-		{
-			// Create an MPC network, add parties, and init them with random inputs
-			var mpcSim = new SyncSimController<SyncParty<CryptoMpc>>(seed);
-			var parties = mpcSim.AddNewParties(n);
+        public static void TestShamir(int n, BigInteger prime, int seed)
+        {
+            StaticRandom.Init(seed);
 
-			foreach (var party in parties)
-			{
-				var randInput = new BigZp(prime, StaticRandom.Next(maxInput));
-				party.Protocol = new CryptoMpc(party, mpcSim.PartyIds, randInput, seed);
-			}
-			Console.WriteLine(n + " parties initialized. Running simulation...\n");
+            var PolyDegree = (int)Math.Ceiling(n / 3.0);
+            var i1 = new BigZp(prime, StaticRandom.Next(1000000000));
+            var i2 = new BigZp(prime, StaticRandom.Next(1000000000));
+            var i3 = new BigZp(prime, StaticRandom.Next(1000000000));
+            var i4 = new BigZp(prime, StaticRandom.Next(1000000000));
+            var a = i1 + i2 + i3 + i4;
 
-			// run the MPC network
-			var elapsedTime = Timex.Run(() => mpcSim.Run());
+            var shares1 = BigShamirSharing.Share(i1, n, PolyDegree - 1);
+            var shares2 = BigShamirSharing.Share(i2, n, PolyDegree - 1);
+            var shares3 = BigShamirSharing.Share(i3, n, PolyDegree - 1);
+            var shares4 = BigShamirSharing.Share(i4, n, PolyDegree - 1);
 
-			var realProduct = new BigZp(prime, 1);
-			var d1 = (int)(2 * Math.Log(n, 2));
-			var d2 = d1 + 1;
+            var rs = new List<BigZp>(n);
+            for (int i = 0; i < n; i++)
+            {
+                rs.Add(new BigZp(prime));
+                rs[i] += shares1[i];
+                rs[i] += shares2[i];
+                rs[i] += shares3[i];
+                rs[i] += shares4[i];
+            }
 
-			realProduct *= mpcSim.Parties[d1].Protocol.Input;
-			realProduct *= mpcSim.Parties[d2].Protocol.Input;
-			realProduct *= mpcSim.Parties[d2].Protocol.Input;
-			realProduct *= mpcSim.Parties[d1].Protocol.Input;
-			realProduct *= mpcSim.Parties[d2].Protocol.Input;
-			realProduct += mpcSim.Parties[d1].Protocol.Input;
-
-			Console.WriteLine("");
-			for (int i = 0; i < Math.Log(n, 2); i++)
-				Console.WriteLine("P" + mpcSim.Parties[i].Id + ", Res\t = " + mpcSim.Parties[i].Protocol.Result);
-
-			Console.WriteLine("\nResult\t = " + realProduct + "\n");
-			Console.WriteLine("# parties    = " + n);
-			Console.WriteLine("# msgs sent  = " + mpcSim.SentMessageCount);
-			Console.WriteLine("# bits sent  = " + (mpcSim.SentByteCount * 8).ToString("0.##E+00"));
-			Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
-			Console.WriteLine("Seed         = " + seed + "\n");
-			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-		}
-
-		private static void TestCryptoMpc_DL(int n, int maxInput, BigInteger prime, BigInteger encPrime, int seed)
-		{
-			// Initialize a discrete-event simulator
-			//var des = new ConcurrentSimulator();
-			var des = new SequentialEventSimulator();
-
-			// Create an MPC network, add parties, and init them with random inputs
-			var mpcNet = new AsyncSimController<AsyncParty<DlCryptoMpc>>(des, seed);
-			var parser = new BigParser(FunctionType.Sum, n, prime);
-			parser.Parse();
-
-			var parties = mpcNet.AddNewParties(n);
-			var dlCrypto = new DiscreteLogCrypto(2, encPrime);
-
-			foreach (var party in parties)
-			{
-				var randInput = new BigZp(prime, StaticRandom.Next(0, maxInput));
-
-				party.Protocol = new DlCryptoMpc(party, parser.Circuit,
-					mpcNet.PartyIds, randInput, null, dlCrypto);
-			}
-			Console.WriteLine(n + " players initialized. Running simulation...");
-			
-			// run the MPC network
-			var startTime = DateTime.Now.TimeOfDay;
-			mpcNet.Run();
-			var endTime = DateTime.Now.TimeOfDay;
-			var elapsedTime = endTime - startTime;
-
-			var realSum = new BigZp(prime);
-			foreach (var player in mpcNet.Parties)
-				realSum += (player.Protocol as IMpcProtocol<BigZp>).Input;
-
-			var hasError = false;
-			foreach (var party in mpcNet.Parties)
-			{
-				var p = party.Protocol as IMpcProtocol<BigZp>;
-				//Console.WriteLine("P" + party.Id + " input = " + p.Input + "\t\tRes = " + p.Result);
-				if (p.Result != realSum)
-					hasError = true;
-			}
-
-			Console.WriteLine("\nSum result   = " + realSum);
-			if (hasError)
-			{
-				var prevColor = Console.ForegroundColor;
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("ERROR: Some or all player outputs do not match the real sum!\n");
-				Console.ForegroundColor = prevColor;
-			}
-
-            // write the log to the console
-			Console.WriteLine("# parties    = " + n);
-			Console.WriteLine("# msgs sent  = " + mpcNet.SentMessageCount);
-			Console.WriteLine("# bits sent  = " + (mpcNet.SentByteCount * 8).ToString("0.##E+00"));
-			Console.WriteLine("# rounds     = " + mpcNet.SimulationTime);
-			Console.WriteLine("DH key size  = " + NumTheoryUtils.GetBitLength(encPrime) + " bits");
-			Console.WriteLine("Seed         = " + seed + "\n");
-			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-		}
-
-		private static void TestAnonymousMpc(int n, int numSlots, int maxInput, int numQuorums, 
-			int quorumSize, bool byzantineCase, int prime, int seed)
-		{
-			// initialize a discrete-event simulator
-			var des = new SequentialEventSimulator();
-
-			var anonymMpc = new MaskzNetwork(des, seed);
-
-			var rand = new Random(seed);
-			var inputs = new Zp[n];
-			for (int i = 0; i < n; i++)
-				inputs[i] = new Zp(prime, rand.Next(0, maxInput));
-
-			anonymMpc.Init(n, numQuorums, numSlots, quorumSize,
-				QuorumBuildingMethod.RandomSampler,
-				byzantineCase ? AdversaryModel.Byzantine : AdversaryModel.HonestButCurious,
-				inputs, prime);
-
-			Console.WriteLine(n + " players initialized. Running simulation...");
-
-			// run the simulation
-			var startTime = DateTime.Now.TimeOfDay;
-			anonymMpc.Run();
-
-			var endTime = DateTime.Now.TimeOfDay;
-			var elapsedTime = endTime - startTime;
-
-			var realSum = new Zp(prime);
-			foreach (var player in anonymMpc.Parties)
-				realSum += player.Input;
-
-			var hasError = false;
-			foreach (var player in anonymMpc.Parties)
-			{
-				Console.WriteLine("Player " + player.Id + " input is " + player.Input + ". His result is " + player.Result);
-				if (player.Result != realSum)
-					hasError = true;
-			}
-
-			if (hasError)
-			{
-				var prevColor = Console.ForegroundColor;
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine("ERROR: Some or all player outputs do not match the real sum!\n");
-				Console.ForegroundColor = prevColor;
-			}
-
-			Console.WriteLine("\nReal sum: " + realSum);
-			Console.WriteLine("# of players: " + n);
-			Console.WriteLine("# of quorums: " + numQuorums);
-			Console.WriteLine("# of slots: " + numSlots);
-			Console.WriteLine("# of messages sent: " + anonymMpc.SentMessageCount);
-			Console.WriteLine("Quorum size: " + quorumSize);
-			Console.WriteLine("Started at " + startTime);
-			Console.WriteLine("Finished at " + endTime);
-			Console.WriteLine("Elapsed time: " + elapsedTime);
-			Console.Read();
-		}
-	}
+            var t = BigShamirSharing.Recombine(rs, PolyDegree - 1, prime);
+        }
+    }
 }

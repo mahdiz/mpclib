@@ -39,9 +39,9 @@ namespace MpcLib.MpcProtocols.Dkms
 			Protocol = new DkmsProtocol(circuit, this, players, input, numSlots, null);
 		}
 
-		public override void Run()
+		public override void Start()
 		{
-			base.Run();		// starts quorum building. we will continue OnQbFinish.
+			base.Start();		// starts quorum building. we will continue OnQbFinish.
 		}
 
 		protected override void OnQbFinish(Dictionary<int, int[]> quorumsMap)

@@ -92,10 +92,6 @@
       <Project>{FB8DD953-2188-41F9-9B81-B5FCB509F2BA}</Project>
       <Name>DistributedSystem</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Simulation\Simulation.csproj">
-      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>Simulation</Name>
-    </ProjectReference>
     <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
       <Project>{4966DB10-9B4A-426F-8D36-D56D47CBE0AC}</Project>
       <Name>StochasticUtils</Name>

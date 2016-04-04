@@ -91,13 +91,48 @@ namespace MpcLib.Simulation.Des
 		}
 	}
 
-	/// <summary>
-	/// Represents an event that its handler would be determined through reflection.
-	/// This type of events should be used with care. Excessive use may bring about
-	/// significantly bad performance.
-	/// </summary>
-	/// <typeparam name="T">The event argument type.</typeparam>
-	internal class ReflectionEvent<T> : BaseEvent
+    /// <summary>
+    /// Represents an event for scheduling.
+    /// </summary>
+    /// <typeparam name="T">The event argument type.</typeparam>
+    /// <typeparam name="S">The event argument type.</typeparam>
+    internal class Event<T,S> : BaseEvent
+    {
+        private readonly T arg1;
+        private readonly S arg2;
+        public readonly Handler<T,S> handler;
+        public override event OnFinish OnFinish;
+
+        public Event(int targetId, Handler<T,S> handler, long time, T arg1, S arg2)
+            : base(targetId, time)
+        {
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.handler = handler;
+        }
+
+        public override void Handle()
+        {
+            Debug.Assert(handler != null, "Event does not have any handler.");
+            handler(arg1, arg2);
+
+            if (OnFinish != null)
+                OnFinish();
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + ", " + arg1 + ", " + arg2;
+        }
+    }
+
+    /// <summary>
+    /// Represents an event that its handler would be determined through reflection.
+    /// This type of events should be used with care. Excessive use may bring about
+    /// significantly bad performance.
+    /// </summary>
+    /// <typeparam name="T">The event argument type.</typeparam>
+    internal class ReflectionEvent<T> : BaseEvent
 	{
 		private readonly T arg;
 		private readonly object obj;

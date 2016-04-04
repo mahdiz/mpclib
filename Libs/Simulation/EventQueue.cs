@@ -14,7 +14,7 @@ namespace MpcLib.Simulation.Des
 	}
 
 	/// <summary>
-	/// Implements an event queue for sequential discrete-event simulation.
+	/// Implements an event queue for discrete-event simulation.
 	/// </summary>
 	public class EventQueue : IEventQueue
 	{

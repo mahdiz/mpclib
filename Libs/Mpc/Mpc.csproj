@@ -83,13 +83,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IMpcProtocol.cs" />
     <Compile Include="Messages\BroadcastMessage.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Messages\ShareMessage.cs" />
     <Compile Include="Messages\MpcMsg.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="MpcProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BasicDataStructures\BasicDataStructures.csproj">

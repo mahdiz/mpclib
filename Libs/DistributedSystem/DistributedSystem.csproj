@@ -80,15 +80,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SyncProtocol.cs" />
-    <Compile Include="AsyncProtocol.cs" />
-    <Compile Include="SimController.cs" />
-    <Compile Include="SyncSimController.cs" />
-    <Compile Include="Protocol.cs" />
-    <Compile Include="RelayEntry.cs" />
-    <Compile Include="SessionCollector.cs" />
-    <Compile Include="StateKey.cs" />
-    <Compile Include="AsyncSimController.cs" />
+    <Compile Include="NetSimulator.cs" />
     <Compile Include="Party.cs" />
     <Compile Include="Msg.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

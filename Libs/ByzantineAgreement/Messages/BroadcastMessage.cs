@@ -12,11 +12,6 @@ namespace MpcLib.ByzantineAgreement
 			Stage = stage;
 			this.k = k;
 		}
-
-		public override int StageKey
-		{
-			get { return (int)Stage; }
-		}
 	}
 
 	public class BroadcastMessage<T> : BroadcastMessage

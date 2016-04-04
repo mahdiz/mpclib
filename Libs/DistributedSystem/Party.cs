@@ -1,152 +1,83 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using MpcLib.Simulation.Des;
 
 namespace MpcLib.DistributedSystem
 {
-	public delegate void SendHandler(int fromId, int toId, Msg msg);
-	public delegate Msg ReceiveHandler(int myId);
-	public delegate void BroadcastHandler(int fromId, IEnumerable<int> toIds, Msg msg);
+    public delegate void SendHandler(int fromId, int toId, Msg msg);
 
-	public delegate Msg SendRecvHandler(int fromId, int toId, Msg msg);
-	public delegate List<Msg> BroadcastRecvHandler(int fromId, IEnumerable<int> toIds, Msg msg);
+    /// <summary>
+    /// Represents an abstract network party.
+    /// </summary>
+    public abstract class Party
+    {
+        private static int idGen;
 
-	/// <summary>
-	/// Represents an abstract network party.
-	/// </summary>
-	public abstract class Party
-	{
-		/// <summary>
-		/// The unique identity of the party.
-		/// </summary>
-		public int Id { get; internal set; }
+        /// <summary>
+        /// The unique identity of the party.
+        /// </summary>
+        public int Id { get; internal set; }
 
-		/// <summary>
-		/// Runs the party protocol.
-		/// </summary>
-		public abstract void Run();
+        public Party()
+        {
+            Id = idGen++;
+            NetSimulator.RegisterParty(this);
+        }
 
-		public override int GetHashCode()
-		{
-			return Id;
-		}
+        public void Send(int toId, Msg msg, int delay = 0)
+        {
+            NetSimulator.Send(Id, toId, msg, delay);
+        }
 
-		public override string ToString()
-		{
-			return "Id=" + Id;
-		}
-	}
+        /// <summary>
+        /// Sends the i-th message to the i-th party.
+        /// </summary>
+        public void Send(IList<int> toIds, IList<Msg> msgs, int delay = 0)
+        {
+            Debug.Assert(toIds.Count != msgs.Count, "Not enough recipients/messages to send!");
 
-	/// <summary>
-	/// Represents an abstract party in a synchronous network.
-	/// </summary>
-	public abstract class SyncParty : Party
-	{
-		internal event SendHandler SendMsg;
-		internal event ReceiveHandler ReceiveMsg;
-		internal event SendRecvHandler SendRecvMsg;
-		internal event BroadcastHandler BroadcastMsg;
-		internal event BroadcastRecvHandler BroadcastRecvMsg;
+            for (int i = 0; i < toIds.Count; i++)
+                NetSimulator.Send(Id, toIds[i], msgs[i], delay);
+        }
 
-		public void Send(int toId, Msg msg)
-		{
-			SendMsg(Id, toId, msg);
-		}
+        /// <summary>
+        /// Sends the i-th message to the i-th party.
+        /// </summary>
+        public void Send(IList<Msg> msgs, int delay = 0)
+        {
+            Debug.Assert(NetSimulator.PartyCount == msgs.Count, "Not enough recipients/messages to send!");
+            NetSimulator.Send(Id, msgs, delay);
+        }
 
-		public Msg Receive()
-		{
-			return ReceiveMsg(Id);
-		}
+        public void Multicast(IEnumerable<int> toIds, Msg msg, int delay = 0)
+        {
+            NetSimulator.Multicast(Id, toIds, msg, delay);
+        }
 
-		public Msg SendReceive(int fromId, int toId, Msg msg)
-		{
-			return SendRecvMsg(fromId, toId, msg);
-		}
+        public void Broadcast(Msg msg, int delay = 0)
+        {
+            NetSimulator.Broadcast(Id, msg, delay);
+        }
 
-		public void Broadcast(int fromId, IEnumerable<int> toIds, Msg msg)
-		{
-			BroadcastMsg(fromId, toIds, msg);
-		}
+        /// <summary>
+        /// Initiates the party protocol.
+        /// </summary>
+        public abstract void Start();
 
-		public List<Msg> BroadcastRecv(int fromId, IEnumerable<int> toIds, Msg msg)
-		{
-			return BroadcastRecvMsg(fromId, toIds, msg);
-		}
-	}
+        public abstract void Receive(int fromId, Msg msg);
 
-	/// <summary>
-	/// Represents an abstract party in an asynchronous network.
-	/// </summary>
-	public abstract class AsyncParty : Party
-	{
-		internal event SendHandler SendMsg;
-		internal event BroadcastHandler BroadcastMsg;
+        public static void Reset()
+        {
+            idGen = 0;
+        }
 
-		internal abstract void Receive(Msg msg);
+        public override int GetHashCode()
+        {
+            return Id;
+        }
 
-		public void Send(int fromId, int toId, Msg msg)
-		{
-			SendMsg(fromId, toId, msg);
-		}
-
-		public void Broadcast(int fromId, IEnumerable<int> toIds, Msg msg)
-		{
-			BroadcastMsg(fromId, toIds, msg);
-		}
-	}
-
-	/// <summary>
-	/// Represents a generic party of a synchronous network.
-	/// </summary>
-	/// <typeparam name="T">Protocol type.</typeparam>
-	public class SyncParty<T> : SyncParty where T : SyncProtocol
-	{
-		/// <summary>
-		/// The protocol this party uses to communicate with other parties.
-		/// </summary>
-		public T Protocol;
-
-		public SyncParty()
-		{
-		}
-
-		public SyncParty(int seed)
-		{
-		}
-
-		public override void Run()
-		{
-			Protocol.Run();
-		}
-	}
-
-	/// <summary>
-	/// Represents a generic party of an asynchronous network.
-	/// </summary>
-	/// <typeparam name="T">Protocol type.</typeparam>
-	public class AsyncParty<T> : AsyncParty where T : AsyncProtocol
-	{
-		/// <summary>
-		/// The protocol this party uses to communicate with other parties.
-		/// </summary>
-		public T Protocol;
-
-		public AsyncParty()
-		{
-		}
-
-		public AsyncParty(int seed)
-		{
-		}
-
-		internal override void Receive(Msg msg)
-		{
-			Protocol.Receive(msg);
-		}
-
-		public override void Run()
-		{
-			Protocol.Run();
-		}
-	}
+        public override string ToString()
+        {
+            return "Id=" + Id;
+        }
+    }
 }

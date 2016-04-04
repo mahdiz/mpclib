@@ -15,11 +15,18 @@ namespace MpcLib.SecretSharing.eVSS
 		public readonly T Share;
 
 		public ShareMsg(T share)
+            : base(MsgType.Share)
 		{
 			Share = share;
 		}
 
-		public override string ToString()
+        public ShareMsg(T share, MsgType type)
+        {
+            Type = type;
+            Share = share;
+        }
+
+        public override string ToString()
 		{
 			return base.ToString() + ", Share=" + Share.ToString();
 		}
@@ -30,11 +37,6 @@ namespace MpcLib.SecretSharing.eVSS
 			{
 				return base.Size + Share.Size;
 			}
-		}
-
-		public override int StageKey
-		{
-			get { return (int)Stage.Share; }
 		}
 	}
 

@@ -14,12 +14,8 @@ namespace MpcLib.SecretSharing.eVSS
 
 		public CommitMsg(MG commitment)
 		{
+            Type = MsgType.Commit;
 			Commitment = commitment;
-		}
-
-		public override int StageKey
-		{
-			get { return (int)Stage.Commit; }
 		}
 	}
 }

@@ -7,8 +7,6 @@ namespace MpcLib.MpcProtocols
 	/// </summary>
 	public class BroadcastMessage<TData> : MpcMsg
 	{
-		public BroadcastStage Stage { get { return baMsg.Stage; } }
-
 		public TData Content { get { return baMsg.Content; } }
 
 		private readonly ByzantineAgreement.BroadcastMessage<TData> baMsg;

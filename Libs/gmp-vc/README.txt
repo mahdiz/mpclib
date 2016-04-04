@@ -1,1 +1,0 @@
-GMP Version 4.1.2

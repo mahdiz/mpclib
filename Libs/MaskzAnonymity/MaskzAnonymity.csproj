@@ -86,17 +86,9 @@
       <Project>{FB8DD953-2188-41F9-9B81-B5FCB509F2BA}</Project>
       <Name>DistributedSystem</Name>
     </ProjectReference>
-    <ProjectReference Include="..\QuorumSystem\QuorumSystem.csproj">
-      <Project>{53392685-E75C-478B-AC7C-A22C704B19E6}</Project>
-      <Name>QuorumSystem</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\DkmsMpc\DkmsMpc.csproj">
-      <Project>{7B978A53-598D-445D-AF78-5A762C3AD42C}</Project>
-      <Name>DkmsMpc</Name>
     </ProjectReference>
     <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
       <Project>{2279AD83-89CC-439F-A198-4E6C1C73F668}</Project>
@@ -109,10 +101,6 @@
     <ProjectReference Include="..\FiniteField\FiniteField.csproj">
       <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
       <Name>FiniteField</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Simulation\Simulation.csproj">
-      <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
-      <Name>Simulation</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

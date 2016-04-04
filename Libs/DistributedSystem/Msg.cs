@@ -1,44 +1,41 @@
 ﻿using MpcLib.Common;
 namespace MpcLib.DistributedSystem
 {
+    public enum MsgType
+    {
+        NotSet = 0,
+        Share,
+        Commit,
+        Reconst,
+
+        /// <summary>
+        /// A loopback message sent by each party in the synchronous setting to notify the end of the current round.
+        /// This is to ensure that the party receives the inputs of "all" honest parties sent in the current round.
+        /// </summary>
+        NextRound,
+    }
+
 	/// <summary>
-	/// Represents a message sent/received to/from network parties.
+	/// Represents an abstract message sent/received to/from network parties.
 	/// </summary>
-	public abstract class Msg : ISizable
+	public class Msg : ISizable
 	{
-		public virtual int SenderId { get; set; }
-		public abstract int StageKey { get; }
-		public ProtocolIds ProtocolId = ProtocolIds.NotSet;
-
-#if DEBUG && SIM
-		private static ulong idGen = 0;
-
-		/// <summary>
-		/// Simulation-wide unique ID.
-		/// </summary>
-		public readonly ulong Id;
-
-		public override string ToString()
-		{
-			return "From=" + SenderId + ", Protocol=" + ProtocolId;
-		}
-
-#endif
+        public MsgType Type;
 
 		public Msg()
 		{
-			SenderId = -1;
-
-#if DEBUG && SIM
-			Id = idGen++;
-#endif
 		}
 
-		public virtual int Size
+        public Msg(MsgType type)
+        {
+            Type = type;
+        }
+
+        public virtual int Size
 		{
 			get
 			{
-				return sizeof(int);
+				return sizeof(MsgType);
 			}
 		}
 	}

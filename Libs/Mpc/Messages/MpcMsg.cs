@@ -17,11 +17,6 @@ namespace MpcLib.MpcProtocols
 			return base.ToString() + ", Stage=" + Stage;
 		}
 
-		public override int StageKey
-		{
-			get { return (int)Stage; }
-		}
-
 		public override int Size
 		{
 			get
