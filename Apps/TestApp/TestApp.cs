@@ -64,6 +64,7 @@ namespace MpcLib.Apps
             Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
             Console.WriteLine("Seed         = " + seed + "\n");
             Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
+            Console.ReadKey();
         }
 
         public static void TestShamir(int n, BigInteger prime, int seed)
