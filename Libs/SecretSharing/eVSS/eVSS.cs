@@ -137,22 +137,23 @@ namespace MpcLib.SecretSharing.eVSS
 			var recvShares = SendReceive(new ShareMsg<BigZp>(ui))
 				.OrderBy(s => s.SenderId).Select(s => s.Share).ToList();
 
-                        // For the honest but curious case
-			// return BigShamirSharing.Recombine(recvShares, PolyDegree - 1, Prime);
+            // For the honest but curious case
+			return BigShamirSharing.Recombine(recvShares, PolyDegree - 1, Prime);
 			// *WARNING*: Not for the malicious case. If any point is not on
 			// the interpolated polynomial, then must use Welch-Berlekamp
 			// error recovery to fix errors. This is how it should be done:
 			//
 
-                        // for the malicious case
+            // for the malicious case
+            /*            
 			var xValues = new List<BigZp>();
 			for (int i = 1; i <= recvShares.Count; i++)
 				xValues.Add(new BigZp(Prime, i));
 			
 			var fixedShares = WelchBerlekampDecoder.Decode(xValues, recvShares, PolyDegree, PolyDegree, Prime);
-			
+			*/
 			// interpolate again
-			return BigShamirSharing.Recombine(fixedShares, PolyDegree, Prime);
+			//return BigShamirSharing.Recombine(fixedShares, PolyDegree, Prime);
 		}
 
 		public static int GetRank(int myId, IList<int> ids)

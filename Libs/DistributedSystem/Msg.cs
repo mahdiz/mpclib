@@ -1,4 +1,5 @@
 ﻿using MpcLib.Common;
+using System.Collections.Generic;
 namespace MpcLib.DistributedSystem
 {
 	/// <summary>
@@ -41,5 +42,17 @@ namespace MpcLib.DistributedSystem
 				return sizeof(int);
 			}
 		}
-	}
+
+
+        
+    }
+
+    public class SenderComparer : IComparer<Msg>
+    {
+        int IComparer<Msg>.Compare(Msg x, Msg y)
+        {
+            return x.SenderId - y.SenderId;
+        }
+
+    }
 }

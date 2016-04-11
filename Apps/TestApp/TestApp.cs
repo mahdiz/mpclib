@@ -11,8 +11,12 @@ using MpcLib.DistributedSystem.QuorumSystem;
 using MpcLib.MpcProtocols;
 using MpcLib.MpcProtocols.Crypto;
 using MpcLib.MpcProtocols.Dkms;
+using MpcLib.RandomGeneration.AllToAllGeneration;
+using MpcLib.SecretSharing;
+using MpcLib.SecretSharing.QuorumShareRenewal;
 using MpcLib.Simulation;
 using MpcLib.Simulation.Des;
+using System.Collections.Generic;
 
 namespace MpcLib.Apps
 {
@@ -37,13 +41,83 @@ namespace MpcLib.Apps
 			Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);		// must be a prime
 			//Debug.Assert(BigInteger.ModPow(2, prime, encPrime) == 1);			// check 2^prime mod p = 1
 
+            /*
 			for (var i = min_logn; i <= max_logn; i++)
 			{
 				var n = BigInteger.Pow(2, i);
 				TestQuorumMpc(n, prime, prime, seed);
-			}
+			}*/
+
+            testThings2();
+
 			Console.ReadLine();
 		}
+
+
+        private static void testThings()
+        {
+            var mpcSim = new SyncSimController<SyncParty<AllToAllGeneration>>(0);
+            var parties = mpcSim.AddNewParties(5);
+
+            foreach (var party in parties)
+            {
+                party.Protocol = new AllToAllGeneration(party, mpcSim.PartyIds, prime);
+            }
+
+            mpcSim.Run();
+        }
+
+        private static void testThings2()
+        {
+            int prime = 29;
+            int fromParties = 5;
+            int toParties = 15;
+            int fromDeg = fromParties / 3;
+            int toDeg = toParties / 3;
+
+            var mpcSim = new SyncSimController<SyncParty<QuorumShareRenewal>>(0);
+            var parties = mpcSim.AddNewParties(fromParties + toParties);
+
+            IList<int> quorumFrom = new List<int>(), quorumTo = new List<int>();
+
+            for (int i = 0; i < fromParties; i++)
+            {
+                quorumFrom.Add(i);
+            }
+
+            for (int i = fromParties; i < fromParties + toParties; i++)
+            {
+                quorumTo.Add(i);
+            }
+
+            var shares = ShamirSharing.Share(new Zp(prime, 26), fromParties, fromDeg);
+            
+            for (int i = 0; i < parties.Count; i++)
+            {
+                var party = parties[i];
+                if (i < shares.Count)
+                {
+                    party.Protocol = new QuorumShareRenewal(party, mpcSim.PartyIds, quorumFrom, quorumTo, prime, shares[i]);
+                }
+                else
+                {
+                    party.Protocol = new QuorumShareRenewal(party, mpcSim.PartyIds, quorumFrom, quorumTo, prime);
+                }
+            }
+
+            mpcSim.Run();
+
+
+            var newShares = new List<Zp>();
+            for (int i = fromParties; i < fromParties + toParties; i++)
+            {
+                newShares.Add(parties[i].Protocol.Share);
+            }
+
+
+            var result = ShamirSharing.Recombine(newShares, toDeg, prime);
+            Console.WriteLine("result: " + result);
+        }
 
         private static void TestQuorumMpc(BigInteger n, BigInteger maxInput, BigInteger prime, int seed)
         {

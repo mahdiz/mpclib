@@ -127,6 +127,14 @@
       <Project>{53392685-e75c-478b-ac7c-a22c704b19e6}</Project>
       <Name>QuorumSystem</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Libs\RandomGeneration\RandomGeneration.csproj">
+      <Project>{81c899cd-da74-4c40-8cb3-cca531f66ca9}</Project>
+      <Name>RandomGeneration</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Libs\SecretSharing\SecretSharing.csproj">
+      <Project>{2279ad83-89cc-439f-a198-4e6c1c73f668}</Project>
+      <Name>SecretSharing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Libs\Simulation\Simulation.csproj">
       <Project>{a25bf042-5ba8-4191-9eaa-75cf555cf0ee}</Project>
       <Name>Simulation</Name>

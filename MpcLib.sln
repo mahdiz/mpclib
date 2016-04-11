@@ -55,6 +55,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simulation", "Libs\Simulation\Simulation.csproj", "{A25BF042-5BA8-4191-9EAA-75CF555CF0EE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "Apps\TestApp\TestApp.csproj", "{8AE2D0C6-252B-41D0-8AD7-843DDB907377}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9} = {81C899CD-DA74-4C40-8CB3-CCA531F66CA9}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomGeneration", "Libs\RandomGeneration\RandomGeneration.csproj", "{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FB8DD953-2188-41F9-9B81-B5FCB509F2BA} = {FB8DD953-2188-41F9-9B81-B5FCB509F2BA}
+		{2279AD83-89CC-439F-A198-4E6C1C73F668} = {2279AD83-89CC-439F-A198-4E6C1C73F668}
+		{281E03FD-C141-4CD6-A4C2-7FB74A78E063} = {281E03FD-C141-4CD6-A4C2-7FB74A78E063}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -376,6 +386,22 @@ Global
 		{8AE2D0C6-252B-41D0-8AD7-843DDB907377}.Release|Win32.Build.0 = Release|x86
 		{8AE2D0C6-252B-41D0-8AD7-843DDB907377}.Release|x86.ActiveCfg = Release|x86
 		{8AE2D0C6-252B-41D0-8AD7-843DDB907377}.Release|x86.Build.0 = Release|x86
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|Win32.Build.0 = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Debug|x86.Build.0 = Debug|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Win32.ActiveCfg = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|Win32.Build.0 = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|x86.ActiveCfg = Release|Any CPU
+		{81C899CD-DA74-4C40-8CB3-CCA531F66CA9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

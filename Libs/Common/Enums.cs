@@ -20,5 +20,7 @@ namespace MpcLib.Common
 		AE,				// Almost Everywhere BA
 		Cuckoo,			// Commensal cuckoo
 		StaticSampler,	// Static sampler quorum building
+        QuorumShareRenewal,
+        AllToAllRandGen,
 	}
 }

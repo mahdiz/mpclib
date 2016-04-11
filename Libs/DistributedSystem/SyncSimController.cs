@@ -105,7 +105,7 @@ namespace MpcLib.Simulation
 			msg.SenderId = fromId;
 			foreach (var toId in toIds)
 			{
-				SyncNetSimulator<Msg>.Send(toId, msg);
+                SyncNetSimulator<Msg>.Send(toId, msg);
 
 				if (MessageSent != null)
 					MessageSent(fromId, toId, msg.Size);
@@ -133,9 +133,10 @@ namespace MpcLib.Simulation
 			broadcast(fromId, toIds, msg);
 
 			var retMsgs = new List<Msg>();
-			for (int i = 0; i < toIds.Count(); i++)
-				retMsgs.Add(SyncNetSimulator<Msg>.Receive(fromId));
-
+            for (int i = 0; i < toIds.Count(); i++)
+            {
+                retMsgs.Add(SyncNetSimulator<Msg>.Receive(fromId));
+            }
 			return retMsgs;
 		}
 	}
