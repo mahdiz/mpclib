@@ -19,7 +19,7 @@ namespace MpcLib.Simulation
 			Debug.Assert(msg != null);
 
 			if (!sockets.ContainsKey(toId))
-				sockets[toId] = new ConcurrentQueue<T>();
+				sockets.TryAdd(toId, new ConcurrentQueue<T>());
 
 			sockets[toId].Enqueue(msg);			// write to the virtual socket
 		}

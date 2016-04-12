@@ -62,7 +62,7 @@ namespace MpcLib.SecretSharing
 
 			// Compute f(i) for the i-th  player
 			var sharesArr = randomMatrix.Times(vanderMonde).ZpVector;
-
+            Debug.Assert(sharesArr != null);
 			Debug.Assert(sharesArr.Length == numPlayers);
 			return sharesArr;
 #endif

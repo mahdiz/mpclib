@@ -300,9 +300,26 @@ namespace MpcLib.Common.FiniteField
 			return X;
 		}
 
-		/* swap rows i and j in the matrix*/
+        public ZpMatrix GetSubMatrix(int r0, int r1, int c0, int c1)
+        {
+            var x = new ZpMatrix(r1 - r0 + 1, c1 - c0 + 1, Prime);
+            var B = x.data;
 
-		private void SwapRows(int i, int j)
+            for (int i = r0; i <= r1; i++)
+            {
+                for (int j = c0; j <= c1; j++)
+                {
+                    B[i - r0][j - c0] = data[i][j];
+                }
+            }
+
+            return x;
+        }
+
+
+        /* swap rows i and j in the matrix*/
+
+        private void SwapRows(int i, int j)
 		{
 			var temp = data[i];
 			data[i] = data[j];

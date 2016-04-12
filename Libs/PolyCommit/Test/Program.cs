@@ -19,7 +19,6 @@ namespace Test
         static void Main(string[] args)
 		{
 			Console.WriteLine("Started.");
-			var PolyCommit = new PolyCommit();
 			StaticRandom.Init(seed);
 
             int quorumSize = 20;
