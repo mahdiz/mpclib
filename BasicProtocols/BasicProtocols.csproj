@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8B214F70-DAFE-43EF-BAED-AB481DB1B542}</ProjectGuid>
+    <ProjectGuid>{E6EBE24E-1515-49B3-9618-7F7217988715}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MpcLib.MultiPartyShuffling</RootNamespace>
-    <AssemblyName>MpcLib.MultiPartyShuffling</AssemblyName>
+    <RootNamespace>MpcLib.BasicProtocols</RootNamespace>
+    <AssemblyName>MpcLib.BasicProtocols</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -33,7 +33,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -42,33 +41,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MpsParty.cs" />
+    <Compile Include="BasicMessage.cs" />
+    <Compile Include="MajorityFilteringProtocol.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\BasicProtocols\BasicProtocols.csproj">
-      <Project>{e6ebe24e-1515-49b3-9618-7f7217988715}</Project>
-      <Name>BasicProtocols</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Common\Common.csproj">
+    <ProjectReference Include="..\Libs\Common\Common.csproj">
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\DistributedSystem\DistributedSystem.csproj">
+    <ProjectReference Include="..\Libs\DistributedSystem\DistributedSystem.csproj">
       <Project>{fb8dd953-2188-41f9-9b81-b5fcb509f2ba}</Project>
       <Name>DistributedSystem</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FiniteField\FiniteField.csproj">
-      <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
-      <Name>FiniteField</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\PolyCommit\PolyCommit\PolyCommit.vcxproj">
-      <Project>{dbbd8f6c-b452-46a9-aff0-65e4429e04f1}</Project>
-      <Name>PolyCommit</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
-      <Project>{2279ad83-89cc-439f-a198-4e6c1c73f668}</Project>
-      <Name>SecretSharing</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

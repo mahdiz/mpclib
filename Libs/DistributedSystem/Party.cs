@@ -48,6 +48,11 @@ namespace MpcLib.DistributedSystem
             NetSimulator.Send(Id, msgs, delay);
         }
 
+        public void Send(IList<Msg> msgs, IList<int> recipients, int delay = 0)
+        {
+            NetSimulator.Send(Id, msgs, recipients, delay);
+        }
+
         public void Multicast(IEnumerable<int> toIds, Msg msg, int delay = 0)
         {
             NetSimulator.Multicast(Id, toIds, msg, delay);

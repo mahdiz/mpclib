@@ -8,6 +8,9 @@ namespace MpcLib.DistributedSystem
         Commit,
         Reconst,
 
+        // For the majority filtering protocol
+        Basic,
+
         /// <summary>
         /// A loopback message sent by each party in the synchronous setting to notify the end of the current round.
         /// This is to ensure that the party receives the inputs of "all" honest parties sent in the current round.

@@ -90,6 +90,16 @@ namespace MpcLib.DistributedSystem
                 Send(fromId, pair.Key, msgs[i++], delay);
         }
 
+        public static void Send(int fromId, IList<Msg> msgs, IList<int> recipients, int delay = 0)
+        {
+            Debug.Assert(msgs.Count == recipients.Count, "Not enough recipients/messages to send!");
+
+            for (var i = 0; i < msgs.Count; i++)
+            {
+                Send(fromId, recipients[i], msgs[i], delay);
+            }
+        }
+
         public static void Multicast(int fromId, IEnumerable<int> toIds, Msg msg, int delay = 0)
         {
             foreach (var toId in toIds)

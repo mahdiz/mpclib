@@ -168,7 +168,7 @@ namespace MpcLib.SecretSharing
 
             // send the i-th share message to the i-th party
             // the delay is to ensure my shares are distributed after my commits
-            Me.Send(shareMsgs, 1);
+            Me.Send(shareMsgs, PartyIds, 1);
         }
     }
 }

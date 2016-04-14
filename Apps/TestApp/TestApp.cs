@@ -29,10 +29,16 @@ namespace MpcLib.Apps
 		
 		static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
 
+
+        public static void TestShareAdditionProtocol()
+        {
+
+        }
+
 		public static void Main(string[] args)
 		{
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 4;      // number of parties
+            int n = 15;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);

@@ -7,7 +7,7 @@ namespace MpcLib.Common.FiniteField
 	/// <summary>
 	/// Represents a finite field.
 	/// </summary>
-	public class Zp : ISizable
+	public class Zp : ISizable, IEquatable<Zp>
 	{
 		private int num;
 		public readonly int Prime;
@@ -241,7 +241,12 @@ namespace MpcLib.Common.FiniteField
 			return Value.GetHashCode();
 		}
 
-		public int Size
+        public bool Equals(Zp other)
+        {
+            return other != null && Value == other.Value && Prime == other.Prime;
+        }
+
+        public int Size
 		{
 			get { return sizeof(int); }
 		}

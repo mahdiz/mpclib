@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using MpcLib.Common.FiniteField;
+using MpcLib.Commitments.PolyCommitment;
 
 namespace MpcLib.SecretSharing
 {
@@ -144,5 +145,19 @@ namespace MpcLib.SecretSharing
 		{
 			return Recombine(sharedSecrets, polyDeg, prime, false);
 		}
+
+        public static MG GenerateCommitment(int numShares, BigZp[] coeffs, BigInteger prime, ref MG[] witnesses, PolyCommit polyCommit)
+        {
+            var iz = new BigZp[numShares];
+            for (int i = 0; i < numShares; i++)
+            {
+                iz[i] = new BigZp(prime, new BigInteger(i + 1));
+            }
+
+            byte[] proof = null;
+            MG commitment = polyCommit.Commit(coeffs, iz, ref witnesses, ref proof, false);
+
+            return commitment;
+        }
 	}
 }

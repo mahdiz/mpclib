@@ -9,7 +9,203 @@ using MpcLib.Commitments.PolyCommitment;
 using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 using MpcLib.DistributedSystem;
+using MpcLib.SecretSharing.eVSS;
 
+namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
+{
+    public class QuorumShareRenewal : Protocol
+    {
+        private PolyCommit PolyCommit;
+
+
+        public QuorumShareRenewal(Party me, IList<int> participants, BigZp share, BigInteger prime, PolyCommit polyCommit)
+            : base(me, participants)
+        {
+            PolyCommit = polyCommit;
+        }
+
+        public override bool CanHandleMessageType(MsgType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void HandleMessage(int fromId, Msg msg)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool IsCompleted()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Start()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    class ShareRenewalRound : Protocol
+    {
+        private PolyCommit PolyCommit;
+        private IList<int> QuorumFrom;
+        private IList<int> QuorumTo;
+        private BigZp[] StartShares;
+        private int StartSharesPerParty;
+        private int FinalSharesPerParty;
+        private int OldPolyDeg;
+        private int NewPolyDeg;
+        private int FinalShareCount;
+        private int StartShareCount;
+        private BigInteger Prime;
+        private BigZp[] VandermondeInv;
+
+        private Dictionary<int, int> numCommitsRecv = new Dictionary<int, int>();
+        private Dictionary<int, CommitMsg> commitsRecv = new Dictionary<int, CommitMsg>();
+        private Dictionary<int, List<ShareWitnessMsg<BigZp>>[]> sharesRecv = new Dictionary<int, List<ShareWitnessMsg<BigZp>>[]>();
+
+
+        private BigZp[] FinalShares;
+
+        public ShareRenewalRound(Party me, IList<int> participants, IList<int> quorumFrom, IList<int> quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty, PolyCommit polyCommit)
+            : base(me, participants)
+        {
+            PolyCommit = polyCommit;
+            QuorumFrom = quorumFrom;
+            QuorumTo = quorumTo;
+            FinalSharesPerParty = finalSharesPerParty;
+            StartSharesPerParty = startSharesPerParty;
+            StartShares = startShares;
+            Prime = prime;
+
+            foreach (var from in QuorumFrom)
+            {
+                sharesRecv[from] = new List<ShareWitnessMsg<BigZp>>[startSharesPerParty];
+                for (int i = 0; i < startSharesPerParty; i++)
+                {
+                    numCommitsRecv[from] = 0;
+                    sharesRecv[from][i] = new List<ShareWitnessMsg<BigZp>>();
+                }
+            }
+
+            StartShareCount = QuorumFrom.Count * StartSharesPerParty;
+            FinalShareCount = QuorumTo.Count * FinalSharesPerParty;
+            NewPolyDeg = FinalShareCount / 3;
+
+            VandermondeInv = BigZpMatrix.GetVandermondeMatrix(StartShareCount, StartShareCount, Prime).Inverse.GetMatrixColumn(0);
+        }
+
+        public override bool CanHandleMessageType(MsgType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void HandleMessage(int fromId, Msg msg)
+        {
+            switch (msg.Type)
+            {
+                case MsgType.Commit:
+                    commitsRecv[fromId] = msg as CommitMsg;
+                    numCommitsRecv[fromId]++;
+                    Debug.Assert(numCommitsRecv[fromId] <= StartSharesPerParty);
+                    break;
+
+                case MsgType.Share:
+                    if (commitsRecv.ContainsKey(fromId))
+                    {
+                        int whichOrigShare = numCommitsRecv[fromId] - 1;
+                        int whichFinalFromOrigShare = sharesRecv[fromId][whichOrigShare].Count;
+                        int evalPoint = QuorumTo.IndexOf(Me.Id) * FinalSharesPerParty + whichOrigShare + 1;
+                        var swMessage = msg as ShareWitnessMsg<BigZp>;
+                        sharesRecv[fromId][numCommitsRecv[fromId] - 1].Add(swMessage);
+                        if (!PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, evalPoint), swMessage.Share, swMessage.Witness))
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                    else Console.WriteLine("No commitment from " + fromId);
+
+                    // when to send myself the next round message?
+                    break;
+                case MsgType.NextRound:
+                    Recombine();
+                    break;
+            }
+
+    
+        }
+
+        public override bool IsCompleted()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Start()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Reshare(BigZp secret)
+        {
+            Debug.Assert(PolyCommit != null);
+            Debug.Assert(Prime == secret.Prime);
+
+            IList<BigZp> coeffs = null;
+
+            var shares = BigShamirSharing.Share(secret, FinalShareCount, NewPolyDeg - 1, out coeffs); // why -1?
+            MG[] witnesses = null;
+            MG commitment = BigShamirSharing.GenerateCommitment(FinalShareCount, coeffs.ToArray(), Prime, ref witnesses, PolyCommit);
+
+            Me.Multicast(QuorumTo, new CommitMsg(commitment));
+
+            // create the share messages
+            Debug.Assert(PolyCommit.VerifyEval(commitment, new BigZp(Prime, 2), shares[1], witnesses[1]));
+            Debug.Assert(BigShamirSharing.Recombine(shares, NewPolyDeg - 1, Prime) == secret);
+
+            for (int i = 0; i < FinalShareCount; i++)
+                Me.Send(i / FinalSharesPerParty, new ShareWitnessMsg<BigZp>(shares[i], witnesses[i]));
+
+        }
+
+        private void Recombine()
+        {
+            BigZp[,] orderedShares = new BigZp[FinalSharesPerParty,StartShareCount];
+
+            int senderPos = 0;
+            foreach (var sender in QuorumFrom)
+            {
+                var sharesFromSender = sharesRecv[sender];
+                for (int i = 0; i < StartSharesPerParty; i++)
+                {
+                    var resharesForShare = sharesFromSender[i];
+                    for (int j = 0; j < resharesForShare.Count; j++)
+                    {
+                        var msg = resharesForShare[j];
+                        orderedShares[j, senderPos * StartSharesPerParty + i] = msg.Share;
+                    }
+                }
+            }
+
+            FinalShares = new BigZp[FinalSharesPerParty];
+
+            for (int i = 0; i < FinalSharesPerParty; i++)
+            {
+                FinalShares[i] = new BigZp(Prime);
+                for (int j = 0; j < StartShareCount; j++)
+                {
+                    FinalShares[i] += orderedShares[i,j] * VandermondeInv[j];
+                }
+            }
+
+        }
+    }
+
+   
+
+}
+
+
+/*
 namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 {
     public class QuorumShareRenewal : SyncProtocol
@@ -220,3 +416,4 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
     }
 }
 
+*/
