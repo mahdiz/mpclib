@@ -12,14 +12,13 @@ using MpcLib.SecretSharing.eVSS;
 
 namespace MpcLib.SecretSharing
 {
-    public class ShareAdditionProtocol : Protocol
+    public class ShareAdditionProtocol : QuorumProtocol
     {
         private BigZp Input;
         private BigInteger Prime;
         private int Seed;
         private PolyCommit PolyCommit;
         private int PolyDegree;
-
 
         private BigZp CombinedShare;
         public BigZp Result { get; private set; }
@@ -32,8 +31,8 @@ namespace MpcLib.SecretSharing
 
         private static readonly List<MsgType> MESSAGE_TYPES = new List<MsgType>() { MsgType.Share, MsgType.Commit, MsgType.Reconst, MsgType.NextRound };
 
-        public ShareAdditionProtocol(Party me, IList<int> participants, BigZp input, BigInteger prime, int seed, PolyCommit polyCommit)
-            : base(me, participants)
+        public ShareAdditionProtocol(Party me, Quorum quorum, BigZp input, BigInteger prime, int seed, PolyCommit polyCommit)
+            : base(me, quorum)
         {
             Input = input;
             Prime = prime;
@@ -100,7 +99,7 @@ namespace MpcLib.SecretSharing
                         Console.WriteLine("Invalid next round message received. Party " + fromId + " seems to be cheating!");
 
                     // broadcast output share for reconstruction
-                    Me.Broadcast(new ShareMsg<BigZp>(CombinedShare, MsgType.Reconst));
+                    QuorumBroadcast(new ShareMsg<BigZp>(CombinedShare, MsgType.Reconst));
                     break;
 
                 case MsgType.Reconst:
@@ -113,7 +112,7 @@ namespace MpcLib.SecretSharing
                         // reconstruct the output
                         var orderedShares = reconstRecv.OrderBy(p => p.Key).Select(p => p.Value).ToList();
                         Result = BigShamirSharing.Recombine(orderedShares, PolyDegree - 1, Prime);
-
+                        IsCompleted = true;
                         // Error-correction procedure
                         //var xValues = new List<BigZp>();
                         //for (int i = 1; i <= reconstRecv.Count; i++)
@@ -127,14 +126,11 @@ namespace MpcLib.SecretSharing
                     break;
             }
         }
-
-        public override bool IsCompleted()
-        {
-            return (Result != null);
-        }
-
+        
         public void Share(BigZp secret)
         {
+            PolyCommit = new PolyCommit();
+            PolyCommit.Setup(PolyDegree, 5);
             Debug.Assert(PolyCommit != null, "PolyCommit is not initialized yet.");
             Debug.Assert(Prime == secret.Prime);
             IList<BigZp> coeffs = null;
@@ -156,7 +152,7 @@ namespace MpcLib.SecretSharing
 
             // broadcast the commitment
             var commitMsg = new CommitMsg(mg);
-            Me.Broadcast(commitMsg);
+            QuorumBroadcast(commitMsg);
 
             // create share messages
             var shareMsgs = new ShareWitnessMsg<BigZp>[NumParties];
@@ -168,7 +164,7 @@ namespace MpcLib.SecretSharing
 
             // send the i-th share message to the i-th party
             // the delay is to ensure my shares are distributed after my commits
-            Me.Send(shareMsgs, PartyIds, 1);
+            QuorumSend(shareMsgs);
         }
     }
 }

@@ -70,6 +70,8 @@ namespace MpcLib.DistributedSystem
 
         public static void Send(int fromId, int toId, Msg msg, int delay = 0)
         {
+          //  Console.WriteLine("Adding send from " + fromId + " at " + des.Clock);
+
             SentMessageCount++;
             SentByteCount += msg.Size;
             des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, msg);
@@ -81,27 +83,36 @@ namespace MpcLib.DistributedSystem
         /// <summary>
         /// Sends the i-th message to the i-th party.
         /// </summary>
-        public static void Send(int fromId, IList<Msg> msgs, int delay = 0)
+        public static void Send(int fromId, ICollection<Msg> msgs, int delay = 0)
         {
             Debug.Assert(parties.Count == msgs.Count, "Not enough recipients/messages to send!");
 
+
             int i = 0;
+            var msgIter = msgs.GetEnumerator();
             foreach (var pair in parties)
-                Send(fromId, pair.Key, msgs[i++], delay);
+            {
+                msgIter.MoveNext();
+                Send(fromId, pair.Key, msgIter.Current, delay);
+            }
         }
 
-        public static void Send(int fromId, IList<Msg> msgs, IList<int> recipients, int delay = 0)
+        public static void Send(int fromId, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
         {
             Debug.Assert(msgs.Count == recipients.Count, "Not enough recipients/messages to send!");
 
-            for (var i = 0; i < msgs.Count; i++)
+            var msgIter = msgs.GetEnumerator();
+            var recipIter = recipients.GetEnumerator();
+
+            while (msgIter.MoveNext() && recipIter.MoveNext())
             {
-                Send(fromId, recipients[i], msgs[i], delay);
+                Send(fromId, recipIter.Current, msgIter.Current, delay);
             }
         }
 
         public static void Multicast(int fromId, IEnumerable<int> toIds, Msg msg, int delay = 0)
         {
+           // Console.WriteLine("Adding multicast from " + fromId + " at " + des.Clock);
             foreach (var toId in toIds)
             {
                 des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, msg);

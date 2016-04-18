@@ -21,14 +21,14 @@ namespace MpcLib.BasicProtocols
         private int majorityThreshold;
         private bool performedTally;
 
-        public MajorityFilteringProtocol(Party me, IList<int> partyIds, IList<int> receivers, T value)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> receivers, T value)
             : base(me, partyIds)
         {
             MyValue = value;
             Receivers = receivers;
         }
 
-        public MajorityFilteringProtocol(Party me, IList<int> partyIds, IList<int> senders)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> senders)
             : base(me, partyIds)
         {
             Senders = new List<int>(senders);
@@ -78,18 +78,17 @@ namespace MpcLib.BasicProtocols
             }
         }
 
-        public override bool IsCompleted()
-        {
-            return performedTally || MyValue != null;
-        }
-
         public override void Start()
         {
             // if I am a sender, then multicast my value,
             // if i am a receiver do nothing.
             if (MyValue != null)
             {
-                Me.Multicast(Receivers, new BasicMessage<T>(MyValue));
+                Me.Multicast(new BasicMessage<T>(MyValue), Receivers);
+            }
+            if (!Receivers.Contains(Me.Id))
+            {
+                IsCompleted = true;
             }
         }
 
@@ -113,7 +112,8 @@ namespace MpcLib.BasicProtocols
             {
                 Console.WriteLine("No value received a majority of the votes at " + Me.Id);
             }
-            performedTally = true;
+
+            IsCompleted = true;
         }
     }
 }

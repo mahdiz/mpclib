@@ -31,29 +31,18 @@ namespace MpcLib.DistributedSystem
         /// <summary>
         /// Sends the i-th message to the i-th party.
         /// </summary>
-        public void Send(IList<int> toIds, IList<Msg> msgs, int delay = 0)
-        {
-            Debug.Assert(toIds.Count != msgs.Count, "Not enough recipients/messages to send!");
-
-            for (int i = 0; i < toIds.Count; i++)
-                NetSimulator.Send(Id, toIds[i], msgs[i], delay);
-        }
-
-        /// <summary>
-        /// Sends the i-th message to the i-th party.
-        /// </summary>
-        public void Send(IList<Msg> msgs, int delay = 0)
+        public void Send(ICollection<Msg> msgs, int delay = 0)
         {
             Debug.Assert(NetSimulator.PartyCount == msgs.Count, "Not enough recipients/messages to send!");
             NetSimulator.Send(Id, msgs, delay);
         }
 
-        public void Send(IList<Msg> msgs, IList<int> recipients, int delay = 0)
+        public void Send(ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
         {
             NetSimulator.Send(Id, msgs, recipients, delay);
         }
 
-        public void Multicast(IEnumerable<int> toIds, Msg msg, int delay = 0)
+        public void Multicast(Msg msg, IEnumerable<int> toIds, int delay = 0)
         {
             NetSimulator.Multicast(Id, toIds, msg, delay);
         }

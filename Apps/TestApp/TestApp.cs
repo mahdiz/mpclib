@@ -29,27 +29,50 @@ namespace MpcLib.Apps
 		
 		static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
 
-
-        public static void TestShareAdditionProtocol()
+        public static void speedTest()
         {
+            var vnd = BigZpMatrix.GetVandermondeMatrix(10, 10, prime);
+            var inv = vnd.Inverse;
+            var id = vnd.Times(inv);
 
+            for (int i = 0; i < 10; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    Console.Write(id.Data[i][j] + " ");
+                }
+                Console.WriteLine();
+            }
+            Console.ReadKey();
         }
 
-		public static void Main(string[] args)
-		{
+        public static void Main(string[] args)
+        {
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 15;      // number of parties
+            int n = 25;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);
 
             // create honest users
             var parties = new List<MpsParty>(n);
-            for (int i = 0; i < n; i++)
-        {
-                var randInput = new BigZp(prime, StaticRandom.Next(1000000));
-                parties.Add(new MpsParty(n, randInput, prime, seed));
+
+            int fromCount = 5;
+            int toCount = 20;
+
+            var secret = new BigZp(prime, 2);
+
+            var shares = BigShamirSharing.Share(secret, fromCount, fromCount / 3);
+
+            for (int i = 0; i < fromCount; i++)
+            {
+                parties.Add(new MpsParty(n, shares[i], prime, seed));
             }
+            for (int i = fromCount; i < n; i++)
+            {
+                parties.Add(new MpsParty(n, null, prime, seed));
+            }
+
             Console.WriteLine(n + " parties initialized. Running simulation...\n");
 
             // run the simulator
@@ -57,12 +80,19 @@ namespace MpcLib.Apps
 
             // print each party's input/outputs
             var validOuput = new BigZp(prime);
+
+            var resultShares = new BigZp[toCount];
+            for (int i = fromCount; i < n; i++)
+                resultShares[i - fromCount] = parties[i].Output;
+
+            var Result = BigShamirSharing.Recombine(new List<BigZp>(resultShares), (int) (Math.Ceiling(toCount / 3.0) - 1), prime);
+            Console.WriteLine("Result = " + Result);
+            /*
             for (int i = 0; i < n; i++)
 		{
                 Console.WriteLine("Party " + parties[i].Id + ": Input = " + parties[i].Input + ", Output = " + parties[i].Output);
-                validOuput += parties[i].Input;
 			}
-
+            */
             Console.WriteLine("\nValid Output = " + validOuput + "\n");
 			Console.WriteLine("# parties    = " + n);
             Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount);

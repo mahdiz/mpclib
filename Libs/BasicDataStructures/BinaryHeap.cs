@@ -282,4 +282,108 @@ namespace MpcLib.Common.BasicDataStructures
 
 		#endregion Methods
 	}
+
+    public class StableBinaryHeap<T> : BinaryHeap<T> where T : IComparable<T>
+    {
+        private class TimestampedT : IComparable<TimestampedT>
+        {
+            public T Value;
+            private bool AnyTimestamp;
+            private ulong Timestamp;
+
+            public TimestampedT(T value)
+            {
+                Value = value;
+                AnyTimestamp = true;
+            }
+
+            public TimestampedT(T value, ulong timestamp)
+            {
+                Value = value;
+                Timestamp = timestamp;
+                AnyTimestamp = false;
+            }
+
+            public int CompareTo(TimestampedT other)
+            {
+                int cmpT = Value.CompareTo(other.Value);
+
+                if (cmpT != 0)
+                    return cmpT;
+
+                if (AnyTimestamp || other.AnyTimestamp)
+                    return 0;
+                
+                return Timestamp.CompareTo(other.Timestamp);
+            }
+        }
+
+        private ulong NextTimestamp = 0;
+
+        private BinaryHeap<TimestampedT> Impl = new BinaryHeap<TimestampedT>();
+
+        public new int Count
+        {
+            get
+            {
+                return Impl.Count;
+            }
+        }
+
+        public new bool IsReadOnly
+        {
+            get
+            {
+                return Impl.IsReadOnly;
+            }
+        }
+
+        public new void Add(T item)
+        {
+            Impl.Add(new TimestampedT(item, NextTimestamp++));
+        }
+
+        public new T Peek()
+        {
+            return Impl.Peek().Value;
+        }
+
+        public new T Remove()
+        {
+            return Impl.Remove().Value;
+        }
+
+        public new void Clear()
+        {
+            Impl.Clear();
+        }
+
+        public new bool Contains(T item)
+        {
+            return Impl.Contains(new TimestampedT(item));
+        }
+
+        public new void CopyTo(T[] array, int arrayIndex)
+        {
+            TimestampedT[] data = new TimestampedT[Count];
+            Impl.CopyTo(data, 0);
+            for (int i = 0; i < Count; i++)
+            {
+                array[arrayIndex + i] = data[i].Value;
+            }
+        }
+
+        public new IEnumerator<T> GetEnumerator()
+        {
+            foreach (var element in Impl)
+            {
+                yield return element.Value;
+            }
+        }
+
+        public new bool Remove(T item)
+        {
+            return Impl.Remove(new TimestampedT(item));
+        }
+    }
 }

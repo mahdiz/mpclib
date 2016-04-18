@@ -11,6 +11,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using MpcLib.BasicProtocols;
+using MpcLib.SecretSharing.QuorumShareRenewal;
 
 namespace MpcLib.MultiPartyShuffling
 {
@@ -24,8 +25,9 @@ namespace MpcLib.MultiPartyShuffling
         protected PolyCommit PolyCommit;
         private int Seed;
 
+        private ShareRenewalRound Srr;
         private ShareAdditionProtocol Sap;
-        private MajorityFilteringProtocol<Zp> Mfp;
+        private QuorumShareRenewal Qrs;
 
         public MpsParty(int numParties, BigZp input, BigInteger prime, int seed)
         {
@@ -36,63 +38,55 @@ namespace MpcLib.MultiPartyShuffling
             PolyDegree = (int)Math.Ceiling(NumParties / 3.0);
             PolyCommit = new PolyCommit();
             PolyCommit.Setup(PolyDegree, seed);
-            
         }
-
+        /*
         public override void Start()
         {
-            // secret-share my input
-            //    Share(Input);
-            var parties = new List<int>();
-            for (var i = 0; i < NumParties; i++)
+            var parties = new SortedSet<int>();
+            for (int i = 0; i < NumParties; i++)
             {
                 parties.Add(i);
             }
 
-            var senders = new List<int>(parties);
-            senders.Remove(NumParties - 1);
-            senders.Remove(NumParties - 2);
+            Sap = new ShareAdditionProtocol(this, parties, new BigZp(Prime, 5), Prime, Seed, PolyCommit);
+            Sap.Start();
+        }
+        */
 
-            var receivers = new List<int>();
-            receivers.Add(NumParties - 1);
-            receivers.Add(NumParties - 2);
+        public override void Start()
+        {
+            // secret-share my input
+            // Share(Input);
+            Quorum from = new Quorum(0, 5);
+            Quorum to = new Quorum(5, 25);
 
-            if (senders.Contains(Id))
-            {
-                Mfp = new MajorityFilteringProtocol<Zp>(this, parties, receivers, new Zp(3, 2));
-            }
-            else
-            {
-                Mfp = new MajorityFilteringProtocol<Zp>(this, parties, senders);
-            }
+            //    BigZp[] inShares = (Input != null) ? new BigZp[] { Input } : null;
 
-            Mfp.Start();
+            //   Srr = new ShareRenewalRound(this, from, to, Input, Prime, 2, 2, 5);
 
-            //Sap = new ShareAdditionProtocol(this, parties, Input, Prime, Seed, PolyCommit);
+            Qrs = new QuorumShareRenewal(this, from, to, Input, Prime, 5);
 
-            //Sap.Start();
+            Qrs.Start();
 
         }
 
         public override void Receive(int fromId, Msg msg)
         {
-            Mfp.HandleMessage(fromId, msg);
-            if (Mfp.IsCompleted())
+            
+            Qrs.HandleMessage(fromId, msg);
+            if (Qrs.IsCompleted)
             {
-                Output = new BigZp(Mfp.Result.Prime, Mfp.Result.Value);
+                Output = Qrs.ResultShare;
             }
-
-            return;
-
+            
             /*
             Sap.HandleMessage(fromId, msg);
-
-            if (Sap.IsCompleted())
+            if (Sap.IsCompleted)
             {
                 Output = Sap.Result;
             }
-            */
             return;
+            */
         }
     }
 }

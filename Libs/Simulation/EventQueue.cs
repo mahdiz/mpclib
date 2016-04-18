@@ -18,7 +18,7 @@ namespace MpcLib.Simulation.Des
 	/// </summary>
 	public class EventQueue : IEventQueue
 	{
-		private BinaryHeap<BaseEvent> pQueue = new BinaryHeap<BaseEvent>();
+		private StableBinaryHeap<BaseEvent> pQueue = new StableBinaryHeap<BaseEvent>();
 
 		public int Count
 		{

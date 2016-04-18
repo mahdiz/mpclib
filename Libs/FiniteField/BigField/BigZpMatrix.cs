@@ -380,7 +380,148 @@ namespace MpcLib.Common.FiniteField
 			data[rowNumber][colNumber] = value.Value;
 		}
 
-		public static BigZpMatrix GetConcatenationMatrix(BigZpMatrix A, BigZpMatrix B)
+        public BigZpMatrix Inverse
+        {
+            get
+            {
+                var piv = new int[RowCount];
+                //var fieldInv = NumTheoryUtils.GetFieldInverse(Prime);
+                var lu = GetLUDecomposition(piv);
+                return lu.SolveInv(BigZpMatrix.GetIdentityMatrix(RowCount, Prime), piv);
+            }
+        }
+
+        private BigZpMatrix SolveInv(BigZpMatrix B, int[] piv)
+        {
+            if (B.RowCount != RowCount)
+                throw new ArgumentException("Matrix row dimensions must agree.");
+
+            if (!Nonsingular)
+                throw new ArgumentException("Matrix is singular.");
+
+            // Copy right hand side with pivoting
+            int nx = B.ColCount;
+            var Xmat = B.GetSubMatrix(piv, 0, nx - 1);
+            var X = Xmat.data;
+
+            // Solve L*Y = B(piv,:)
+            for (int k = 0; k < RowCount; k++)
+            {
+                for (int i = k + 1; i < RowCount; i++)
+                {
+                    for (int j = 0; j < nx; j++)
+                        X[i][j] = Modulo(X[i][j] - X[k][j] * data[i][k]);
+                }
+            }
+
+            // Solve U*X = Y;
+            for (int k = RowCount - 1; k >= 0; k--)
+            {
+                for (int j = 0; j < nx; j++)
+                    X[k][j] = Modulo(X[k][j] * NumTheoryUtils.CalcInverse(data[k][k], Prime));
+
+                for (int i = 0; i < k; i++)
+                {
+                    for (int j = 0; j < nx; j++)
+                        X[i][j] = Modulo(X[i][j] - X[k][j] * data[i][k]);
+                }
+            }
+            return Xmat;
+        }
+
+        private BigZpMatrix GetLUDecomposition(int[] pivot)
+        {
+            // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
+            var LU = new BigZpMatrix(this);
+            BigInteger[][] LUArr = LU.data;
+
+            int[] piv = pivot;
+            for (int i = 0; i < RowCount; i++)
+                piv[i] = i;
+
+            int pivsign = 1;
+            BigInteger[] LUrowi;
+            var LUcolj = new BigInteger[RowCount];
+
+            // Outer loop.
+            for (int j = 0; j < RowCount; j++)
+            {
+                // Make a copy of the j-th column to localize references.
+                for (int i = 0; i < RowCount; i++)
+                    LUcolj[i] = LUArr[i][j];
+
+                // Apply previous transformations.
+                for (int i = 0; i < RowCount; i++)
+                {
+                    LUrowi = LUArr[i];
+
+                    // Most of the time is spent in the following dot product.
+                    int kmax = Math.Min(i, j);
+                    BigInteger s = 0;
+                    for (int k = 0; k < kmax; k++)
+                        s = Modulo(s + LUrowi[k] * LUcolj[k]);
+
+                    LUrowi[j] = LUcolj[i] = Modulo(LUcolj[i] - s);
+                }
+
+                // Find pivot and exchange if necessary.
+                int p = j;
+                for (int i = j + 1; i < RowCount; i++)
+                {
+                    if ((LUcolj[i]) > (LUcolj[p]))
+                        p = i;
+                }
+                if (p != j)
+                {
+                    for (int k = 0; k < RowCount; k++)
+                    {
+                        BigInteger t = LUArr[p][k];
+                        LUArr[p][k] = LUArr[j][k];
+                        LUArr[j][k] = t;
+                    }
+                    int r = piv[p];
+                    piv[p] = piv[j];
+                    piv[j] = r;
+                    pivsign = -pivsign;
+                }
+
+                // Compute multipliers.
+                if (j < RowCount & LUArr[j][j] != 0)
+                {
+                    for (int i = j + 1; i < RowCount; i++)
+                        //LUArr[i][j] = Modulo(LUArr[i][j] * fieldInv[Modulo(LUArr[j][j])]);
+                        LUArr[i][j] = Modulo(LUArr[i][j] * NumTheoryUtils.MultiplicativeInverse(Modulo(LUArr[j][j]), Prime));
+                }
+            }
+            return LU;
+        }
+
+        private BigZpMatrix GetSubMatrix(int[] r, int j0, int j1)
+        {
+            var X = new BigZpMatrix(r.Length, j1 - j0 + 1, Prime);
+            var B = X.data;
+
+            for (int i = 0; i < r.Length; i++)
+            {
+                for (int j = j0; j <= j1; j++)
+                    B[i][j - j0] = data[r[i]][j];
+            }
+            return X;
+        }
+
+        public IList<BigZp> GetMatrixColumn(int colNumber)
+        {
+            if (ColCount <= colNumber)
+                throw new ArgumentException("Illegal matrix column number.");
+
+            var wantedCol = new List<BigZp>();
+            for (int i = 0; i < RowCount; i++)
+                wantedCol.Add(new BigZp(Prime, data[i][colNumber]));
+
+            return wantedCol;
+        }
+
+        public static BigZpMatrix GetConcatenationMatrix(BigZpMatrix A, BigZpMatrix B)
 		{
 			if (A.RowCount != B.RowCount)
 			{
@@ -413,6 +554,8 @@ namespace MpcLib.Common.FiniteField
 			}
 			return C;
 		}
+
+
 
 		/// <summary>
 		/// Print matrix to standard output.

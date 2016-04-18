@@ -9,19 +9,20 @@ namespace MpcLib.DistributedSystem
     public abstract class Protocol
     {
         public Party Me { get; internal set; }
-        public IList<int> PartyIds { get; internal set; }
+        public SortedSet<int> PartyIds { get; internal set; }
         public int NumParties;
+        public bool IsCompleted { get; protected set; }
 
-        public Protocol(Party me, IList<int> partyIds)
+        public Protocol(Party me, SortedSet<int> partyIds)
         {
             Me = me;
             PartyIds = partyIds;
             NumParties = PartyIds.Count;
+            IsCompleted = false;
         }
 
         public abstract void Start();
         public abstract bool CanHandleMessageType(MsgType type);
         public abstract void HandleMessage(int fromId, Msg msg);
-        public abstract bool IsCompleted();
     }
 }

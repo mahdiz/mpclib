@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace MpcLib.Common.FiniteField
 {
@@ -10,6 +11,8 @@ namespace MpcLib.Common.FiniteField
 	public class Zp : ISizable, IEquatable<Zp>
 	{
 		private int num;
+        private BigInteger bigNum;
+
 		public readonly int Prime;
 
 		public int Value
