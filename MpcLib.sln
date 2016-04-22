@@ -41,7 +41,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Simulation", "Libs\Simulati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mps", "Libs\Mps\Mps.csproj", "{8B214F70-DAFE-43EF-BAED-AB481DB1B542}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicProtocols", "BasicProtocols\BasicProtocols.csproj", "{E6EBE24E-1515-49B3-9618-7F7217988715}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicProtocols", "Libs\BasicProtocols\BasicProtocols.csproj", "{E6EBE24E-1515-49B3-9618-7F7217988715}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Circuit", "Libs\Circuit\Circuit.csproj", "{84C74DD1-BC63-44EA-BE28-227048400333}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -343,6 +345,22 @@ Global
 		{E6EBE24E-1515-49B3-9618-7F7217988715}.Release|Win32.Build.0 = Release|Any CPU
 		{E6EBE24E-1515-49B3-9618-7F7217988715}.Release|x86.ActiveCfg = Release|Any CPU
 		{E6EBE24E-1515-49B3-9618-7F7217988715}.Release|x86.Build.0 = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|Win32.Build.0 = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Debug|x86.Build.0 = Debug|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Win32.ActiveCfg = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|Win32.Build.0 = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|x86.ActiveCfg = Release|Any CPU
+		{84C74DD1-BC63-44EA-BE28-227048400333}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

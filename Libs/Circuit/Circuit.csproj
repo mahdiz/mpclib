@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E6EBE24E-1515-49B3-9618-7F7217988715}</ProjectGuid>
+    <ProjectGuid>{84C74DD1-BC63-44EA-BE28-227048400333}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MpcLib.BasicProtocols</RootNamespace>
-    <AssemblyName>MpcLib.BasicProtocols</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>Circuit</RootNamespace>
+    <AssemblyName>Circuit</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,18 +40,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BasicMessage.cs" />
-    <Compile Include="MajorityFilteringProtocol.cs" />
+    <Compile Include="Circuit.cs" />
+    <Compile Include="Gate.cs" />
+    <Compile Include="LPSorting.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SortingNetwork.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Libs\Common\Common.csproj">
-      <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
-      <Name>Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Libs\DistributedSystem\DistributedSystem.csproj">
-      <Project>{fb8dd953-2188-41f9-9b81-b5fcb509f2ba}</Project>
-      <Name>DistributedSystem</Name>
+    <ProjectReference Include="..\BasicDataStructures\BasicDataStructures.csproj">
+      <Project>{d89afe72-407e-4414-bdfc-e5b50bb25bef}</Project>
+      <Name>BasicDataStructures</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
