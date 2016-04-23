@@ -57,6 +57,11 @@ namespace MpcLib.DistributedSystem
 			parties[p.Id] = p;
 		}
 
+        public static Party GetParty(int id)
+        {
+            return parties[id];
+        }
+
         public static void Run()
         {
             if (parties.Count == 0)

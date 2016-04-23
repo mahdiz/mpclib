@@ -237,10 +237,7 @@ namespace MpcLib.Circuit
             return pn;
         }
     }
-}
-        
-
-
+    
     class LPSortingCalculationCache
     {
         public const int MAX_SIZE = 32;

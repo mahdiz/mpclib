@@ -13,7 +13,7 @@ using MpcLib.SecretSharing.eVSS;
 
 namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 {
-    public class QuorumShareRenewal : MultiQuorumProtocol
+    public class QuorumShareRenewalProtocol : MultiQuorumProtocol<BigZp>
     {
         private const int FROM = 0;
         private const int TO = 1;
@@ -24,43 +24,34 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 
         private int FinalRoundInitialSharesPerParty;
         private BigInteger Prime;
-        private int Seed;
         private bool FinalRound;
 
-        public BigZp ResultShare { get; private set; }
-
-        public QuorumShareRenewal(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp share, BigInteger prime, int seed)
+        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp share, BigInteger prime)
             : base(me, new Quorum[] { quorumFrom, quorumTo })
         {
             Prime = prime;
-            Seed = seed;
             Shares = new BigZp[] { share };
         }
 
-        public override bool CanHandleMessageType(MsgType type)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void HandleMessage(int fromId, Msg msg)
+        protected override void HandleMessage(int fromId, Msg msg)
         {
             if (CurrentRound == null && msg.Type == MsgType.NextRound)
             {
                 // want to start the next round
                 if (IntermediateRoundsRemaining > 0)
                 {
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 3 * Shares.Length, Seed);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 3 * Shares.Length);
                 }
                 else
                 {
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 1, Seed);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 1);
                     FinalRound = true;
                 }
                 CurrentRound.Start();
             }
             else
             {
-                CurrentRound.HandleMessage(fromId, msg);
+                CurrentRound.MessageHandler(fromId, msg);
 
                 if (CurrentRound.IsCompleted)
                 {
@@ -68,14 +59,14 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                     {
                         if (Quorums[TO].HasMember(Me.Id))
                         {
-                            Debug.Assert(CurrentRound.FinalShares.Length == 1);
-                            ResultShare = CurrentRound.FinalShares[0];
+                            Debug.Assert(CurrentRound.Result.Length == 1);
+                            Result = CurrentRound.Result[0];
                         }
                         IsCompleted = true;
                     }
                     else
                     {
-                        Shares = CurrentRound.FinalShares;
+                        Shares = CurrentRound.Result;
                         IntermediateRoundsRemaining--;
                         CurrentRound = null;
                         Me.Send(Me.Id, new Msg(MsgType.NextRound));
@@ -103,20 +94,20 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                 if (IntermediateRoundsRemaining > 0)
                 {
                     // set up the first intermediate round
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[FROM], Shares, Prime, 1, 3, Seed);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[FROM], Shares, Prime, 1, 3);
                     FinalRound = false;
                 }
                 else
                 {
                     // set up the final round
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, 1, 1, Seed);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, 1, 1);
                     FinalRound = true;
                 }
             }
             else
             {
                 // I'm only receiving, so I want to set up the final round
-                CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], null, Prime, FinalRoundInitialSharesPerParty, 1, Seed);
+                CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], null, Prime, FinalRoundInitialSharesPerParty, 1);
                 FinalRound = true;
             }
 
@@ -124,7 +115,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         }
     }
 
-    public class ShareRenewalRound : MultiQuorumProtocol
+    public class ShareRenewalRound : MultiQuorumProtocol<BigZp[]>
     {
         private const int FROM = 0;
         private const int TO = 1;
@@ -145,10 +136,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private Dictionary<int, CommitMsg> commitsRecv = new Dictionary<int, CommitMsg>();
         private Dictionary<int, List<ShareWitnessMsg<BigZp>>[]> sharesRecv = new Dictionary<int, List<ShareWitnessMsg<BigZp>>[]>();
 
-
-        public BigZp[] FinalShares { get; private set; }
-
-        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty, int seed)
+        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty)
             : base(me, new Quorum[] { quorumFrom, quorumTo })
         {
             FinalSharesPerParty = finalSharesPerParty;
@@ -169,7 +157,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 
             StartShareCount = Quorums[FROM].Size * StartSharesPerParty;
             FinalShareCount = Quorums[TO].Size * FinalSharesPerParty;
-            NewPolyDeg = (int)Math.Ceiling(FinalShareCount / 3.0);
+            NewPolyDeg = (int)Math.Ceiling(FinalShareCount / 3.0) - 1;
             
             VandermondeInv = BigZpMatrix.GetVandermondeMatrix(StartShareCount, StartShareCount, Prime).Inverse.GetMatrixColumn(0);
 
@@ -188,16 +176,20 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                 }
             }
 
-            PolyCommit = new PolyCommit();
-            PolyCommit.Setup(NewPolyDeg, seed);
+            if (Quorums[TO] is ByzantineQuorum)
+            {
+                var byzTo = Quorums[TO] as ByzantineQuorum;
+                if (FinalShareCount == Quorums[TO].Size)
+                    PolyCommit = byzTo.PolyCommit;
+                else
+                {
+                    PolyCommit = new PolyCommit();
+                    PolyCommit.Setup(NewPolyDeg + 1, byzTo.Seed);
+                }
+            }
         }
-
-        public override bool CanHandleMessageType(MsgType type)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void HandleMessage(int fromId, Msg msg)
+        
+        protected override void HandleMessage(int fromId, Msg msg)
         {
             switch (msg.Type)
             {
@@ -216,7 +208,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                         var swMessage = msg as ShareWitnessMsg<BigZp>;
                         sharesRecv[fromId][numCommitsRecv[fromId] - 1].Add(swMessage);
                         ReceivedReshareCount++;
-                        if (!PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, evalPoint), swMessage.Share, swMessage.Witness))
+                        if (PolyCommit != null && !PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, evalPoint), swMessage.Share, swMessage.Witness))
                         {
                             throw new NotImplementedException();
                         }
@@ -253,21 +245,25 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 
         private void Reshare(BigZp secret)
         {
-
-            Debug.Assert(PolyCommit != null);
             Debug.Assert(Prime == secret.Prime);
 
             IList<BigZp> coeffs = null;
 
-            var shares = BigShamirSharing.Share(secret, FinalShareCount, NewPolyDeg - 1, out coeffs); // why -1?
+            var shares = BigShamirSharing.Share(secret, FinalShareCount, NewPolyDeg, out coeffs);
 
             MG[] witnesses = null;
-            MG commitment = BigShamirSharing.GenerateCommitment(FinalShareCount, coeffs.ToArray(), Prime, ref witnesses, PolyCommit);
+            MG commitment = null;
+            if (PolyCommit != null)
+                commitment = BigShamirSharing.GenerateCommitment(FinalShareCount, coeffs.ToArray(), Prime, ref witnesses, (Quorums[TO] as ByzantineQuorum).PolyCommit);
+            else
+                witnesses = new MG[FinalShareCount];
+            
             QuorumBroadcast(new CommitMsg(commitment), TO);
             
             // create the share messages
-            Debug.Assert(PolyCommit.VerifyEval(commitment, new BigZp(Prime, 2), shares[1], witnesses[1]));
-            Debug.Assert(BigShamirSharing.Recombine(shares, NewPolyDeg - 1, Prime) == secret);
+            if (PolyCommit != null)
+                Debug.Assert(PolyCommit.VerifyEval(commitment, new BigZp(Prime, 2), shares[1], witnesses[1]));
+            Debug.Assert(BigShamirSharing.Recombine(shares, NewPolyDeg, Prime) == secret);
 
             int numSent = 0;
             foreach (var toMember in Quorums[TO].Members)
@@ -301,14 +297,14 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                 senderPos++;
             }
 
-            FinalShares = new BigZp[FinalSharesPerParty];
+            Result = new BigZp[FinalSharesPerParty];
 
             for (int i = 0; i < FinalSharesPerParty; i++)
             {
-                FinalShares[i] = new BigZp(Prime);
+                Result[i] = new BigZp(Prime);
                 for (int j = 0; j < StartShareCount; j++)
                 {
-                    FinalShares[i] += orderedShares[i,j] * VandermondeInv[j];
+                    Result[i] += orderedShares[i,j] * VandermondeInv[j];
                 }
             }
 

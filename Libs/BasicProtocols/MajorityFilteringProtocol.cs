@@ -8,9 +8,8 @@ using System.Threading.Tasks;
 
 namespace MpcLib.BasicProtocols
 {
-    public class MajorityFilteringProtocol<T> : Protocol where T : ISizable, IEquatable<T>
+    public class MajorityFilteringProtocol<T> : Protocol<T> where T : class, ISizable, IEquatable<T>
     {
-        public T Result { get; internal set; }
         private T MyValue;
 
         private IList<int> Receivers;
@@ -37,13 +36,8 @@ namespace MpcLib.BasicProtocols
             performedTally = false;
             majorityThreshold = senders.Count / 2 + 1;
         }
-        
-        public override bool CanHandleMessageType(MsgType type)
-        {
-            return true;
-        }
 
-        public override void HandleMessage(int fromId, Msg msg)
+        protected override void HandleMessage(int fromId, Msg msg)
         {
             switch (msg.Type)
             {

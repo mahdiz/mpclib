@@ -37,12 +37,12 @@ namespace MpcLib.DistributedSystem
             Members = new SortedSet<int>(ids);
         }
 
-        public void AddMember(int id)
+        public virtual void AddMember(int id)
         {
             Members.Add(id);
         }
 
-        public void RemoveMembers(int id)
+        public virtual void RemoveMembers(int id)
         {
             Members.Remove(id);
         }

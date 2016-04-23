@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Security.Cryptography;
 
 namespace MpcLib.Common.StochasticUtils
@@ -49,5 +50,28 @@ namespace MpcLib.Common.StochasticUtils
 		{
 			return rand.Next(minValue, maxValue);
 		}
+
+        public BigInteger Next(BigInteger maxValue)
+        {
+            int bits = (int) Math.Ceiling(BigInteger.Log(maxValue, 2));
+            int bytes = bits / 8 + ((bits % 8 == 0) ? 0 : 1);
+
+            int bitsToZero = (bits % 8 == 0) ? 0 : (8 - bits % 8);
+
+
+            byte[] data = new byte[bytes];
+            while (true)
+            {
+                rand.NextBytes(data);
+                for (int i = 0; i < bitsToZero; i++)
+                {
+                    data[data.Length - 1] &= (byte) ~(1 << (8 - i));
+                }
+
+                BigInteger ret = new BigInteger(data);
+                if (ret < maxValue)
+                    return ret;
+            }
+        }
 	}
 }

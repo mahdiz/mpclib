@@ -45,7 +45,16 @@ namespace MpcLib.Common.FiniteField
 			}
 		}
 
-		public BigZp(BigInteger prime, BigInteger num)
+
+        public BigZp SquareRoot
+        {
+            get
+            {
+                return new BigZp(Prime, NumTheoryUtils.ModSqrRoot(num, Prime));
+            }
+        }
+        
+        public BigZp(BigInteger prime, BigInteger num)
 		{
 			this.Prime = prime;
 			this.num = Modulo(num, prime);
@@ -212,6 +221,8 @@ namespace MpcLib.Common.FiniteField
 					throw new Exception("Unknown operation: " + operation);
 			}
 		}
+
+        
 
 		public BigInteger Modulo(BigInteger i)
 		{

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
+using MpcLib.NtlWrapper;
 
 namespace MpcLib.Common.FiniteField
 {
@@ -170,13 +171,18 @@ namespace MpcLib.Common.FiniteField
 			return false;	// it's a prime with high probability
 		}
 
-		/// <summary>
-		/// Returns a random big integer in the specified range. This is based on a simple probabilistic algorithm.
-		/// </summary>
-		/// <param name="minValue">Inclusive lower bound.</param>
-		/// <param name="maxValue">Exclusive upper bound.</param>
-		/// <returns></returns>
-		public static BigInteger NextRandomBigInt(RNGCryptoServiceProvider rng, BigInteger minValue, BigInteger maxValue)
+        public static BigInteger ModSqrRoot(BigInteger val, BigInteger prime)
+        {
+            return NtlFunctionality.ModSqrRoot(val, prime);
+        }
+
+        /// <summary>
+        /// Returns a random big integer in the specified range. This is based on a simple probabilistic algorithm.
+        /// </summary>
+        /// <param name="minValue">Inclusive lower bound.</param>
+        /// <param name="maxValue">Exclusive upper bound.</param>
+        /// <returns></returns>
+        public static BigInteger NextRandomBigInt(RNGCryptoServiceProvider rng, BigInteger minValue, BigInteger maxValue)
 		{
 			BigInteger n;
 			var len = maxValue.ToByteArray().Length;
@@ -277,12 +283,12 @@ namespace MpcLib.Common.FiniteField
 			return p;
 		}
 
-		/// <summary>
-		/// Discrete logarithm encryption.
-		/// </summary>
-		/// <param name="x">Value to be encrypted.</param>
-		/// <param name="p">Prime modulus. Should be large enough (> 1024 bits) to ensure security.</param>
-		public static BigInteger DLEncrypt(BigZp x, BigInteger p)
+        /// <summary>
+        /// Discrete logarithm encryption.
+        /// </summary>
+        /// <param name="x">Value to be encrypted.</param>
+        /// <param name="p">Prime modulus. Should be large enough (> 1024 bits) to ensure security.</param>
+        public static BigInteger DLEncrypt(BigZp x, BigInteger p)
 		{
 			return BigInteger.ModPow(2, x.Value, p);
 		}

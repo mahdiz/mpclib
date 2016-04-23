@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using MpcLib.Common.StochasticUtils;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace MpcLib.DistributedSystem
@@ -11,16 +12,19 @@ namespace MpcLib.DistributedSystem
     public abstract class Party
     {
         private static int idGen;
-
+        
         /// <summary>
         /// The unique identity of the party.
         /// </summary>
         public int Id { get; internal set; }
 
+        public SafeRandom SafeRandGen { get; private set; }
+
         public Party()
         {
             Id = idGen++;
             NetSimulator.RegisterParty(this);
+            SafeRandGen = new SafeRandom();
         }
 
         public void Send(int toId, Msg msg, int delay = 0)

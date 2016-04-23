@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MpcLib.DistributedSystem
 {
-    public abstract class QuorumProtocol : Protocol
+    public abstract class QuorumProtocol<T> : Protocol<T> where T : class
     {
         protected Quorum Quorum;
 
@@ -16,12 +16,7 @@ namespace MpcLib.DistributedSystem
             Quorum = quorum;
         }
 
-        public override bool CanHandleMessageType(MsgType type)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void HandleMessage(int fromId, Msg msg)
+        protected override void HandleMessage(int fromId, Msg msg)
         {
             throw new NotImplementedException();
         }
@@ -42,7 +37,7 @@ namespace MpcLib.DistributedSystem
         }
     }
 
-    public abstract class MultiQuorumProtocol : Protocol
+    public abstract class MultiQuorumProtocol<T> : Protocol<T> where T : class
     {
         protected Quorum[] Quorums;
 

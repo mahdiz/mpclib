@@ -13,6 +13,11 @@ namespace MpcLib.DistributedSystem
         public int NumParties;
         public bool IsCompleted { get; protected set; }
 
+        public object RawResult { get; protected set; }
+
+        private Protocol SubProtocol;
+        private int SubProtocolTag;
+
         public Protocol(Party me, SortedSet<int> partyIds)
         {
             Me = me;
@@ -22,7 +27,63 @@ namespace MpcLib.DistributedSystem
         }
 
         public abstract void Start();
-        public abstract bool CanHandleMessageType(MsgType type);
-        public abstract void HandleMessage(int fromId, Msg msg);
+        protected abstract void HandleMessage(int fromId, Msg msg);
+
+        public void MessageHandler(int fromId, Msg msg)
+        {
+            if (SubProtocol == null)
+                HandleMessage(fromId, msg);
+            else
+            {
+                SubProtocol.MessageHandler(fromId, msg);
+                if (SubProtocol.IsCompleted)
+                {
+                    Me.Send(Me.Id, new SubProtocolCompletedMsg(SubProtocol.RawResult, SubProtocolTag));
+                    SubProtocol = null;
+                }
+            }
+        }
+
+        protected void ExecuteSubProtocol(Protocol subProtocol, int tag)
+        {
+            SubProtocol = subProtocol;
+            SubProtocolTag = tag;
+            SubProtocol.Start();
+        }
+    }
+
+
+    public abstract class Protocol<T> : Protocol where T : class
+    {
+        public Protocol(Party me, SortedSet<int> partyIds)
+            : base(me, partyIds)
+        {
+        }
+
+        public T Result
+        {
+            get
+            {
+                return RawResult as T;
+            }
+            protected set
+            {
+                RawResult = value;
+            }
+        }
+    }
+
+    public class SubProtocolCompletedMsg : Msg
+    {
+
+        public SubProtocolCompletedMsg(object result, int tag)
+            : base(MsgType.SubProtocolCompleted)
+        {
+            Result = result;
+            Tag = tag;
+        }
+
+        public object Result;
+        public int Tag;
     }
 }

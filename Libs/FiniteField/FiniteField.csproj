@@ -86,6 +86,10 @@
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\NtlWrapper\NtlWrapper.vcxproj">
+      <Project>{3e0ad1a0-c92c-4abc-96ee-0ed2c4f8d932}</Project>
+      <Name>NtlWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
       <Project>{4966db10-9b4a-426f-8d36-d56d47cbe0ac}</Project>
       <Name>StochasticUtils</Name>
