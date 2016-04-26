@@ -13,17 +13,32 @@ using MpcLib.SecretSharing.QuorumShareRenewal;
 
 namespace MpcLib.SecretSharing
 {
-    public class ShareMultiplicationProtocol : QuorumProtocol<BigZp>
+    public class ShareMultiplicationProtocol : QuorumProtocol<Share<BigZp>>
     {
-        private BigZp Share1, Share2;
-        private BigInteger Prime;
-        private int Seed;
+        public class ProtocolFactory : IBitProtocolFactory
+        {
+            Party Me;
+            Quorum Quorum;
+            public ProtocolFactory(Party me, Quorum quorum)
+            {
+                Me = me;
+                Quorum = quorum;
+            }
 
-        public ShareMultiplicationProtocol(Party me, Quorum quorum, BigZp share1, BigZp share2)
+            public Protocol<Share<BigZp>> GetBitProtocol(Share<BigZp> bitShareA, Share<BigZp> bitShareB)
+            {
+                return new ShareMultiplicationProtocol(Me, Quorum, bitShareA, bitShareB);
+            }
+        }
+
+        private Share<BigZp> Share1, Share2;
+        private BigInteger Prime;
+
+        public ShareMultiplicationProtocol(Party me, Quorum quorum, Share<BigZp> share1, Share<BigZp> share2)
             : base(me, quorum)
         {
-            Debug.Assert(share1.Prime == share2.Prime);
-            Prime = share1.Prime;
+            Debug.Assert(share1.Value.Prime == share2.Value.Prime);
+            Prime = share1.Value.Prime;
             Share1 = share1;
             Share2 = share2;
         }
@@ -33,7 +48,7 @@ namespace MpcLib.SecretSharing
             switch (msg.Type)
             {
                 case MsgType.SubProtocolCompleted:
-                    Result = (msg as SubProtocolCompletedMsg).Result as BigZp;
+                    Result = (msg as SubProtocolCompletedMsg).Result as Share<BigZp>;
                     IsCompleted = true;
                     return;
             }
@@ -43,7 +58,14 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, Share1 * Share2, Prime), 4);
+            var newShare = new Share<BigZp>(Share1.Value * Share2.Value, Share1.IsPublic && Share2.IsPublic);
+            if (Share1.IsPublic || Share2.IsPublic)
+            {
+                Result = newShare;
+                IsCompleted = true;
+            }
+            else
+                ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, newShare, Prime), 4);
         }
     }
 }

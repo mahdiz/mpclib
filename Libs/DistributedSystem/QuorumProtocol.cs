@@ -16,16 +16,6 @@ namespace MpcLib.DistributedSystem
             Quorum = quorum;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Start()
-        {
-            throw new NotImplementedException();
-        }
-
         protected void QuorumBroadcast(Msg msg, int delay = 0)
         {
             Me.Multicast(msg, Quorum.Members, delay);

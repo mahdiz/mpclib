@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using MpcLib.NtlWrapper;
+using System.Diagnostics;
 
 namespace MpcLib.Common.FiniteField
 {
@@ -319,7 +320,7 @@ namespace MpcLib.Common.FiniteField
 			}
 			return (a.Length * 8) - k;
 		}
-
+        
 		/// <summary>
 		/// Returns the actual number of bits of a byte array by ignoring trailing zeros in the binary representation.
 		/// </summary>
@@ -327,5 +328,58 @@ namespace MpcLib.Common.FiniteField
 		{
 			return GetBitLength(a.ToByteArray());
 		}
+
+        public static int GetBitLength2(BigInteger a)
+        {
+            var bytes = a.ToByteArray();
+            Array.Reverse(bytes);
+
+            int zeros = 0;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                for (int j = 7; j >= 0; j--)
+                {
+                    if ((bytes[i] & (1 << j)) > 0)
+                    {
+                        return bytes.Length * 8 - zeros;
+                    }
+                    zeros++;
+                }
+            }
+
+            return 0;
+        }
+
+        // Little-endian
+        public static List<BigZp> GetBitDecomposition(BigInteger a, BigInteger prime)
+        {
+            List<BigZp> result = new List<BigZp>();
+
+            var aBytes = a.ToByteArray() ;
+      //      Array.Reverse(aBytes);
+
+            int bits = GetBitLength2(a);
+           
+            for (int i = 0; i < bits; i++)
+            {
+                result.Add(new BigZp(prime, (aBytes[i / 8] >> (i % 8)) & 0x1));
+            }
+
+            return result;
+        }
+
+        public static List<BigZp> GetBitDecomposition(BigInteger a, BigInteger prime, int length)
+        {
+            List<BigZp> result = GetBitDecomposition(a, prime);
+            Debug.Assert(result.Count <= length);
+
+            for (int i = result.Count; i < length; i++)
+            {
+                // pad with zeroes
+                result.Add(new BigZp(prime, 0));
+            }
+
+            return result;
+        }
 	}
 }

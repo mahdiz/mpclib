@@ -9,12 +9,12 @@ using System.Numerics;
 
 namespace MpcLib.SecretSharing
 {
-    public class BitCompositionProtocol : QuorumProtocol<BigZp>
+    public class BitCompositionProtocol : QuorumProtocol<Share<BigZp>>
     {
-        List<BigZp> BitShares;
+        List<Share<BigZp>> BitShares;
         BigInteger Prime;
 
-        public BitCompositionProtocol(Party me, Quorum quorum, List<BigZp> bitShares, BigInteger prime)
+        public BitCompositionProtocol(Party me, Quorum quorum, List<Share<BigZp>> bitShares, BigInteger prime)
             : base(me, quorum)
         {
             BitShares = bitShares;
@@ -27,13 +27,16 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            Result = new BigZp(Prime);
+            var value = new BigZp(Prime);
             BigZp two = new BigZp(Prime, 2);
+            bool isPublic = true;
             for (int i = BitShares.Count - 1; i >= 0; i--)
             {
-                Result = Result * two + BitShares[i];
+                value = value * two + BitShares[i].Value;
+                isPublic &= BitShares[i].IsPublic;
             }
 
+            Result = new Share<BigZp>(value, isPublic);
             IsCompleted = true;
         }
     }

@@ -54,7 +54,7 @@ namespace MpcLib.SecretSharing.eVSS
 		{
 			get
 			{
-				return base.Size + Witness.Size;
+				return base.Size + ((Witness != null) ? Witness.Size : 0);
 			}
 		}
 	}

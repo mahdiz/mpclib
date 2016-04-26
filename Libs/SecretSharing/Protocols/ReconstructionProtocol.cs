@@ -13,23 +13,29 @@ namespace MpcLib.SecretSharing
 {
     public class ReconstructionProtocol : QuorumProtocol<BigZp>
     {
-        private BigZp Share;
+        private Share<BigZp> Share;
         private BigInteger Prime;
 
 
         private Dictionary<int, BigZp> ReconstRecv;
         
-        public ReconstructionProtocol(Party me, Quorum quorum, BigZp share)
+        public ReconstructionProtocol(Party me, Quorum quorum, Share<BigZp> share)
             : base(me, quorum)
         {
             Share = share;
-            Prime = share.Prime;
+            Prime = share.Value.Prime;
             ReconstRecv = new Dictionary<int, BigZp>();
         }
 
         public override void Start()
         {
-            QuorumBroadcast(new ShareMsg<BigZp>(Share, MsgType.Reconst));
+            if (Share.IsPublic)
+            {
+                Result = Share.Value;
+                IsCompleted = true;
+            }
+            else
+                QuorumBroadcast(new ShareMsg<BigZp>(Share.Value, MsgType.Reconst));
         }
 
         protected override void HandleMessage(int fromId, Msg msg)

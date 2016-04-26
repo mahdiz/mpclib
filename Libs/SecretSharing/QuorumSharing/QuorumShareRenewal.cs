@@ -13,7 +13,7 @@ using MpcLib.SecretSharing.eVSS;
 
 namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 {
-    public class QuorumShareRenewalProtocol : MultiQuorumProtocol<BigZp>
+    public class QuorumShareRenewalProtocol : MultiQuorumProtocol<Share<BigZp>>
     {
         private const int FROM = 0;
         private const int TO = 1;
@@ -26,11 +26,12 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private BigInteger Prime;
         private bool FinalRound;
 
-        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp share, BigInteger prime)
+        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime)
             : base(me, new Quorum[] { quorumFrom, quorumTo })
         {
+            Debug.Assert(!share.IsPublic);  // makes no sense to do share renewal on a public value
             Prime = prime;
-            Shares = new BigZp[] { share };
+            Shares = new BigZp[] { share.Value };
         }
 
         protected override void HandleMessage(int fromId, Msg msg)
@@ -60,7 +61,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                         if (Quorums[TO].HasMember(Me.Id))
                         {
                             Debug.Assert(CurrentRound.Result.Length == 1);
-                            Result = CurrentRound.Result[0];
+                            Result = new Share<BigZp>(CurrentRound.Result[0], false);
                         }
                         IsCompleted = true;
                     }
