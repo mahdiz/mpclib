@@ -7,16 +7,15 @@ using System.Threading.Tasks;
 
 // Based on the paper "A (fairly) Simple Circuit that (usually) Sorts" by Tom Leighton and Greg Plaxton
 
-namespace MpcLib.Circuit
+namespace MpcLib.Circuits
 {
-    class LPSortingNetwork : PermutationNetwork
+    public class LPSortingNetwork : PermutationNetwork
     {
         private const int c = 0; // not sure what to set as.  Log of the constant from the big-O notation
         private const double gamma = 0.822;
-        private const int bitonicSortBound = 4;
+        private const int bitonicSortBound = 6;
 
         int K;
-
 
         LPSortingCalculationCache CalculationCache;
 
@@ -28,18 +27,51 @@ namespace MpcLib.Circuit
             K = (int)Math.Log(wireCount, 2);
 
             CalculationCache = new LPSortingCalculationCache();
-            
+
+            AppendNetwork(new LPSortingNetwork(K, CalculationCache), 0);
         }
 
-        private LPSortingNetwork(int k, int l, LPSortingCalculationCache calculationCache)
+        // the initial round
+        private LPSortingNetwork(int k, LPSortingCalculationCache calculationCache)
             : base(1 << k)
         {
             CalculationCache = calculationCache;
+            K = k;
 
-            if (l <= bitonicSortBound)
+            if (k <= (int)Math.Floor(gamma * (k)) + c + 2)
             {
-                // Apply Lemma 4.3
-                AppendNetwork(CreateFinalSorter(l), 0);
+                // network too small to be sorted by this method
+                AppendNetwork(SortingNetworkFactory.CreateBitonicSort(1 << K, false), 0);
+            }
+            else
+            {
+                // Apply Lemma 4.2
+                AppendNetwork(CreateTournament(k), 0);
+                // Apply Lemma 4.1
+                AppendNetwork(CreateBlockCorrectionNetwork(k, (int)Math.Floor(gamma * (k)) + c), 0);
+
+                AppendNetwork(new LPSortingNetwork(K, (int)Math.Floor(gamma * (k)) + c + 2, CalculationCache), 0);
+            }
+        }
+
+        // the subsequent rounds
+        private LPSortingNetwork(int k, int l, LPSortingCalculationCache calculationCache)
+            : base(1 << k)
+        {
+            Console.WriteLine(k + " " + l);
+            CalculationCache = calculationCache;
+
+            K = k;
+            
+            if (l <= (int)Math.Floor(gamma * (l + 2)) + c + 5)
+            {
+                // if we would get worse by doing the procedure, then finish
+                if (k <= l)
+                    AppendNetwork(SortingNetworkFactory.CreateBitonicSort(1 << K, false), 0);
+                else
+                    // Apply Lemma 4.3
+                    AppendNetwork(CreateFinalSorter(l), 0);
+                
             }
             else
             {
@@ -72,7 +104,7 @@ namespace MpcLib.Circuit
             // for the permutation rho
             PermutationGate permuteGate = new PermutationGate(GenerateArbitraryPermutation(blockSize));
             
-            pn.AppendGate(permuteGate.Clone() as Gate, 0);
+            pn.AppendGate(permuteGate.Copy() as Gate, 0);
             pn.AppendNetwork(SortingNetworkFactory.CreateButterflyTournament(blockSize), 0);
             return pn;
         }
@@ -133,22 +165,24 @@ namespace MpcLib.Circuit
                 mappedY[i++] = pi[yElem];
             }
 
-            pn.AppendGate(new SplitGate(blockSize, mappedY, false), 0);
+            pn.AppendGate(PermutationGateFactory.CreateSplitGate(blockSize, mappedY, false), 0);
 
             // we now want to unshuffle X into 2^(l+1) groups and add one element of Y to each group
 
-            pn.AppendGate(new UnshuffleGate(blockSize - ySize, ySize), 0);
+            pn.AppendGate(PermutationGateFactory.CreateUnshuffleGate(blockSize - ySize, ySize), 0);
 
-            pn.AppendGate(new MultiGroupInserterGate(blockSize, (blockSize / ySize) - 1, ySize), 0);
+            pn.AppendGate(PermutationGateFactory.CreateMultiGroupInserterGate(blockSize, (blockSize / ySize) - 1, ySize), 0);
+
+            var treeInsertion = SortingNetworkFactory.CreateBinaryTreeInsertion(blockSize / ySize);
 
             // use binary tree insertion to insert the elemnt we just added to each group
-            for (int j = 0; j < ySize; i++)
+            for (int j = 0; j < ySize; j++)
             {
-                pn.AppendNetwork(SortingNetworkFactory.CreateBinaryTreeInsertion(blockSize / ySize), j * blockSize / ySize);
+                pn.AppendNetwork(treeInsertion.Clone() as PermutationNetwork, j * blockSize / ySize);
             }
 
             // now shuffle all of the lists back together
-            pn.AppendGate(new ShuffleGate(blockSize, ySize), 0);
+            pn.AppendGate(PermutationGateFactory.CreateShuffleGate(blockSize, ySize), 0);
 
             return pn;
         }
@@ -180,8 +214,8 @@ namespace MpcLib.Circuit
             int listCount = (1 << (intraBlockSortQuality + 1));
             int listSize = borderSize / listCount;
 
-            pn.AppendGate(new UnshuffleGate(borderSize, listCount), 0);
-            pn.AppendGate(new UnshuffleGate(borderSize, listCount), borderSize);
+            pn.AppendGate(PermutationGateFactory.CreateUnshuffleGate(borderSize, listCount), 0);
+            pn.AppendGate(PermutationGateFactory.CreateUnshuffleGate(borderSize, listCount), borderSize);
 
             // merge the corresponding lists
             for (int i = 0; i < listCount; i++)
@@ -197,8 +231,8 @@ namespace MpcLib.Circuit
             }
 
             // shuffle the lists back into the blocks
-            pn.AppendGate(new ShuffleGate(borderSize, listCount), 0);
-            pn.AppendGate(new ShuffleGate(borderSize, listCount), borderSize);
+            pn.AppendGate(PermutationGateFactory.CreateShuffleGate(borderSize, listCount), 0);
+            pn.AppendGate(PermutationGateFactory.CreateShuffleGate(borderSize, listCount), borderSize);
 
             return pn;
         }
@@ -212,27 +246,35 @@ namespace MpcLib.Circuit
             int blockCount = 1 << (K - blockBitLength);
 
             // sort each block, alternate orders for bitonic merge coming up
+            var bitonicSort = SortingNetworkFactory.CreateBitonicSort(blockSize, false);
+
             for (int i = 0; i < blockCount; i++)
             {
-                pn.AppendNetwork(SortingNetworkFactory.CreateBitonicSort(blockSize, (i % 2 == 1)), i * blockSize);
+                pn.AppendNetwork(bitonicSort, i * blockSize);
+                if (i % 2 == 1)
+                    pn.AppendGate(PermutationGateFactory.CreateInvertGate(blockSize), i * blockSize);
             }
 
             PermutationNetwork twoBlockMerge = SortingNetworkFactory.CreateBitonicMerge(blockSize * 2, false);
 
             // merge each block with the one next to it.  alternate ordern for bitonic merge coming up
+
+            var bitonicMerge = SortingNetworkFactory.CreateBitonicMerge(blockSize * 2, false);
             for (int i = 0; i < blockCount; i+=2)
             {
-                pn.AppendNetwork(SortingNetworkFactory.CreateBitonicMerge(blockSize * 2, (i % 2 == 1)), i * blockSize);
+                pn.AppendNetwork(bitonicMerge.Clone() as PermutationNetwork, i * blockSize);
+                if ((i / 2) % 2 == 1)
+                    pn.AppendGate(PermutationGateFactory.CreateInvertGate(2 * blockSize), i * blockSize);
             }
 
             // do another round of merges, this time offset by 1
             for (int i = 1; i < blockCount; i+=2)
             {
-                pn.AppendNetwork(SortingNetworkFactory.CreateBitonicMerge(blockSize * 2, false), i * blockSize);
+                pn.AppendNetwork(bitonicMerge.Clone() as PermutationNetwork, i * blockSize);
             }
 
             // the last block will be inverted, so uninvert it
-            pn.AppendGate(new InvertGate(blockSize), (blockCount - 1) * blockSize);
+            pn.AppendGate(PermutationGateFactory.CreateInvertGate(blockSize), (blockCount - 1) * blockSize);
 
             return pn;
         }

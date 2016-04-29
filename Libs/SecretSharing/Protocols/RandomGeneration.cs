@@ -215,11 +215,8 @@ namespace MpcLib.SecretSharing
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-            
-
-            Console.WriteLine("Randgen Done Stage " + completedMsg.Tag);
-
-
+       //     Console.WriteLine("Randgen Done Stage " + completedMsg.Tag);
+       
             if (completedMsg.Tag < BitsNeeded - 1)
             {
                 Result.Add((Share<BigZp>)completedMsg.Result);

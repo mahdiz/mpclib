@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MpcLib.Circuit
+namespace MpcLib.Circuits
 {
     public class SortingNetwork
     {
@@ -63,7 +63,7 @@ namespace MpcLib.Circuit
             {
                 pn.AppendGate(new CompareAndSwapGate(), new int[] { i, i + wireCount / 2 });
                 if (invertOrder)
-                    pn.AppendGate(new SwapGate(), new int[] { i, i + wireCount / 2 });
+                    pn.AppendGate(PermutationGateFactory.CreateSwapGate(), new int[] { i, i + wireCount / 2 });
             }
 
             return pn;
@@ -80,7 +80,7 @@ namespace MpcLib.Circuit
             if (wireCount > 2)
             {
                 pn.AppendNetwork(CreateBitonicMerge(wireCount / 2, invertOrder), 0);
-                pn.AppendNetwork(CreateBitonicMerge(wireCount / 2, invertOrder), 0);
+                pn.AppendNetwork(CreateBitonicMerge(wireCount / 2, invertOrder), wireCount / 2);
             }
 
             return pn;
@@ -92,9 +92,9 @@ namespace MpcLib.Circuit
 
             PermutationNetwork pn = new PermutationNetwork(wireCount);
 
-            if (wireCount > 4)
+            if (wireCount >= 4)
             {
-                pn.AppendNetwork(CreateBitonicSort(wireCount / 2, false), wireCount / 2);
+                pn.AppendNetwork(CreateBitonicSort(wireCount / 2, false), 0);
                 pn.AppendNetwork(CreateBitonicSort(wireCount / 2, true), wireCount / 2);
             }
 

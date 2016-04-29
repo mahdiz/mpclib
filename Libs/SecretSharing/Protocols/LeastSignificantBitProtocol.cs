@@ -41,7 +41,7 @@ namespace MpcLib.SecretSharing
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
-            Console.WriteLine("LSB Done Stage " + completedMsg.Tag);
+       //     Console.WriteLine("LSB Done Stage " + completedMsg.Tag);
 
             switch (completedMsg.Tag)
             {

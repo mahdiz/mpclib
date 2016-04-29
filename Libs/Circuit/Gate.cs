@@ -5,94 +5,42 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MpcLib.Circuit
+namespace MpcLib.Circuits
 {
-    public abstract class Gate : ICloneable, IEquatable<Gate>
+    public abstract class Gate
     {
+        public const int NO_RANK = -1;
+
         public int InputCount { get; protected set; }
         public int OutputCount { get; protected set; }
-
-        public GateAddress[] InputConnections;
-        public GateAddress[] OutputConnections;
-
-        public int FreeInputs;
-        public int FreeOutputs;
-
-        public bool HasFreeInputs
-        {
-            get
-            {
-                return FreeInputs > 0;
-            }
-        }
-
-        public bool HasFreeOutputs
-        {
-            get
-            {
-                return FreeOutputs > 0;
-            }
-        }
-
+        
+        public int TopologicalRank = NO_RANK;
+        
         public Gate(int inputCount, int outputCount)
         {
             InputCount = inputCount;
             OutputCount = outputCount;
-            InputConnections = new GateAddress[inputCount];
-            OutputConnections = new GateAddress[outputCount];
         }
 
-        public GateAddress GetInputConnection(int port)
+        public InputGateAddress GetLocalInputAddress(int port)
         {
-            return InputConnections[port];
+            return new InputGateAddress(this, port);
         }
 
-        public void SetInputConnection(int port, GateAddress inputFrom)
+        public OutputGateAddress GetLocalOutputAddress(int port)
         {
-            bool wasNull = (InputConnections[port] == null);
-            InputConnections[port] = inputFrom;
-            if (wasNull && inputFrom != null)
-                FreeInputs--;
-            else if (!wasNull && inputFrom == null)
-                FreeInputs++;
+            return new OutputGateAddress(this, port);
         }
 
-        public GateAddress GetOutputConnection(int port)
+        public abstract Gate Copy();
+
+        public override string ToString()
         {
-            return OutputConnections[port];
+            return "Gate Number: " + TopologicalRank;
         }
-
-        public void SetOutputConnection(int port, GateAddress outputTo)
-        {
-            bool wasNull = (OutputConnections[port] == null);
-            OutputConnections[port] = outputTo;
-            if (wasNull && outputTo != null)
-                FreeOutputs--;
-            else if (!wasNull && outputTo == null)
-                FreeOutputs++;
-        }
-
-        public void UpdateNeighborsWhenCloned(Gate old, Dictionary<Gate, Gate> cloneMapping)
-        {
-            for (int i = 0; i < InputCount; i++)
-            {
-                if (old.InputConnections[i] != null)
-                    InputConnections[i] = new GateAddress(cloneMapping[old.InputConnections[i].Gate], old.InputConnections[i].Port);
-            }
-
-            for (int i = 0; i < OutputCount; i++)
-            {
-                if (old.OutputConnections[i] != null)
-                    OutputConnections[i] = new GateAddress(cloneMapping[old.OutputConnections[i].Gate], old.OutputConnections[i].Port);
-            }
-        }
-
-        public abstract object Clone();
-        public abstract bool Equals(Gate other);
     }
 
-
-    public class GateAddress
+    public abstract class GateAddress
     {
         public readonly Gate Gate;
         public readonly int Port;
@@ -102,44 +50,141 @@ namespace MpcLib.Circuit
             Gate = gate;
             Port = port;
         }
-
-        public override bool Equals(object o)
+        
+        public override string ToString()
         {
-            if (!(o is GateAddress))
+            return "(" + Gate.TopologicalRank + ", " + Port + ")";
+        }
+
+        public override bool Equals(object obj)
+        {
+            GateAddress other = obj as GateAddress;
+            if (obj == null)
                 return false;
-
-            GateAddress other = o as GateAddress;
-
             return Gate.Equals(other.Gate) && Port == other.Port;
         }
 
         public override int GetHashCode()
         {
-            return 31 * Gate.GetHashCode() + 39 * Port;
+            return 53 * Gate.GetHashCode() + 31 * Port;
         }
     }
 
-    public class CompareAndSwapGate : Gate
+    public class InputGateAddress : GateAddress
+    {
+        public InputGateAddress(Gate gate, int port)
+            : base(gate, port)
+        {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is InputGateAddress && base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return 19 * base.GetHashCode() + 13;
+        }
+    }
+
+    public class OutputGateAddress : GateAddress
+    {
+        public OutputGateAddress(Gate gate, int port)
+            : base(gate, port)
+        {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is OutputGateAddress && base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return 11 * base.GetHashCode() + 29;
+        }
+    }
+
+    public class GateConnection
+    {
+        public readonly OutputGateAddress FromAddr;
+        public readonly InputGateAddress ToAddr;
+
+        public GateConnection(OutputGateAddress from, InputGateAddress to)
+        {
+            FromAddr = from;
+            ToAddr = to;
+        }
+
+        public override bool Equals(object obj)
+        {
+            GateConnection other = obj as GateConnection;
+            if (obj == null)
+                return false;
+            return FromAddr.Equals(other.FromAddr) && ToAddr.Equals(other.ToAddr);
+        }
+
+        public override int GetHashCode()
+        {
+            return 5 * FromAddr.GetHashCode() + 37 * ToAddr.GetHashCode();
+        }
+    }
+
+    public static class GateAddressHelper
+    {
+        static internal string Render(this GateAddress addr)
+        {
+            return (addr == null) ? "null" : addr.ToString();
+        }
+    }
+
+    public class InputGate : Gate
+    {
+        public InputGate()
+            : base(0, 1)
+        {
+        }
+
+        public override Gate Copy()
+        {
+            return new InputGate();
+        }
+    }
+
+    public abstract class ComputationGate : Gate
+    {
+        public int EvaluationQuorum;
+
+        public ComputationGate(int inputCount, int outputCount)
+            : base(inputCount, outputCount)
+        {
+        }
+    }
+
+
+    public class CompareAndSwapGate : ComputationGate
     {
         public CompareAndSwapGate()
             : base(2, 2)
         {
         }
 
-        public override object Clone()
+        public override Gate Copy()
         {
-            throw new NotImplementedException();
+            return new CompareAndSwapGate();
         }
 
-        public override bool Equals(Gate other)
+        public override string ToString()
         {
-            throw new NotImplementedException();
+            return base.ToString() + " Gate Type: C&S";
         }
     }
 
     public class PermutationGate : Gate
     {
         private int[] Permutation;
+        private Func<int, int> PermutationFunc;
         public int Count { get; private set; }
         public PermutationGate(int[] permutation)
             : base(permutation.Length, permutation.Length)
@@ -148,73 +193,50 @@ namespace MpcLib.Circuit
             Count = permutation.Length;
         }
 
-        public PermutationGate(int count)
+        public PermutationGate(int count, Func<int, int> permutation)
             : base(count, count)
         {
             Count = count;
+            PermutationFunc = permutation;
         }
 
-        public virtual int Permute(int input)
+        public int Permute(int input)
         {
-            return Permutation[input];
+            if (Permutation != null)
+                return Permutation[input];
+            return PermutationFunc(input);
         }
 
-        public override object Clone()
+        public override Gate Copy()
         {
-            throw new NotImplementedException();
+            if (Permutation != null)
+            {
+                return new PermutationGate((int[])Permutation.Clone());
+            }
+            else
+                return new PermutationGate(Count, (Func<int, int>)PermutationFunc.Clone());
         }
 
-        public override bool Equals(Gate other)
+        public override string ToString()
         {
-            throw new NotImplementedException();
+            return base.ToString() + " Gate Type: Permutation";
         }
     }
 
-    public class SwapGate : PermutationGate
+    public static class PermutationGateFactory
     {
-        public SwapGate()
-            : base(2)
-        { 
+        public static PermutationGate CreateSwapGate()
+        {
+            Func<int, int> swapFunc = (a => (a == 0) ? 1 : 0);
+            return new PermutationGate(2, swapFunc);
         }
 
-        public override int Permute(int input)
+        public static PermutationGate CreateNopGate()
         {
-            return (input == 0) ? 1 : 0;
+            return new PermutationGate(1, a => a);
         }
 
-        public override object Clone()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool Equals(Gate other)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class NopGate : PermutationGate
-    {
-        public NopGate()
-            : base(1)
-        {
-        }
-
-        public override int Permute(int input)
-        {
-            return 0;
-        }
-    }
-
-    public class SplitGate : PermutationGate
-    {
-        public SplitGate(int count, int[] group, bool moveGroupToTop)
-            : base(GeneratePermutationFromSplit(count, group, moveGroupToTop))
-        {
-        }
-        
-        // maintain the ordering within each group
-        private static int[] GeneratePermutationFromSplit(int count, int[] group, bool moveGroupToTop)
+        public static PermutationGate CreateSplitGate(int count, int[] group, bool moveGroupToTop)
         {
             int[] sortedGroup = group.Clone() as int[];
             Array.Sort(sortedGroup);
@@ -225,101 +247,60 @@ namespace MpcLib.Circuit
             int notGroupIndex = moveGroupToTop ? 0 : group.Length;
             for (int i = 0; i < count; i++)
             {
-                if (i == sortedGroup[groupIndex])
-                    groupIndex++;
+                if (groupIndex < group.Length && i == sortedGroup[groupIndex])
+                    perm[groupIndex++] = i;
                 else
                     perm[notGroupIndex++] = i;
             }
 
-            Array.Copy(sortedGroup, 0, perm, moveGroupToTop ? 0 : notGroupIndex, sortedGroup.Length);
-
-            return perm;
+            return new PermutationGate(perm);
         }
-    }
 
-    public class UnshuffleGate : PermutationGate
-    {
-        private int CountPerGroup, NumGroups;
-
-        public UnshuffleGate(int count, int numGroups)
-            : base(count)
+        public static PermutationGate CreateUnshuffleGate(int count, int numGroups)
         {
             Debug.Assert(count % numGroups == 0);
-            NumGroups = numGroups;
-            CountPerGroup = count / numGroups;
-        }
-
-        public override int Permute(int input)
-        {
+            int countPerGroup = count / numGroups;
             // I will be in group "i mod numGroups".  To get to the start of that
             // multiply by countPerGroup.  My offset within the group is i/numGroups
             // since numGroups elemnts are grabbed for each offset
-            return (input % NumGroups) * CountPerGroup + input / NumGroups;
-        }
-        
-    }
-    
-    public class MultiGroupInserterGate : PermutationGate
-    {
-        private int GroupSize, NumGroups;
+            Func<int, int> unshuffleFunc = (input => (input % numGroups) * countPerGroup + input / numGroups);
+            return new PermutationGate(count, unshuffleFunc);
 
-        public MultiGroupInserterGate(int count, int groupSize, int numGroups)
-            : base(count)
+        }
+
+        public static PermutationGate CreateMultiGroupInserterGate(int count, int groupSize, int numGroups)
         {
-            Debug.Assert(count == groupSize * (numGroups + 1));
+            // expect the first groupSize * groupCount elements to be the groups
+            // and the next groupCount elements to be what we are supposed to add, one to each group
+            // at the front of each group
+            Func<int, int> inserterFunc = (input =>
+            {
+                if (input < groupSize * numGroups)
+                    return input + input / groupSize + 1;
+                else
+                    return (input - groupSize * numGroups) * (groupSize + 1);
+            });
 
-            GroupSize = groupSize;
-            NumGroups = numGroups;
+
+            return new PermutationGate(count, inserterFunc);
         }
 
-
-        // expect the first groupSize * groupCount elements to be the groups
-        // and the next groupCount elements to be what we are supposed to add, one to each group
-        // at the front of each group
-        public override int Permute(int input)
-        {
-            if (input < GroupSize*NumGroups)
-            {
-                return input + input / GroupSize + 1;
-            }
-            else
-            {
-                return (input - GroupSize * NumGroups) * (GroupSize + 1);
-            }
-        }
-    }
-
-    public class ShuffleGate : PermutationGate
-    {
-        private int CountPerGroup, NumGroups;
-
-        public ShuffleGate(int count, int numGroups)
-            : base(count)
+        public static PermutationGate CreateShuffleGate(int count, int numGroups)
         {
             Debug.Assert(count % numGroups == 0);
 
-            CountPerGroup = count / numGroups;
-        }
+            int countPerGroup = count / numGroups;
 
-        public override int Permute(int input)
-        {
             // take my position within the group and multiply to get which block i am in
             // then add my group number to get offset within block
-            return (input % CountPerGroup) * NumGroups + (input / CountPerGroup);
+            Func<int, int> shuffleFunc = (input => (input % countPerGroup) * numGroups + (input / countPerGroup));
+
+            return new PermutationGate(count, shuffleFunc);
         }
 
-    }
-
-    public class InvertGate : PermutationGate
-    {
-        public InvertGate(int count)
-            : base(count)
+        public static PermutationGate CreateInvertGate(int count)
         {
-        }
-
-        public override int Permute(int input)
-        {
-            return Count - 1 - input;
+            return new PermutationGate(count, (input => (count - 1 - input)));
         }
     }
 }

@@ -7,123 +7,112 @@ using System.Threading.Tasks;
 using MpcLib.Common.BasicDataStructures.Graph;
 using System.Diagnostics;
 
-namespace MpcLib.Circuit
+namespace MpcLib.Circuits
 {
     public class Circuit : ICloneable
     {
         protected ISet<Gate> Gates;
 
-        public ISet<Gate> InputGates { get; private set; }
-        public ISet<Gate> OutputGates { get; private set; }
+        public ISet<InputGateAddress> InputAddrs { get; private set; }
+        public ISet<OutputGateAddress> OutputAddrs { get; private set; }
+        
+
+        public IDictionary<OutputGateAddress, InputGateAddress> OutputConnectionCounterparties;
+        public IDictionary<InputGateAddress, OutputGateAddress> InputConnectionCounterparties;
+
+        private List<Gate> TopologicalOrderImpl;
+
+        public List<Gate> TopologicalOrder
+        {
+            get
+            {
+                if (TopologicalOrderImpl == null)
+                    TopologicalOrderImpl = AssignTopologicalRanks();
+                return TopologicalOrderImpl;
+            }
+        }
+
 
         public Circuit()
         {
             Gates = new HashSet<Gate>();
-            InputGates = new HashSet<Gate>();
-            OutputGates = new HashSet<Gate>();
+            InputAddrs = new HashSet<InputGateAddress>();
+            OutputAddrs = new HashSet<OutputGateAddress>();
+
+            OutputConnectionCounterparties = new Dictionary<OutputGateAddress, InputGateAddress>();
+            InputConnectionCounterparties = new Dictionary<InputGateAddress, OutputGateAddress>();
         }
 
         // create a copy of the gate and add it
-        public void AddGate(Gate gate)
+        public void AddGate(Gate gate, IEnumerable<GateConnection> connections)
         {
-            Debug.Assert(gate.InputCount == gate.InputConnections.Length);
-            Debug.Assert(gate.OutputCount == gate.OutputConnections.Length);
-
             // insert before checks to allow loopback
             Gates.Add(gate);
 
-            bool isInput = false, isOutput = false;
-            for (int i = 0; i < gate.InputConnections.Length; i++)
+            for (int i = 0; i < gate.InputCount; i++)
+                InputAddrs.Add(new InputGateAddress(gate, i));
+            for (int i = 0; i < gate.OutputCount; i++)
+                OutputAddrs.Add(new OutputGateAddress(gate, i));
+
+            foreach (var connection in connections)
             {
-                var inputFrom = gate.InputConnections[i];
-                if (inputFrom == null)
-                {
-                    isInput = true;
-                    continue;
-                }
-                
-                Debug.Assert(Gates.Contains(inputFrom.Gate));
-                AddConnection(inputFrom, new GateAddress(gate, i));
+                AddConnection(connection);
             }
 
-            for (int i = 0; i < gate.OutputConnections.Length; i++)
-            {
-                var outputTo = gate.OutputConnections[i];
-                if (outputTo == null)
-                {
-                    isOutput = true;
-                    continue;
-                }
-
-                Debug.Assert(Gates.Contains(outputTo.Gate));
-                AddConnection(new GateAddress(gate, i), outputTo);
-            }
-
-            if (isInput)
-            {
-            }
-            if (isOutput)
-            {
-                OutputGates.Add(gate);
-            }
+            TopologicalOrderImpl = null;
         }
 
-        public void AddConnection(GateAddress inputFrom, GateAddress outputTo)
+
+        public void AddConnection(GateConnection connection)
         {
-            Debug.Assert(Gates.Contains(inputFrom.Gate));
-            Debug.Assert(Gates.Contains(outputTo.Gate));
+            // create a connection from output to input
 
-            // we need to remove the old connections
-            GateAddress oldOutputTo = inputFrom.Gate.GetOutputConnection(inputFrom.Port);
-            GateAddress oldInputFrom = outputTo.Gate.GetInputConnection(outputTo.Port);
-
-            if (!outputTo.Equals(oldOutputTo))
+            if (OutputConnectionCounterparties.ContainsKey(connection.FromAddr))
             {
-                // remove the old connection and make a new one
-                if (oldOutputTo != null)
-                {
-                    oldOutputTo.Gate.SetInputConnection(oldOutputTo.Port, null);
-                    InputGates.Add(oldOutputTo.Gate);
-                }
-
-                inputFrom.Gate.SetOutputConnection(inputFrom.Port, outputTo);
-                if (!inputFrom.Gate.HasFreeOutputs)
-                {
-                    OutputGates.Remove(inputFrom.Gate);
-                }
+                // the "from" in this connection already has a counterparty.  want to remove it
+                var oldTo = OutputConnectionCounterparties[connection.FromAddr];
+                InputConnectionCounterparties[oldTo] = null;
+                InputAddrs.Add(oldTo);
             }
 
-            if (!inputFrom.Equals(oldInputFrom))
+            if (InputConnectionCounterparties.ContainsKey(connection.ToAddr))
             {
-                if (oldInputFrom != null)
-                {
-                    oldInputFrom.Gate.SetOutputConnection(oldInputFrom.Port, null);
-                    OutputGates.Add(oldInputFrom.Gate);
-                }
-
-                outputTo.Gate.SetInputConnection(outputTo.Port, inputFrom);
-                if (!outputTo.Gate.HasFreeInputs)
-                {
-                    InputGates.Remove(outputTo.Gate);
-                }
+                // the "to" in this connection already has a counterparty.  want to remove it
+                var oldFrom = InputConnectionCounterparties[connection.ToAddr];
+                OutputConnectionCounterparties[oldFrom] = null;
+                OutputAddrs.Add(oldFrom);
             }
+
+            OutputConnectionCounterparties[connection.FromAddr] = connection.ToAddr;
+            OutputAddrs.Remove(connection.FromAddr);
+            InputConnectionCounterparties[connection.ToAddr] = connection.FromAddr;
+            InputAddrs.Remove(connection.ToAddr);
+            
+            TopologicalOrderImpl = null;
         }
 
-        public void JoinWith(Circuit c, IList<Tuple<GateAddress, GateAddress>> joins)
+        public void JoinWith(Circuit c, IList<GateConnection> joins)
         {
             // add all of the gates in the other circuit.  we need to make sure that there are there is no overlap
             Debug.Assert(!Gates.Intersect(c.Gates).Any());
 
             Gates.UnionWith(c.Gates);
-            InputGates.UnionWith(c.InputGates);
-            OutputGates.UnionWith(c.OutputGates);
+            InputAddrs.UnionWith(c.InputAddrs);
+            OutputAddrs.UnionWith(c.OutputAddrs);
+            
+            foreach (var inAddr in c.InputConnectionCounterparties.Keys)
+            {
+                var outAddr = c.InputConnectionCounterparties[inAddr];
+                InputConnectionCounterparties[inAddr] = outAddr;
+                OutputConnectionCounterparties[outAddr] = inAddr;
+            }
 
             foreach (var join in joins)
             {
-                var inputFrom = join.Item1;
-                var outputTo = join.Item2;
-                AddConnection(inputFrom, outputTo);
+                AddConnection(join);
             }
+
+            TopologicalOrderImpl = null;
         }
 
         public object Clone()
@@ -141,22 +130,119 @@ namespace MpcLib.Circuit
             // add all of the gates and connections that I have
             foreach (var gate in Gates)
             {
-                var gateClone = gate.Clone() as Gate;
+                var gateClone = gate.Copy() as Gate;
                 clone.Gates.Add(gateClone);
-                if (InputGates.Contains(gate))
-                    clone.InputGates.Add(gateClone);
-                if (OutputGates.Contains(gate))
-                    clone.OutputGates.Add(gateClone);
-
                 mapping.Add(gate, gateClone);
             }
 
-            foreach (var gate in Gates)
+            foreach (var input in InputAddrs)
             {
-                mapping[gate].UpdateNeighborsWhenCloned(gate, mapping);
+                clone.InputAddrs.Add(new InputGateAddress(mapping[input.Gate], input.Port));
             }
-            
+
+            foreach (var output in OutputAddrs)
+            {
+                clone.OutputAddrs.Add(new OutputGateAddress(mapping[output.Gate], output.Port));
+            }
+
+            foreach (var oldInputGate in InputConnectionCounterparties.Keys)
+            {
+                var newInputGate = new InputGateAddress(mapping[oldInputGate.Gate], oldInputGate.Port);
+                var oldOutputGate = InputConnectionCounterparties[oldInputGate];
+                var newOutputGate = new OutputGateAddress(mapping[oldOutputGate.Gate], oldOutputGate.Port);
+
+                clone.InputConnectionCounterparties[newInputGate] = newOutputGate;
+                clone.OutputConnectionCounterparties[newOutputGate] = newInputGate;
+            }
+
             return clone;
+        }
+
+        // DOES NOT DEAL WITH CIRCUITS WITH CYCLES!!!
+        private List<Gate> AssignTopologicalRanks()
+        {
+            // grab an item from the input set
+            var inEnum = InputAddrs.GetEnumerator();
+            inEnum.MoveNext();
+            var gateDeque = new LinkedList<Gate>();
+            while (inEnum.MoveNext())
+                gateDeque.AddFirst(inEnum.Current.Gate);
+
+            var sortList = new List<Gate>();
+
+            int nextRank = 0;
+
+            while (gateDeque.Count > 0)
+            {
+                var current = gateDeque.First.Value;
+
+                if (current.TopologicalRank != Gate.NO_RANK)
+                {
+                    // already assigned a rank to this. can move on to next
+                    gateDeque.RemoveFirst();
+                    continue;
+                }
+
+                // check to see if all of the predecessors have a rank assigned. If any don't then add them to the front of the queue
+                bool shouldAssignRank = true;
+
+                for (int i = 0; i < current.InputCount; i++)
+                {
+                    var addr = current.GetLocalInputAddress(i);
+                    if (InputAddrs.Contains(addr))
+                        continue;
+
+                    var counterparty = InputConnectionCounterparties[addr].Gate;
+                    if (counterparty.TopologicalRank == Gate.NO_RANK)
+                    {
+                        gateDeque.AddFirst(counterparty);
+                        shouldAssignRank = false;
+                    }
+
+                }
+
+                if (shouldAssignRank)
+                {
+                    current.TopologicalRank = nextRank;
+                    nextRank++;
+                    sortList.Add(current);
+                    gateDeque.RemoveFirst();
+
+                    // add all successors
+                    for (int i = 0; i < current.OutputCount; i++)
+                    {
+                        var addr = current.GetLocalOutputAddress(i);
+                        if (OutputAddrs.Contains(addr))
+                            continue;
+
+                        gateDeque.AddLast(OutputConnectionCounterparties[addr].Gate);
+                    }
+                }
+                // otherwise a predecessor still needs a rank
+            }
+
+            return sortList;
+        }
+
+        public override string ToString()
+        {
+            List<Gate> gates = TopologicalOrder;
+            // that should also assign all gates to a number
+
+            string str = "";
+
+            str += "Input Addrs: " + string.Join(" ", InputAddrs.Select(addr => addr.Render())) + "\n";
+            str += "Output Addrs: " + string.Join(" ", OutputAddrs.Select(addr => addr.Render())) + "\n";
+
+            str += string.Join("\n", gates);
+
+            str += "\n";
+
+            str += string.Join("\n", OutputConnectionCounterparties.Select(kv => kv.Key + " -> " + kv.Value));
+
+            str += "\n";
+
+            return str;
         }
     }
 
@@ -166,15 +252,21 @@ namespace MpcLib.Circuit
 
         public Circuit Circuit { get; private set; }
 
-        private GateAddress[] LastGateForWire;
-        private GateAddress[] FirstGateForWire;
+        public OutputGateAddress[] LastGateForWire;
+        public InputGateAddress[] FirstGateForWire;
+
+        private List<Gate>[] WireGateList;
 
         public PermutationNetwork(int wireCount)
         {
             WireCount = wireCount;
-            LastGateForWire = new GateAddress[wireCount];
-            FirstGateForWire = new GateAddress[wireCount];
+            LastGateForWire = new OutputGateAddress[wireCount];
+            FirstGateForWire = new InputGateAddress[wireCount];
             Circuit = new Circuit();
+
+            WireGateList = new List<Gate>[wireCount];
+            for (int i = 0; i < wireCount; i++)
+                WireGateList[i] = new List<Gate>();
         }
 
         public void AppendGate(Gate gate, int[] wires)
@@ -182,23 +274,27 @@ namespace MpcLib.Circuit
             Debug.Assert(gate.InputCount == gate.OutputCount);
             Debug.Assert(gate.InputCount == wires.Length);
 
+            ISet<GateConnection> joins = new HashSet<GateConnection>();
+
             for (int i = 0; i < wires.Length; i++)
             {
                 int wire = wires[i];
-                gate.InputConnections[i] = LastGateForWire[wire];
-                LastGateForWire[wire] = new GateAddress(gate, i);
+                if (LastGateForWire[wire] != null)
+                    joins.Add(new GateConnection(LastGateForWire[wire], gate.GetLocalInputAddress(i)));
+
+                LastGateForWire[wire] = gate.GetLocalOutputAddress(i);
                 if (FirstGateForWire[wire] == null)
-                {
-                    FirstGateForWire[wire] = LastGateForWire[wire];
-                }
+                    FirstGateForWire[wire] = gate.GetLocalInputAddress(i);
+
+                WireGateList[wire].Add(gate);
             }
 
-            Circuit.AddGate(gate);
+            Circuit.AddGate(gate, joins);
         }
 
         public void AppendGate(Gate gate, int startWire)
         {
-            Debug.Assert(WireCount <= startWire + gate.InputCount);
+            Debug.Assert(startWire + gate.InputCount <= WireCount);
             // wasteful but good enough for now
 
             int[] wires = new int[gate.InputCount];
@@ -214,24 +310,27 @@ namespace MpcLib.Circuit
         {
             // append the provided network to this one. join wires[i] to i
             Debug.Assert(wires.Length == pn.WireCount);
-            List<Tuple<GateAddress, GateAddress>> joins = new List<Tuple<GateAddress, GateAddress>>();
+            List<GateConnection> joins = new List<GateConnection>();
 
             for (int i = 0; i < wires.Length; i++)
             {
-                if (LastGateForWire[wires[i]] != null && pn.FirstGateForWire[i] != null)
+                int wire = wires[i];
+                if (LastGateForWire[wire] != null && pn.FirstGateForWire[i] != null)
                 {
-                    joins.Add(new Tuple<GateAddress, GateAddress>(LastGateForWire[wires[i]], pn.FirstGateForWire[i]));
+                    joins.Add(new GateConnection(LastGateForWire[wire], pn.FirstGateForWire[i]));
                 }
 
                 if (pn.LastGateForWire[i] != null)
                 {
-                    LastGateForWire[wires[i]] = pn.LastGateForWire[i];
+                    LastGateForWire[wire] = pn.LastGateForWire[i];
                 }
 
-                if (FirstGateForWire[wires[i]] == null)
+                if (FirstGateForWire[wire] == null)
                 {
-                    FirstGateForWire[wires[i]] = pn.FirstGateForWire[i];
+                    FirstGateForWire[wire] = pn.FirstGateForWire[i];
                 }
+
+                WireGateList[wire].AddRange(pn.WireGateList[i]);
             }
 
             Circuit.JoinWith(pn.Circuit, joins);
@@ -239,7 +338,7 @@ namespace MpcLib.Circuit
 
         public void AppendNetwork(PermutationNetwork pn, int startWire)
         {
-            Debug.Assert(WireCount <= startWire + pn.WireCount);
+            Debug.Assert(startWire + pn.WireCount <= WireCount);
 
             // wasteful but good enough for now
             int[] mapping = new int[pn.WireCount];
@@ -255,7 +354,7 @@ namespace MpcLib.Circuit
         public object Clone()
         {
             var clone = new PermutationNetwork(WireCount);
-            
+
             Dictionary<Gate, Gate> mapping;
 
             clone.Circuit = Circuit.Clone(out mapping) as Circuit;
@@ -263,12 +362,26 @@ namespace MpcLib.Circuit
             for (int i = 0; i < WireCount; i++)
             {
                 if (FirstGateForWire[i] != null)
-                    clone.FirstGateForWire[i] = new GateAddress(mapping[FirstGateForWire[i].Gate], FirstGateForWire[i].Port);
+                    clone.FirstGateForWire[i] = new InputGateAddress(mapping[FirstGateForWire[i].Gate], FirstGateForWire[i].Port);
                 if (LastGateForWire[i] != null)
-                    clone.LastGateForWire[i] = new GateAddress(mapping[LastGateForWire[i].Gate], LastGateForWire[i].Port);
+                    clone.LastGateForWire[i] = new OutputGateAddress(mapping[LastGateForWire[i].Gate], LastGateForWire[i].Port);
             }
 
             return clone;
+        }
+
+        public override string ToString()
+        {
+            string str = Circuit.ToString();
+            str += "First Gate Per Wire: " + string.Join(" ", FirstGateForWire.Select(addr => addr.Render())) + "\n";
+            str += "Last Gate Per Wire: " + string.Join(" ", LastGateForWire.Select(addr => addr.Render())) + "\n";
+
+            for (int i = 0; i < WireCount; i++)
+            {
+                str += "Wire " + i + ": " + string.Join(" ", WireGateList[i].Select(g => g.TopologicalRank)) + "\n";
+            }
+
+            return str;
         }
     }
 }

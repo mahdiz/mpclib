@@ -9,13 +9,14 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Circuit</RootNamespace>
     <AssemblyName>Circuit</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>true</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -41,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Circuit.cs" />
+    <Compile Include="CircuitEvaluationProtocol.cs" />
     <Compile Include="Gate.cs" />
     <Compile Include="LPSorting.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -50,6 +52,22 @@
     <ProjectReference Include="..\BasicDataStructures\BasicDataStructures.csproj">
       <Project>{d89afe72-407e-4414-bdfc-e5b50bb25bef}</Project>
       <Name>BasicDataStructures</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DistributedSystem\DistributedSystem.csproj">
+      <Project>{fb8dd953-2188-41f9-9b81-b5fcb509f2ba}</Project>
+      <Name>DistributedSystem</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FiniteField\FiniteField.csproj">
+      <Project>{3fc29bc8-208b-4b67-b222-b5de9aa3c65b}</Project>
+      <Name>FiniteField</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
+      <Project>{2279ad83-89cc-439f-a198-4e6c1c73f668}</Project>
+      <Name>SecretSharing</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

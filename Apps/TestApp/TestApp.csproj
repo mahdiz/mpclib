@@ -93,6 +93,10 @@
       <Project>{d89afe72-407e-4414-bdfc-e5b50bb25bef}</Project>
       <Name>BasicDataStructures</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Libs\Circuit\Circuit.csproj">
+      <Project>{84c74dd1-bc63-44ea-be28-227048400333}</Project>
+      <Name>Circuit</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Libs\Common\Common.csproj">
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>

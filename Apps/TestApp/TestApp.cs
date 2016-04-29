@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Numerics;
 using MpcLib.Common;
 using MpcLib.Common.FiniteField;
-using MpcLib.Common.FiniteField.Circuits;
 using MpcLib.Common.StochasticUtils;
 using MpcLib.DistributedSystem;
 using MpcLib.MpcProtocols;
@@ -11,6 +10,7 @@ using MpcLib.MpcProtocols.Crypto;
 using MpcLib.MultiPartyShuffling;
 using System.Collections.Generic;
 using MpcLib.SecretSharing;
+using MpcLib.Circuits;
 
 namespace MpcLib.Apps
 {
@@ -33,21 +33,21 @@ namespace MpcLib.Apps
         public static void Main(string[] args)
         {
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 5;      // number of parties
+            int n = 8;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);
-            
-            SetupCompareAndSwap(new Quorum(0, n));
+
+            TestSimpleCircuitEvaluation(new Quorum(0, n));
 
             Console.WriteLine(n + " parties initialized. Running simulation...\n");
 
             // run the simulator
             var elapsedTime = Timex.Run(() => NetSimulator.Run());
 
-            Console.WriteLine("Simulation finished.  Checking results...\n");
+            CheckSimpleCircuitEvaluation(new Quorum(0, n));
 
-            CheckCompareAndSwap();
+            Console.WriteLine("Simulation finished.  Checking results...\n");
 
             Console.WriteLine("# parties    = " + n);
             Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount);
@@ -55,7 +55,7 @@ namespace MpcLib.Apps
 			Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
 			Console.WriteLine("Seed         = " + seed + "\n");
 			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-            Console.ReadKey();
+        //    Console.ReadKey();
 		}
 
 
@@ -406,6 +406,24 @@ namespace MpcLib.Apps
             return result;
         }
 
+        public static List<BigZp> ReconstructDictionary(Quorum q, OutputGateAddress[] ordering)
+        {
+            List<BigZp> result = new List<BigZp>();
+            foreach (OutputGateAddress outAddr in ordering)
+            {
+                BigZp[] shares = new BigZp[q.Size];
+
+                int j = 0;
+                foreach (var id in q.Members)
+                {
+                    shares[j++] = (NetSimulator.GetParty(id) as TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>).UnderTest.Result[outAddr].Value;
+                }
+                result.Add(BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime));
+            }
+
+            return result;
+        }
+
         public static List<Share<BigZp>> MakeList(params BigZp[] vals)
         {
             List<Share<BigZp>> result = new List<Share<BigZp>>();
@@ -415,7 +433,49 @@ namespace MpcLib.Apps
             return result;
         }
 
+        public static void TestCreateCircuit()
+        {
+            var c = new LPSortingNetwork(1 << 3);
+            Console.WriteLine(c);
+        }
 
+        public static PermutationNetwork network;
+        public static void TestSimpleCircuitEvaluation(Quorum quorum)
+        {
+            int n = quorum.Size;
+            var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
+            
+            Debug.Assert((n & (n - 1)) == 0); // is power of 2
+            
+            network = new LPSortingNetwork(n);
+
+            IList<BigZp>[] shares = new IList<BigZp>[n];
+
+            for (int i = 0; i < n; i++)
+                shares[i] = BigShamirSharing.Share(new BigZp(prime, 500 - 2*i), n, polyDeg);
+
+            foreach (var id in quorum.Members)
+            {
+                Dictionary<InputGateAddress, Share<BigZp>> inShares = new Dictionary<InputGateAddress, Share<BigZp>>();
+
+                int i = 0;
+                foreach (var inAddr in network.Circuit.InputAddrs)
+                {
+                    inShares[inAddr] = new Share<BigZp>(shares[i][id]);
+                    i++;
+                }
+
+                TestParty<IDictionary<OutputGateAddress, Share<BigZp>>> party = new TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>();
+                party.UnderTest = new SecureGroupCircuitEvaluation(party, quorum, network.Circuit, inShares);
+                NetSimulator.RegisterParty(party);
+            }
+        }
+
+        public static void CheckSimpleCircuitEvaluation(Quorum quorum)
+        {
+            Console.WriteLine("Result: " + string.Join(" ", ReconstructDictionary(quorum, network.LastGateForWire)));
+        }
+        
         public static void TestShamir(int n, BigInteger prime, int seed)
 		{
             StaticRandom.Init(seed);
