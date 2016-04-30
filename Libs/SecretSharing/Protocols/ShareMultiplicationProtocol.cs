@@ -43,17 +43,13 @@ namespace MpcLib.SecretSharing
             Share2 = share2;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
-            switch (msg.Type)
-            {
-                case MsgType.SubProtocolCompleted:
-                    Result = (msg as SubProtocolCompletedMsg).Result as Share<BigZp>;
-                    IsCompleted = true;
-                    return;
-            }
+            Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
-            Debug.Assert(false);
+            Result = (Share<BigZp>)(msg as SubProtocolCompletedMsg).SingleResult;
+            IsCompleted = true;
+            return;
         }
 
         public override void Start()
@@ -65,7 +61,7 @@ namespace MpcLib.SecretSharing
                 IsCompleted = true;
             }
             else
-                ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, newShare, Prime), 4);
+                ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, newShare, Prime, Quorum.NextProtocolId));   
         }
     }
 }

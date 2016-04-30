@@ -56,7 +56,7 @@ namespace MpcLib.MultiPartyShuffling
         {
         }
 
-        public override void Receive(int fromId, Msg msg)
+        public override void Receive(int fromId, long protocolId, Msg msg)
         {
         }
     }

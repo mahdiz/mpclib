@@ -14,8 +14,10 @@ namespace MpcLib.SecretSharing
     public class ShareLessThanProtocol : QuorumProtocol<Share<BigZp>>
     {
         private Share<BigZp> ShareA, ShareB, ShareAMinusB;
-        private Share<BigZp> W, X, Y, XY;
+        private Share<BigZp> W, X, Y, XY, XpY;
         private BigInteger Prime;
+
+        private int Stage;
 
         public ShareLessThanProtocol(Party me, Quorum Quorum, Share<BigZp> shareA, Share<BigZp> shareB)
             : base(me, Quorum)
@@ -30,69 +32,74 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new LessThanHalfPrime(Me, Quorum, ShareA), 0);
+            Stage = 0;
+            ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, ShareA, BigZpShareFactory.ShareAdditiveInverse(ShareB)));
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             var completedMsg = msg as SubProtocolCompletedMsg;
 
-            switch (completedMsg.Tag)
+            switch (Stage)
             {
                 case 0:
-                    W = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new LessThanHalfPrime(Me, Quorum, ShareB), 1);
+                    ShareAMinusB = (Share<BigZp>)completedMsg.SingleResult;
+
+                    ExecuteSubProtocols(new Protocol[]
+                    {
+                        new LessThanHalfPrime(Me, Quorum, ShareA),
+                        new LessThanHalfPrime(Me, Quorum, ShareB),
+                        new LessThanHalfPrime(Me, Quorum, ShareAMinusB)
+                    });
                     break;
                 case 1:
-                    X = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, ShareA, BigZpShareFactory.ShareAdditiveInverse(ShareB)), 2);
+                    W = (Share<BigZp>)completedMsg.ResultList[0];
+                    X = (Share<BigZp>)completedMsg.ResultList[1];
+                    Y = (Share<BigZp>)completedMsg.ResultList[2];
+
+                    ExecuteSubProtocols(new Protocol[]
+                    {
+                        new ShareMultiplicationProtocol(Me, Quorum, X, Y),
+                        new ShareAdditionProtocol(Me, Quorum, X, Y),
+                    });
                     break;
                 case 2:
-                    ShareAMinusB = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new LessThanHalfPrime(Me, Quorum, ShareAMinusB), 3);
+                    XY = (Share<BigZp>)completedMsg.ResultList[0];
+                    XpY = (Share<BigZp>)completedMsg.ResultList[1];
+                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BigZpShareFactory.CreateConstantShare(Prime, 2), XY));
                     break;
                 case 3:
-                    Y = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, X, Y), 4);
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, XpY, BigZpShareFactory.ShareAdditiveInverse((Share<BigZp>)completedMsg.SingleResult)));
                     break;
                 case 4:
-                    XY = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BigZpShareFactory.CreateConstantShare(Prime, 2), XY), 5);
+                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, W, (Share<BigZp>)completedMsg.SingleResult));
                     break;
                 case 5:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, Y, BigZpShareFactory.ShareAdditiveInverse((Share<BigZp>)completedMsg.Result)), 6);
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, XY, (Share<BigZp>)completedMsg.SingleResult));
                     break;
                 case 6:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, X, (Share<BigZp>)completedMsg.Result), 7);
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BigZpShareFactory.ShareAdditiveInverse(XpY), (Share<BigZp>)completedMsg.SingleResult));
                     break;
                 case 7:
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, W, (Share<BigZp>)completedMsg.Result), 8);
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BigZpShareFactory.CreateConstantShare(Prime, 1), (Share<BigZp>)completedMsg.SingleResult));
                     break;
                 case 8:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, XY, (Share<BigZp>)completedMsg.Result), 9);
-                    break;
-                case 9:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BigZpShareFactory.ShareAdditiveInverse(Y), (Share<BigZp>)completedMsg.Result), 10);
-                    break;
-                case 10:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BigZpShareFactory.ShareAdditiveInverse(X), (Share<BigZp>)completedMsg.Result), 11);
-                    break;
-                case 11:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BigZpShareFactory.CreateConstantShare(Prime, 1), (Share<BigZp>)completedMsg.Result), 12);
-                    break;
-                case 12:
-                    Result = (Share<BigZp>)completedMsg.Result;
+                    Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
                     break;
             }
+
+            Stage++;
         }
     }
 
     public class LessThanHalfPrime : QuorumProtocol<Share<BigZp>>
     {
         private Share<BigZp> Share;
+
+        private int Stage;
 
         public LessThanHalfPrime(Party me, Quorum Quorum, Share<BigZp> share)
             : base(me, Quorum)
@@ -102,32 +109,33 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, Share, new Share<BigZp>(new BigZp(Share.Value.Prime, 2), true)), 0);
+            Stage = 0;
+            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, Share, new Share<BigZp>(new BigZp(Share.Value.Prime, 2), true)));
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             var completedMsg = msg as SubProtocolCompletedMsg;
 
-            switch (completedMsg.Tag)
+            switch (Stage)
             {
                 case 0:
-                    ExecuteSubProtocol(new LeastSignificantBitProtocol(Me, Quorum, (Share<BigZp>)completedMsg.Result), 1);
+                    ExecuteSubProtocol(new LeastSignificantBitProtocol(Me, Quorum, (Share<BigZp>)completedMsg.SingleResult));
                     break;
                 case 1:
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, 
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum,
                         BigZpShareFactory.CreateConstantShare(Share.Value.Prime, 1),
-                        BigZpShareFactory.ShareAdditiveInverse((Share<BigZp>)completedMsg.Result)),
-                        2);
+                        BigZpShareFactory.ShareAdditiveInverse((Share<BigZp>)completedMsg.SingleResult)));
                     break;
                 case 2:
-                    Result = (Share<BigZp>)completedMsg.Result;
+                    Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
                     break;
-
             }
+
+            Stage++;
         }
     }
 }

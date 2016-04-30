@@ -33,7 +33,7 @@ namespace MpcLib.SecretSharing
             IsCompleted = true;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             // do nothing
         }

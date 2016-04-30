@@ -21,7 +21,7 @@ namespace MpcLib.SecretSharing
             Prime = prime;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
         }
 

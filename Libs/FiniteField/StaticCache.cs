@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace MpcLib.Common.FiniteField
 {
 	/// <summary>
 	/// Implements a static internal cache for improving runtime performance of secret sharing.
 	/// </summary>
-	internal class StaticCache
+	public class StaticCache
 	{
 		/// <summary>
 		/// Maps a prime to the corresponding array of inverses.
@@ -61,5 +63,18 @@ namespace MpcLib.Common.FiniteField
 			}
 			return res;
 		}
-	}
+
+        private static Dictionary<Tuple<BigInteger, int>, IList<BigZp>> VandermondeInvCache = new Dictionary<Tuple<BigInteger, int>, IList<BigZp>>();
+
+        public static IList<BigZp> GetVandermondeInvColumn(BigInteger prime, int size)
+        {
+            Tuple<BigInteger, int> t = new Tuple<BigInteger, int>(prime, size);
+            if (VandermondeInvCache.ContainsKey(t))
+                return VandermondeInvCache[t];
+
+            var inv = BigZpMatrix.GetVandermondeMatrix(size, size, prime).Inverse.GetMatrixColumn(0);
+            VandermondeInvCache[t] = inv;
+            return inv;
+        }
+    }
 }

@@ -26,33 +26,33 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private BigInteger Prime;
         private bool FinalRound;
 
-        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime)
-            : base(me, new Quorum[] { quorumFrom, quorumTo })
+        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime, long protocolId)
+            : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
         {
             Debug.Assert(!share.IsPublic);  // makes no sense to do share renewal on a public value
             Prime = prime;
             Shares = new BigZp[] { share.Value };
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             if (CurrentRound == null && msg.Type == MsgType.NextRound)
             {
                 // want to start the next round
                 if (IntermediateRoundsRemaining > 0)
                 {
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 3 * Shares.Length);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 3 * Shares.Length, ProtocolId);
                 }
                 else
                 {
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 1);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, Shares.Length, 1, ProtocolId);
                     FinalRound = true;
                 }
                 CurrentRound.Start();
             }
             else
             {
-                CurrentRound.MessageHandler(fromId, msg);
+                CurrentRound.HandleMessage(fromId, msg);
 
                 if (CurrentRound.IsCompleted)
                 {
@@ -70,7 +70,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                         Shares = CurrentRound.Result;
                         IntermediateRoundsRemaining--;
                         CurrentRound = null;
-                        Me.Send(Me.Id, new Msg(MsgType.NextRound));
+                        Send(Me.Id, new Msg(MsgType.NextRound));
                         // use this to ensure all of the parties stay on the same round
                     }
                 }
@@ -95,20 +95,20 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                 if (IntermediateRoundsRemaining > 0)
                 {
                     // set up the first intermediate round
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[FROM], Shares, Prime, 1, 3);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[FROM], Shares, Prime, 1, 3, ProtocolId);
                     FinalRound = false;
                 }
                 else
                 {
                     // set up the final round
-                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, 1, 1);
+                    CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], Shares, Prime, 1, 1, ProtocolId);
                     FinalRound = true;
                 }
             }
             else
             {
                 // I'm only receiving, so I want to set up the final round
-                CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], null, Prime, FinalRoundInitialSharesPerParty, 1);
+                CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], null, Prime, FinalRoundInitialSharesPerParty, 1, ProtocolId);
                 FinalRound = true;
             }
 
@@ -137,8 +137,8 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private Dictionary<int, CommitMsg> commitsRecv = new Dictionary<int, CommitMsg>();
         private Dictionary<int, List<ShareWitnessMsg<BigZp>>[]> sharesRecv = new Dictionary<int, List<ShareWitnessMsg<BigZp>>[]>();
 
-        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty)
-            : base(me, new Quorum[] { quorumFrom, quorumTo })
+        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty, long protocolId)
+            : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
         {
             FinalSharesPerParty = finalSharesPerParty;
             StartSharesPerParty = startSharesPerParty;
@@ -159,8 +159,9 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             StartShareCount = Quorums[FROM].Size * StartSharesPerParty;
             FinalShareCount = Quorums[TO].Size * FinalSharesPerParty;
             NewPolyDeg = (int)Math.Ceiling(FinalShareCount / 3.0) - 1;
-            
-            VandermondeInv = BigZpMatrix.GetVandermondeMatrix(StartShareCount, StartShareCount, Prime).Inverse.GetMatrixColumn(0);
+
+            VandermondeInv = StaticCache.GetVandermondeInvColumn(Prime, StartShareCount);
+           //     BigZpMatrix.GetVandermondeMatrix(StartShareCount, StartShareCount, Prime).Inverse.GetMatrixColumn(0);
 
             if (Quorums[TO].HasMember(Me.Id))
             {
@@ -190,7 +191,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             }
         }
         
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             switch (msg.Type)
             {
@@ -219,7 +220,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                     // send the message to start the next round when we have received all of the shares from everybody
                     if (ReceivedReshareCount == StartShareCount * FinalSharesPerParty)
                     {
-                        Me.Send(Me.Id, new Msg(MsgType.NextRound));
+                        Send(Me.Id, new Msg(MsgType.NextRound));
                     }
                     break;
                 case MsgType.NextRound:
@@ -271,7 +272,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             {
                 for (int i = 0; i < FinalSharesPerParty; i++)
                 {
-                    Me.Send(toMember, new ShareWitnessMsg<BigZp>(shares[numSent], witnesses[numSent]));
+                    Send(toMember, new ShareWitnessMsg<BigZp>(shares[numSent], witnesses[numSent]));
                     numSent++;
                 }
             }

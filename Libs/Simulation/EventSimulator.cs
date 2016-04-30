@@ -3,6 +3,7 @@
 	public delegate void Handler();
 	public delegate void Handler<T>(T e);
     public delegate void Handler<T,S>(T a, S b);
+    public delegate void Handler<T, S, R>(T a, S b, R c);
 
     /// <summary>
     /// Implements a Discrete-Event Simulation (DES) system.
@@ -40,6 +41,8 @@
 
         protected Q queue = new Q();
 
+        protected Q loopbackQueue = new Q();
+
         /// <summary>
         /// Schedules an event without any argument.
         /// </summary>
@@ -75,6 +78,11 @@
             queue.Enqueue(new Event<T,S>(targetId, handler, clock + delay, arg1, arg2));
         }
 
+        public void Schedule<T,S,R>(int targetId, Handler<T,S,R> handler, int delay, T arg1, S arg2, R arg3)
+        {
+            queue.Enqueue(new Event<T, S, R>(targetId, handler, clock + delay, arg1, arg2, arg3));
+        }
+
         /// <summary>
         /// Schedules a generic event with a handler that would be invoked dynamically for a specific object using reflection.
         /// Use with care due to performance issues. Also, ensure that the handler is declared or inherited by the class of obj,
@@ -89,15 +97,24 @@
 			queue.Enqueue(new ReflectionEvent<T>(targetId, handler, obj, clock + delay, arg));
 		}
 
+        public void Loopback<T,S,R>(int targetId, Handler<T,S,R> handler, T arg1, S arg2, R arg3)
+        {
+            loopbackQueue.Enqueue(new Event<T, S, R>(targetId, handler, clock, arg1, arg2, arg3));
+        }
+
         /// <summary>
         /// Runs the simulation.
         /// </summary>
         public virtual void Run()
         {
             Reset();
-            while (!halted && queue.Count > 0)
+            while (!halted && (loopbackQueue.Count > 0 || queue.Count > 0))
             {
-                var e = queue.Dequeue();
+                BaseEvent e;
+                if (loopbackQueue.Count > 0)
+                    e = loopbackQueue.Dequeue();
+                else
+                    e = queue.Dequeue();
 
                 // dispatch the event
                 clock = e.Time;

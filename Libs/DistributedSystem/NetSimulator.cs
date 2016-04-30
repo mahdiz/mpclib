@@ -73,13 +73,13 @@ namespace MpcLib.DistributedSystem
             des.Run();
         }
 
-        public static void Send(int fromId, int toId, Msg msg, int delay = 0)
+        public static void Send(int fromId, int toId, long protocolId, Msg msg, int delay = 0)
         {
           //  Console.WriteLine("Adding send from " + fromId + " at " + des.Clock);
 
             SentMessageCount++;
             SentByteCount += msg.Size;
-            des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, msg);
+            des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, protocolId, msg);
 
             if (MessageSent != null)
                 MessageSent(fromId, toId, msg.Size);
@@ -88,7 +88,7 @@ namespace MpcLib.DistributedSystem
         /// <summary>
         /// Sends the i-th message to the i-th party.
         /// </summary>
-        public static void Send(int fromId, ICollection<Msg> msgs, int delay = 0)
+        public static void Send(int fromId, long protocolId, ICollection<Msg> msgs, int delay = 0)
         {
             Debug.Assert(parties.Count == msgs.Count, "Not enough recipients/messages to send!");
 
@@ -98,11 +98,11 @@ namespace MpcLib.DistributedSystem
             foreach (var pair in parties)
             {
                 msgIter.MoveNext();
-                Send(fromId, pair.Key, msgIter.Current, delay);
+                Send(fromId, pair.Key, protocolId, msgIter.Current, delay);
             }
         }
 
-        public static void Send(int fromId, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
+        public static void Send(int fromId, long protocolId, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
         {
             Debug.Assert(msgs.Count == recipients.Count, "Not enough recipients/messages to send!");
 
@@ -111,16 +111,16 @@ namespace MpcLib.DistributedSystem
 
             while (msgIter.MoveNext() && recipIter.MoveNext())
             {
-                Send(fromId, recipIter.Current, msgIter.Current, delay);
+                Send(fromId, recipIter.Current, protocolId, msgIter.Current, delay);
             }
         }
 
-        public static void Multicast(int fromId, IEnumerable<int> toIds, Msg msg, int delay = 0)
+        public static void Multicast(int fromId, long protocolId, IEnumerable<int> toIds, Msg msg, int delay = 0)
         {
            // Console.WriteLine("Adding multicast from " + fromId + " at " + des.Clock);
             foreach (var toId in toIds)
             {
-                des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, msg);
+                des.Schedule(toId, parties[toId].Receive, delay + 1, fromId, protocolId, msg);
 
                 if (MessageSent != null)
                     MessageSent(fromId, toId, msg.Size);
@@ -140,9 +140,14 @@ namespace MpcLib.DistributedSystem
             SentByteCount += 1024 * nSquared;
         }
 
-        public static void Broadcast(int fromId, Msg msg, int delay = 0)
+        public static void Broadcast(int fromId, long protocolId, Msg msg, int delay = 0)
         {
-            Multicast(fromId, PartyIds, msg, delay);
+            Multicast(fromId, protocolId, PartyIds, msg, delay);
+        }
+
+        public static void Loopback(int id, long protocolId, Msg msg)
+        {
+            des.Loopback(id, parties[id].Receive, id, protocolId, msg);
         }
 
         public static void Reset()

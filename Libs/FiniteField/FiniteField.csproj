@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BigField\BigZp.cs" />
+    <Compile Include="CalculationCache.cs" />
     <Compile Include="Circuits\Circuit.cs" />
     <Compile Include="Circuits\Enums.cs" />
     <Compile Include="BigField\BigZpMatrix.cs" />

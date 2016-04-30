@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MpcLib.DistributedSystem
 {
-    public class Quorum
+    public class Quorum : ICloneable
     {
         public int Size
         {
@@ -16,25 +16,53 @@ namespace MpcLib.DistributedSystem
             }
         }
 
-        public SortedSet<int> Members { get; private set; }
-        
-        public Quorum()
+        private int QuorumNumber;
+        private long ProtocolId = 0;
+        public long NextProtocolId
         {
-            Members = new SortedSet<int>();
+            get
+            {
+                return ProtocolId++;
+            }
         }
 
-        public Quorum(int startId, int endId)
+        public SortedSet<int> Members { get; private set; }
+        
+        public Quorum(int quorumNumber)
         {
             Members = new SortedSet<int>();
+            QuorumNumber = quorumNumber;
+            SetStartProtocolId();
+        }
+
+        public Quorum(int quorumNumber, int startId, int endId)
+            : this(quorumNumber)
+        {
             for (int i = startId; i < endId; i++)
             {
                 Members.Add(i);
             }
         }
 
-        public Quorum(ICollection<int> ids)
+        public Quorum(int quorumNumber, ICollection<int> ids)
+            : this(quorumNumber)
         {
             Members = new SortedSet<int>(ids);
+        }
+        
+        public virtual object Clone()
+        {
+            Quorum q = (Quorum) this.MemberwiseClone();
+
+            q.Members = new SortedSet<int>(Members);
+            return q;
+        }
+
+        private void SetStartProtocolId()
+        {
+            ProtocolId = QuorumNumber;
+            ProtocolId <<= 32;
+            ProtocolId += 1;
         }
 
         public virtual void AddMember(int id)

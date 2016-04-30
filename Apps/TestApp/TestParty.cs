@@ -14,12 +14,8 @@ namespace MpcLib.Apps
         
         public override void Start()
         {
+            RegisterProtocol(null, UnderTest);
             UnderTest.Start();
-        }
-
-        public override void Receive(int fromId, Msg msg)
-        {
-            UnderTest.MessageHandler(fromId, msg);
         }
     }
 }

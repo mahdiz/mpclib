@@ -23,6 +23,8 @@ namespace MpcLib.SecretSharing
 
         Share<BigZp> X, Y;
 
+        private int Stage;
+
         public LeastSignificantBitProtocol(Party me, Quorum quorum, Share<BigZp> share)
             : base(me, quorum)
         {
@@ -32,38 +34,37 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new RandomBitwiseGenProtocol(Me, Quorum, Prime, Prime), 0);
+            Stage = 0;
+            ExecuteSubProtocol(new RandomBitwiseGenProtocol(Me, Quorum, Prime, Prime));
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
-       //     Console.WriteLine("LSB Done Stage " + completedMsg.Tag);
-
-            switch (completedMsg.Tag)
+            switch (Stage)
             {
                 case 0:
-                    BitwiseRand = completedMsg.Result as List<Share<BigZp>>;
-                    ExecuteSubProtocol(new BitCompositionProtocol(Me, Quorum, BitwiseRand, Prime), 1);
+                    BitwiseRand = (List<Share<BigZp>>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new BitCompositionProtocol(Me, Quorum, BitwiseRand, Prime));
                     break;
                 case 1:
-                    Rand = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, Rand, Share), 2);
+                    Rand = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, Rand, Share));
                     break;
                 case 2:
-                    PaddedShare = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, PaddedShare), 3);
+                    PaddedShare = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, PaddedShare));
                     break;
                 case 3:
-                    RevealedPadded = completedMsg.Result as BigZp;
+                    RevealedPadded = (BigZp)completedMsg.SingleResult;
                     BigZp lowBit = new BigZp(Prime, RevealedPadded.Value.IsEven ? 0 : 1);
-                    ExecuteSubProtocol(new SharedBitXor(Me, Quorum, new Share<BigZp>(lowBit, true), BitwiseRand[0]), 4);
+                    ExecuteSubProtocol(new SharedBitXor(Me, Quorum, new Share<BigZp>(lowBit, true), BitwiseRand[0]));
                     break;
                 case 4:
-                    X = completedMsg.Result as Share<BigZp>;
+                    X = (Share<BigZp>)completedMsg.SingleResult;
 
                     var bitwiseRevealedPadded = NumTheoryUtils.GetBitDecomposition(RevealedPadded.Value, Prime, BitwiseRand.Count);
 
@@ -73,17 +74,19 @@ namespace MpcLib.SecretSharing
                         bitwiseRevealedPaddedShares.Add(new Share<BigZp>(bit, true));
                     }
 
-                    ExecuteSubProtocol(new BitwiseLessThanProtocol(Me, Quorum, bitwiseRevealedPaddedShares, BitwiseRand), 5);
+                    ExecuteSubProtocol(new BitwiseLessThanProtocol(Me, Quorum, bitwiseRevealedPaddedShares, BitwiseRand));
                     break;
                 case 5:
-                    Y = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new SharedBitXor(Me, Quorum, X, Y), 6);
+                    Y = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new SharedBitXor(Me, Quorum, X, Y));
                     break;
                 case 6:
-                    Result = completedMsg.Result as Share<BigZp>;
+                    Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
                     break;
             }
+
+            Stage++;
 
         }
     }

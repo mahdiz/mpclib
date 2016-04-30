@@ -20,6 +20,8 @@ namespace MpcLib.SecretSharing
 
         private Share<BigZp> LesserShare, GreaterShare;
 
+        int stage;
+
         public CompareAndSwapProtocol(Party me, Quorum quorum, Share<BigZp> shareA, Share<BigZp> shareB)
             : base(me, quorum)
         {
@@ -31,53 +33,62 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new ShareLessThanProtocol(Me, Quorum, ShareA, ShareB), 0);
+            stage = 0;
+            ExecuteSubProtocol(new ShareLessThanProtocol(Me, Quorum, ShareA, ShareB));
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             var completedMsg = (SubProtocolCompletedMsg)msg;
 
-            switch (completedMsg.Tag)
+            switch (stage)
             {
                 case 0:
-                    Comp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, 
-                        BigZpShareFactory.CreateConstantShare(Prime, 1), 
-                        BigZpShareFactory.ShareAdditiveInverse(Comp)), 1);
+                    Comp = (Share<BigZp>)completedMsg.ResultList[0];
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum,
+                        BigZpShareFactory.CreateConstantShare(Prime, 1),
+                        BigZpShareFactory.ShareAdditiveInverse(Comp)));
                     break;
                 case 1:
-                    InvComp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, Comp, ShareA), 2);
+                    InvComp = (Share<BigZp>)completedMsg.ResultList[0];
+
+                    ExecuteSubProtocols(new Protocol[]
+                    {
+                        new ShareMultiplicationProtocol(Me, Quorum, Comp, ShareA),
+                        new ShareMultiplicationProtocol(Me, Quorum, InvComp, ShareA),
+                        new ShareMultiplicationProtocol(Me, Quorum, Comp, ShareB),
+                        new ShareMultiplicationProtocol(Me, Quorum, InvComp, ShareB)
+                    });
                     break;
                 case 2:
-                    ShareAComp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, InvComp, ShareA), 3);
-                    break;
+                    {
+                        var results = completedMsg.ResultList;
+                        ShareAComp = (Share<BigZp>)results[0];
+                        ShareAInvComp = (Share<BigZp>)results[1];
+                        ShareBComp = (Share<BigZp>)results[2];
+                        ShareBInvComp = (Share<BigZp>)results[3];
+
+                        ExecuteSubProtocols(new Protocol[]
+                        {
+                        new ShareAdditionProtocol(Me, Quorum, ShareAComp, ShareBInvComp),
+                        new ShareAdditionProtocol(Me, Quorum, ShareAInvComp, ShareBComp)
+                        });
+                        break;
+                    }
                 case 3:
-                    ShareAInvComp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, Comp, ShareB), 4);
-                    break;
-                case 4:
-                    ShareBComp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, InvComp, ShareB), 5);
-                    break;
-                case 5:
-                    ShareBInvComp = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, ShareAComp, ShareBInvComp), 6);
-                    break;
-                case 6:
-                    LesserShare = (Share<BigZp>)completedMsg.Result;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, ShareAInvComp, ShareBComp), 7);
-                    break;
-                case 7:
-                    GreaterShare = (Share<BigZp>)completedMsg.Result;
-                    Result = new Tuple<Share<BigZp>, Share<BigZp>>(LesserShare, GreaterShare);
-                    IsCompleted = true;
-                    break;
+                    {
+                        var results = completedMsg.ResultList;
+                        LesserShare = (Share<BigZp>)results[0];
+                        GreaterShare = (Share<BigZp>)results[1];
+                        Result = new Tuple<Share<BigZp>, Share<BigZp>>(LesserShare, GreaterShare);
+                        IsCompleted = true;
+                        break;
+                    }
             }
+
+            stage++;
         }
     }
 }

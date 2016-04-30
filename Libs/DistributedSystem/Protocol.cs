@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,58 +13,66 @@ namespace MpcLib.DistributedSystem
         public SortedSet<int> PartyIds { get; internal set; }
         public int NumParties;
         public bool IsCompleted { get; protected set; }
+        public long ProtocolId { get; protected set; }
 
         public object RawResult { get; protected set; }
 
-        private Protocol SubProtocol;
-        private int SubProtocolTag;
-
-        public Protocol(Party me, SortedSet<int> partyIds)
+        public Protocol(Party me, SortedSet<int> partyIds, long protocolId)
         {
             Me = me;
             PartyIds = partyIds;
             NumParties = PartyIds.Count;
             IsCompleted = false;
+            ProtocolId = protocolId;
         }
 
         public abstract void Start();
-        protected abstract void HandleMessage(int fromId, Msg msg);
-
-        public void MessageHandler(int fromId, Msg msg)
+        public abstract void HandleMessage(int fromId, Msg msg);
+        
+        public void Send(int toId, Msg msg, int delay = 0)
         {
-            if (SubProtocol == null)
-                HandleMessage(fromId, msg);
-            else
-            {
-                SubProtocol.MessageHandler(fromId, msg);
-                CheckSubProtocolCompleted();
-            }
+            Me.Send(this, toId, msg, delay);
         }
 
-        protected void ExecuteSubProtocol(Protocol subProtocol, int tag)
+        /// <summary>
+        /// Sends the i-th message to the i-th party.
+        /// </summary>
+        public void Send(Protocol protocol, ICollection<Msg> msgs, int delay = 0)
         {
-            SubProtocol = subProtocol;
-            SubProtocolTag = tag;
-            SubProtocol.Start();
-
-            CheckSubProtocolCompleted();
+            Me.Send(this, msgs, delay);
         }
 
-        private void CheckSubProtocolCompleted()
+        public void Send(ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
         {
-            if (SubProtocol.IsCompleted)
-            {
-                Me.Send(Me.Id, new SubProtocolCompletedMsg(SubProtocol.RawResult, SubProtocolTag));
-                SubProtocol = null;
-            }
+            Me.Send(this, msgs, recipients, delay);
+        }
+
+        public void Multicast(Msg msg, IEnumerable<int> toIds, int delay = 0)
+        {
+            Me.Multicast(this, msg, toIds, delay);
+        }
+
+        public void Broadcast(Msg msg, int delay = 0)
+        {
+            Me.Broadcast(this, msg, delay);
+        }
+
+        public void ExecuteSubProtocol(Protocol subProtocol)
+        {
+            Me.ExecuteSubProtocol(this, subProtocol);
+        }
+
+        public void ExecuteSubProtocols(IEnumerable<Protocol> subProtocols)
+        {
+            Me.ExecuteSubProtocols(this, subProtocols);
         }
     }
 
 
     public abstract class Protocol<T> : Protocol where T : class
     {
-        public Protocol(Party me, SortedSet<int> partyIds)
-            : base(me, partyIds)
+        public Protocol(Party me, SortedSet<int> partyIds, long protocolId)
+            : base(me, partyIds, protocolId)
         {
         }
 
@@ -83,21 +92,39 @@ namespace MpcLib.DistributedSystem
     public class SubProtocolCompletedMsg : Msg
     {
 
-        public SubProtocolCompletedMsg(object result, int tag)
+        public SubProtocolCompletedMsg(SortedDictionary<long, object> result)
             : base(MsgType.SubProtocolCompleted)
         {
             Result = result;
-            Tag = tag;
         }
 
-        public object Result;
-        public int Tag;
+        public SortedDictionary<long, object> Result;
+
+        private List<object> ResultListInternal;
+        public List<object> ResultList
+        {
+            get
+            {
+                if (ResultListInternal == null)
+                    ResultListInternal = Result.Values.ToList();
+                return ResultListInternal;
+            }
+        }
+
+        public object SingleResult
+        {
+            get
+            {
+                Debug.Assert(ResultList.Count == 1);
+                return ResultList[0];
+            }
+        }
     }
 
     public class NopProtocol : Protocol
     {
-        public NopProtocol(Party me, object result)
-            : base(me, new SortedSet<int>())
+        public NopProtocol(Party me, object result, long protocolId)
+            : base(me, new SortedSet<int>(), protocolId)
         {
             IsCompleted = true;
             RawResult = result;
@@ -107,7 +134,7 @@ namespace MpcLib.DistributedSystem
         {
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
         }
     }

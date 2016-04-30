@@ -11,19 +11,24 @@ namespace MpcLib.DistributedSystem
         protected Quorum Quorum;
 
         public QuorumProtocol(Party me, Quorum quorum)
-            : base(me, quorum.Members)
+            : this(me, quorum, quorum.NextProtocolId)
+        {
+        }
+
+        public QuorumProtocol(Party me, Quorum quorum, long protocolId)
+            : base(me, quorum.Members, protocolId)
         {
             Quorum = quorum;
         }
 
         protected void QuorumBroadcast(Msg msg, int delay = 0)
         {
-            Me.Multicast(msg, Quorum.Members, delay);
+            Multicast(msg, Quorum.Members, delay);
         }
 
         protected void QuorumSend(ICollection<Msg> msgs, int delay = 0)
         {
-            Me.Send(msgs, Quorum.Members, delay);
+            Send(msgs, Quorum.Members, delay);
         }
     }
 
@@ -31,8 +36,8 @@ namespace MpcLib.DistributedSystem
     {
         protected Quorum[] Quorums;
 
-        public MultiQuorumProtocol(Party me, Quorum[] quorums)
-            : base(me, MergeQuorums(quorums))
+        public MultiQuorumProtocol(Party me, Quorum[] quorums, long protocolId)
+            : base(me, MergeQuorums(quorums), protocolId)
         {
             Quorums = quorums;
         }
@@ -50,12 +55,12 @@ namespace MpcLib.DistributedSystem
 
         protected void QuorumSend(ICollection<Msg> msgs, int whichQuorum, int delay = 0)
         {
-            Me.Send(msgs, Quorums[whichQuorum].Members, delay);
+            Send(msgs, Quorums[whichQuorum].Members, delay);
         }
 
         protected void QuorumBroadcast(Msg msg, int whichQuorum, int delay = 0)
         {
-            Me.Multicast(msg, Quorums[whichQuorum].Members, delay);
+            Multicast(msg, Quorums[whichQuorum].Members, delay);
         }
     }
 }

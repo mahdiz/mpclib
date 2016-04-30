@@ -38,7 +38,7 @@ namespace MpcLib.SecretSharing
                 QuorumBroadcast(new ShareMsg<BigZp>(Share.Value, MsgType.Reconst));
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.Reconst);
             ReconstRecv[fromId] = (msg as ShareMsg<BigZp>).Share;

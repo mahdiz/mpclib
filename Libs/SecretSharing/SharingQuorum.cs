@@ -13,19 +13,20 @@ namespace MpcLib.SecretSharing
         public PolyCommit PolyCommit { get; private set; }
         public int Seed { get; private set; }
 
-        public ByzantineQuorum(int seed)
+        public ByzantineQuorum(int quorumId, int seed)
+            : base(quorumId)
         {
             SetupByzantine(seed);
         }
 
-        public ByzantineQuorum(int startId, int endId, int seed)
-            : base(startId, endId)
+        public ByzantineQuorum(int quorumId, int startId, int endId, int seed)
+            : base(quorumId, startId, endId)
         {
             SetupByzantine(seed);
         }
 
-        public ByzantineQuorum(ICollection<int> ids, int seed)
-            : base(ids)
+        public ByzantineQuorum(int quorumId, ICollection<int> ids, int seed)
+            : base(quorumId, ids)
         {
             SetupByzantine(seed);
         }
@@ -55,6 +56,16 @@ namespace MpcLib.SecretSharing
         {
             base.RemoveMembers(id);
             InitPolyCommit();
+        }
+
+        public override object Clone()
+        {
+            ByzantineQuorum copy = (ByzantineQuorum)base.Clone();
+
+            copy.PolyCommit = new PolyCommit();
+            copy.InitPolyCommit();
+
+            return copy;
         }
     }
 }

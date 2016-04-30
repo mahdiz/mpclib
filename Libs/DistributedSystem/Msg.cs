@@ -45,7 +45,7 @@ namespace MpcLib.DistributedSystem
 		{
 			get
 			{
-				return sizeof(MsgType);
+				return sizeof(MsgType) + sizeof(long);
 			}
 		}
 	}

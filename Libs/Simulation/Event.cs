@@ -126,6 +126,39 @@ namespace MpcLib.Simulation.Des
         }
     }
 
+    internal class Event<T,S,R> : BaseEvent
+    {
+        private readonly T arg1;
+        private readonly S arg2;
+        private readonly R arg3;
+        public readonly Handler<T, S, R> handler;
+        public override event OnFinish OnFinish;
+
+        public Event(int targetId, Handler<T, S, R> handler, long time, T arg1, S arg2, R arg3)
+            : base(targetId, time)
+        {
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.arg3 = arg3;
+            this.handler = handler;
+        }
+
+        public override void Handle()
+        {
+            Debug.Assert(handler != null, "Event does not have any handler.");
+            handler(arg1, arg2, arg3);
+
+            if (OnFinish != null)
+                OnFinish();
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + ", " + arg1 + ", " + arg2 + ", " + arg3;
+        }
+
+    }
+
     /// <summary>
     /// Represents an event that its handler would be determined through reflection.
     /// This type of events should be used with care. Excessive use may bring about

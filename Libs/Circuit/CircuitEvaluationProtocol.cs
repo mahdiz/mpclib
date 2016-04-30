@@ -33,13 +33,13 @@ namespace MpcLib.Circuits
             Result = new Dictionary<OutputGateAddress, Share<BigZp>>();
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             var completedMsg = (SubProtocolCompletedMsg)msg;
 
-            var result = (Tuple<Share<BigZp>, Share<BigZp>>)completedMsg.Result;
+            var result = (Tuple<Share<BigZp>, Share<BigZp>>)completedMsg.SingleResult;
             var gate = GateList[currentGate];
 
             GateResults[gate.GetLocalOutputAddress(0)] = result.Item1;
@@ -97,8 +97,8 @@ namespace MpcLib.Circuits
             {
                 var input0 = GetGateInput(gate.GetLocalInputAddress(0));
                 var input1 = GetGateInput(gate.GetLocalInputAddress(1));
-
-                ExecuteSubProtocol(new CompareAndSwapProtocol(Me, Quorum, input0, input1), 0);
+                
+                ExecuteSubProtocol(new CompareAndSwapProtocol(Me, Quorum, input0, input1));
             }
         }
 

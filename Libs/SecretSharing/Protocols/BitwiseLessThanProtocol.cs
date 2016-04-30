@@ -16,6 +16,8 @@ namespace MpcLib.SecretSharing
 
         private List<Share<BigZp>> C, D, E, y;
 
+        private int Stage;
+
         public BitwiseLessThanProtocol(Party me, Quorum quorum, List<Share<BigZp>> aBitShares, List<Share<BigZp>> bBitShares)
             : base(me, quorum)
         {
@@ -27,42 +29,47 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesA, BitSharesB, new SharedBitXor.ProtocolFactory(Me, Quorum)), 0);
+            ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesA, BitSharesB, new SharedBitXor.ProtocolFactory(Me, Quorum)));
+            Stage = 0;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
-          //  Console.WriteLine("BLT Done Stage " + completedMsg.Tag);
+            //  Console.WriteLine("BLT Done Stage " + completedMsg.Tag);
 
-            switch (completedMsg.Tag)
+            var stageResult = (List<Share<BigZp>>)completedMsg.ResultList[0];
+
+            switch (Stage)
             {
                 case 0:
-                    C = completedMsg.Result as List<Share<BigZp>>;
-                    ExecuteSubProtocol(new PrefixOperationProtocol(Me, Quorum, C, new SharedBitOr.ProtocolFactory(Me, Quorum)), 1);
-                    return;
+                    C = stageResult;
+                    ExecuteSubProtocol(new PrefixOperationProtocol(Me, Quorum, C, new SharedBitOr.ProtocolFactory(Me, Quorum)));
+                    break;
                 case 1:
-                    D = completedMsg.Result as List<Share<BigZp>>;
+                    D = stageResult;
                     ExecuteSubtractionStep();
-                    return;
+                    break;
                 case 2:
-                    E = completedMsg.Result as List<Share<BigZp>>;
+                    E = stageResult;
                     E.Add(D[D.Count - 1]); // add the high order bit since it didn't do subtraction
-                    ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesB, E, new ShareMultiplicationProtocol.ProtocolFactory(Me, Quorum)), 3);
-                    return;
+                    ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesB, E, new ShareMultiplicationProtocol.ProtocolFactory(Me, Quorum)));
+                    break;
                 case 3:
-                    y = completedMsg.Result as List<Share<BigZp>>;
+                    y = stageResult;
                     // use the prefix protocol with addition, to add all shares together, and then grab the lowest order value
-                    ExecuteSubProtocol(new PrefixOperationProtocol(Me, Quorum, y, new ShareAdditionProtocol.ProtocolFactory(Me, Quorum)), 4);
-                    return;
+                    ExecuteSubProtocol(new PrefixOperationProtocol(Me, Quorum, y, new ShareAdditionProtocol.ProtocolFactory(Me, Quorum)));
+                    break;
                 case 4:
-                    Result = (completedMsg.Result as List<Share<BigZp>>)[0];
+                    Result = stageResult[0];
                     IsCompleted = true;
-                    return;
+                    break;
             }
+
+            Stage++;
         }
         
         private void ExecuteSubtractionStep()
@@ -77,15 +84,15 @@ namespace MpcLib.SecretSharing
             {
                 for (int i = 0; i < DUpper.Count; i++)
                 {
-                    DUpper[i] = new Share<BigZp>(DUpper[i].Value.AdditiveInverse, DUpper[i].IsPublic); // make this a subtraction
+                    DUpper[i] = BigZpShareFactory.ShareAdditiveInverse(DUpper[i]); // make this a subtraction
                 }
 
-                ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, DLower, DUpper, new ShareAdditionProtocol.ProtocolFactory(Me, Quorum)), 2);
+                ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, DLower, DUpper, new ShareAdditionProtocol.ProtocolFactory(Me, Quorum)));
             }
             else
             {
                 // only 1 bit in input. no subtraction necessary
-                ExecuteSubProtocol(new NopProtocol(Me, new List<Share<BigZp>>()), 2);
+                ExecuteSubProtocol(new NopProtocol(Me, new List<Share<BigZp>>(), Quorum.NextProtocolId));
             }
         }
 

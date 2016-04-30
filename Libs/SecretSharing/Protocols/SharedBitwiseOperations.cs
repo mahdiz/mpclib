@@ -32,26 +32,23 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            Result = new List<Share<BigZp>>();
-            ExecuteForBit(0);
+            List<Protocol> bitProtocols = new List<Protocol>();
+
+            for (int i = 0; i < BitSharesA.Count; i++)
+            {
+                bitProtocols.Add(ProtocolFactory.GetBitProtocol(BitSharesA[i], BitSharesB[i]));
+            }
+
+            ExecuteSubProtocols(bitProtocols);
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-            Result.Add(completedMsg.Result as Share<BigZp>);
-
-            if (completedMsg.Tag + 1 < BitSharesA.Count)
-                ExecuteForBit(completedMsg.Tag + 1);
-            else
-                IsCompleted = true;
-        }
-
-        private void ExecuteForBit(int bit)
-        {
-            ExecuteSubProtocol(ProtocolFactory.GetBitProtocol(BitSharesA[bit], BitSharesB[bit]), bit);
+            Result = completedMsg.ResultList.Cast<Share<BigZp>>().ToList();
+            IsCompleted = true;
         }
     }
 
@@ -60,6 +57,8 @@ namespace MpcLib.SecretSharing
         private IList<Share<BigZp>> SharedBits;
         private IBitProtocolFactory ProtocolFactory;
 
+        private int WhichBit;
+
         public PrefixOperationProtocol(Party me, Quorum quorum, IList<Share<BigZp>> sharedBits, IBitProtocolFactory bitProtocolFactory)
             : base(me, quorum)
         {
@@ -67,14 +66,15 @@ namespace MpcLib.SecretSharing
             ProtocolFactory = bitProtocolFactory;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
+            Result.Add((Share<BigZp>)completedMsg.SingleResult);
 
-            Result.Add(completedMsg.Result as Share<BigZp>);
-            ExecuteNextIfNeeded(completedMsg.Tag - 1);
+            WhichBit--;
+            ExecuteNextIfNeeded();
         }
 
         public override void Start()
@@ -85,18 +85,19 @@ namespace MpcLib.SecretSharing
             // the first bit of the prefix is the same as the shared bit
             Result.Add(SharedBits[SharedBits.Count - 1]);
 
-            ExecuteNextIfNeeded(SharedBits.Count - 2);
+            WhichBit = SharedBits.Count - 2;
+
+            ExecuteNextIfNeeded();
         }
 
-        private void ExecuteNextIfNeeded(int which)
+        private void ExecuteNextIfNeeded()
         {
-            if (which >= 0)
-                ExecuteSubProtocol(ProtocolFactory.GetBitProtocol(SharedBits[which], Result[Result.Count - 1]), which);
+            if (WhichBit >= 0)
+                ExecuteSubProtocol(ProtocolFactory.GetBitProtocol(SharedBits[WhichBit], Result[Result.Count - 1]));
             else
             {
                 Result.Reverse();
                 IsCompleted = true;
-
             }
         }
     }
@@ -119,7 +120,8 @@ namespace MpcLib.SecretSharing
             }
         }
 
-        Share<BigZp> BitA, BitB, BitSum, BitProd;
+        private Share<BigZp> BitA, BitB, BitSum, BitProd;
+        private int Stage;
         public SharedBitOr(Party me, Quorum quorum, Share<BigZp> bitA, Share<BigZp> bitB)
             : base(me, quorum)
         {
@@ -127,34 +129,35 @@ namespace MpcLib.SecretSharing
             BitB = bitB;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-            
-            switch (completedMsg.Tag)
+
+            switch (Stage)
             {
                 case 0:
-                    BitProd = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitA, BitB), 1);
-                    return;
+                    BitProd = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitA, BitB));
+                    break;
                 case 1:
-                    BitSum = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitSum, new Share<BigZp>(BitProd.Value.AdditiveInverse, BitProd.IsPublic)), 2);
-                    return;
+                    BitSum = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitSum, new Share<BigZp>(BitProd.Value.AdditiveInverse, BitProd.IsPublic)));
+                    break;
                 case 2:
-                    Result = completedMsg.Result as Share<BigZp>;
+                    Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
-                    return;
+                    break;
             }
 
-            Debug.Assert(false);
+            Stage++;
         }
 
         public override void Start()
         {
-            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB), 0);
+            Stage = 0;
+            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB));
         }
     }
 
@@ -176,7 +179,8 @@ namespace MpcLib.SecretSharing
             }
         }
 
-        Share<BigZp> BitA, BitB, BitSum, BitProd;
+        private Share<BigZp> BitA, BitB, BitSum, BitProd;
+        private int Stage;
         public SharedBitXor(Party me, Quorum quorum, Share<BigZp> bitA, Share<BigZp> bitB)
             : base(me, quorum)
         {
@@ -184,33 +188,35 @@ namespace MpcLib.SecretSharing
             BitB = bitB;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
-            switch (completedMsg.Tag)
+            switch (Stage)
             {
                 case 0:
-                    BitProd = completedMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitA, BitB), 1);
+                    BitProd = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitA, BitB));
                     break;
                 case 1:
-                    BitSum = completedMsg.Result as Share<BigZp>;
+                    BitSum = (Share<BigZp>)completedMsg.SingleResult;
                     var tempShare = new Share<BigZp>(new BigZp(BitProd.Value.Prime, 2) * (BitProd.Value.AdditiveInverse), BitProd.IsPublic);
-                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitSum, tempShare), 2);
+                    ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, BitSum, tempShare));
                     break;
                 case 2:
-                    Result = completedMsg.Result as Share<BigZp>;
+                    Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
                     break;
             }
+            Stage++;
         }
 
         public override void Start()
         {
-            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB), 0);
+            Stage = 0;
+            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB));
         }
     }
 
@@ -240,24 +246,18 @@ namespace MpcLib.SecretSharing
             BitB = bitB;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-
-            switch (completedMsg.Tag)
-            {
-                case 0:
-                    Result = completedMsg.Result as Share<BigZp>;
-                    IsCompleted = true;
-                    break;
-            }
+            Result = (Share<BigZp>) completedMsg.SingleResult;
+            IsCompleted = true;
         }
 
         public override void Start()
         {
-            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB), 0);
+            ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB));
         }
     }
 }

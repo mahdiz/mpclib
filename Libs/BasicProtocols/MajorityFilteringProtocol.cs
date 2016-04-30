@@ -20,15 +20,15 @@ namespace MpcLib.BasicProtocols
         private int majorityThreshold;
         private bool performedTally;
 
-        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> receivers, T value)
-            : base(me, partyIds)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> receivers, T value, long protocolId)
+            : base(me, partyIds, protocolId)
         {
             MyValue = value;
             Receivers = receivers;
         }
 
-        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> senders)
-            : base(me, partyIds)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> senders, long protocolId)
+            : base(me, partyIds, protocolId)
         {
             Senders = new List<int>(senders);
             Received = new List<T>();
@@ -37,7 +37,7 @@ namespace MpcLib.BasicProtocols
             majorityThreshold = senders.Count / 2 + 1;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             switch (msg.Type)
             {
@@ -55,7 +55,7 @@ namespace MpcLib.BasicProtocols
 
                     if (Received.Count >= Math.Ceiling(2.0 * NumParties / 3.0) && !scheduledTally)
                     {
-                        Me.Send(Me.Id, new Msg(MsgType.NextRound));
+                        Send(Me.Id, new Msg(MsgType.NextRound));
                         scheduledTally = true;
                         Console.WriteLine("Party " + Me.Id + " scheduled tally round");
                     }
@@ -78,7 +78,7 @@ namespace MpcLib.BasicProtocols
             // if i am a receiver do nothing.
             if (MyValue != null)
             {
-                Me.Multicast(new BasicMessage<T>(MyValue), Receivers);
+                Multicast(new BasicMessage<T>(MyValue), Receivers);
             }
             if (!Receivers.Contains(Me.Id))
             {

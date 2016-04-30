@@ -47,7 +47,7 @@ namespace MpcLib.SecretSharing
             Share(MyRandom);
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             switch (msg.Type)
             {
@@ -79,7 +79,7 @@ namespace MpcLib.SecretSharing
                             // send a loopback message to notify the end of this round. This is done to
                             // ensure we receive the inputs of "all" honest parties in this round and 
                             // bad parties cannot prevent us from receiving honest input by sending bad inputs sooner.
-                            Me.Send(Me.Id, new Msg(MsgType.NextRound));
+                            Send(Me.Id, new Msg(MsgType.NextRound));
                             scheduledReconst = true;
                         }
                     }
@@ -133,6 +133,7 @@ namespace MpcLib.SecretSharing
         private Share<BigZp> RandShare, Rand2Share;
         private BigZp Rand2, RandP;
 
+        private int Stage;
 
         public RandomBitGenProtocol(Party me, Quorum quorum, BigInteger prime)
             : base(me, quorum)
@@ -140,23 +141,23 @@ namespace MpcLib.SecretSharing
             Prime = prime;
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
 
-            var completionMsg = msg as SubProtocolCompletedMsg;
-            switch (completionMsg.Tag)
+            var completedMsg = msg as SubProtocolCompletedMsg;
+            switch (Stage)
             {
                 case 0:
-                    RandShare = completionMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, RandShare, RandShare), 1);
+                    RandShare = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, RandShare, RandShare));
                     break;
                 case 1:
-                    Rand2Share = completionMsg.Result as Share<BigZp>;
-                    ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, Rand2Share), 2);
+                    Rand2Share = (Share<BigZp>)completedMsg.SingleResult;
+                    ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, Rand2Share));
                     break;
                 case 2:
-                    Rand2 = completionMsg.Result as BigZp;
+                    Rand2 = (BigZp)completedMsg.SingleResult;
                     if (Rand2.Value == 0)
                         // need to start over
                         Start();
@@ -164,12 +165,15 @@ namespace MpcLib.SecretSharing
                         FinalProcessing();
                     break;
             }
+
+            Stage++;
         }
 
         public override void Start()
         {
+            Stage = 0;
             BigZp myRandom = new BigZp(Prime, Me.SafeRandGen.Next(Prime));
-            ExecuteSubProtocol(new RandomGenProtocol(Me, Quorum, myRandom, Prime), 0);
+            ExecuteSubProtocol(new RandomGenProtocol(Me, Quorum, myRandom, Prime));
         }
 
         private void FinalProcessing()
@@ -190,6 +194,8 @@ namespace MpcLib.SecretSharing
         private BigInteger Prime;
         int BitsNeeded;
 
+        private int Stage;
+
         public RandomBitwiseGenProtocol(Party me, Quorum quorum, BigInteger prime, BigInteger max)
             : base(me, quorum)
         {
@@ -207,55 +213,59 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
-            ExecuteSubProtocol(new RandomBitGenProtocol(Me, Quorum, Prime), 0);
+            Stage = 0;
+
+            List<Protocol> bitGens = new List<Protocol>();
+            for (int i = 0; i < BitsNeeded; i++)
+            {
+                bitGens.Add(new RandomBitGenProtocol(Me, Quorum, Prime));
+            }
+
+            ExecuteSubProtocols(bitGens);
         }
 
-        protected override void HandleMessage(int fromId, Msg msg)
+        public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-       //     Console.WriteLine("Randgen Done Stage " + completedMsg.Tag);
        
-            if (completedMsg.Tag < BitsNeeded - 1)
+            switch (Stage)
             {
-                Result.Add((Share<BigZp>)completedMsg.Result);
-                ExecuteSubProtocol(new RandomBitGenProtocol(Me, Quorum, Prime), completedMsg.Tag + 1);
-            }
-            else if (completedMsg.Tag == BitsNeeded - 1)
-            {
-                Result.Add((Share<BigZp>) completedMsg.Result);
-                if (Max.IsPowerOfTwo)
-                {
-                    // we automatically know the number we generated is in the range
-                    IsCompleted = true;
-                }
-                else
-                {
-                    var maxBits = NumTheoryUtils.GetBitDecomposition(Max, Prime);
-                    var maxBitsShares = new List<Share<BigZp>>();
-                    foreach (var bit in maxBits)
-                        maxBitsShares.Add(new Share<BigZp>(bit, true));
-                    ExecuteSubProtocol(new BitwiseLessThanProtocol(Me, Quorum, Result, maxBitsShares), BitsNeeded);
-                }
-            }
-            else if (completedMsg.Tag == BitsNeeded)
-            {
-                ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, completedMsg.Result as Share<BigZp>), BitsNeeded + 1);
-            }
-            else if (completedMsg.Tag == BitsNeeded + 1)
-            {
-                if ((completedMsg.Result as BigZp).Value == 1)
-                {
-                    // generation succeeded
-                    IsCompleted = true;
-                }
-                else
-                {
-                    // try again :(
-                    Result.Clear();
-                    Start();
-                }
+                case 0:
+                    Result = completedMsg.ResultList.Cast<Share<BigZp>>().ToList();
+                    if (Max.IsPowerOfTwo)
+                    {
+                        // we automatically know the number we generated is in the range
+                        IsCompleted = true;
+                    }
+                    else
+                    {
+                        var maxBits = NumTheoryUtils.GetBitDecomposition(Max, Prime);
+                        var maxBitsShares = new List<Share<BigZp>>();
+                        foreach (var bit in maxBits)
+                            maxBitsShares.Add(new Share<BigZp>(bit, true));
+                        ExecuteSubProtocol(new BitwiseLessThanProtocol(Me, Quorum, Result, maxBitsShares));
+                        Stage++;
+                    }
+                    break;
+                case 1:
+                    ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, (Share<BigZp>)completedMsg.SingleResult));
+                    Stage++;
+                    break;
+                case 2:
+                    if (((BigZp)completedMsg.SingleResult).Value == 1)
+                    {
+                        // generation succeeded
+                        IsCompleted = true;
+                    }
+                    else
+                    {
+                        // try again :(
+                        Result.Clear();
+                        Start();
+                    }
+                    break;
             }
         }
     }

@@ -33,19 +33,21 @@ namespace MpcLib.Apps
         public static void Main(string[] args)
         {
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 8;      // number of parties
+            int n = 16;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);
 
-            TestSimpleCircuitEvaluation(new Quorum(0, n));
+            Quorum q = new Quorum(0, 0, n);
+
+            SetupSimpleCircuitEvaluation(q);
 
             Console.WriteLine(n + " parties initialized. Running simulation...\n");
-
+            
             // run the simulator
             var elapsedTime = Timex.Run(() => NetSimulator.Run());
 
-            CheckSimpleCircuitEvaluation(new Quorum(0, n));
+            ReconstructDictionary(q, network.LastGateForWire);
 
             Console.WriteLine("Simulation finished.  Checking results...\n");
 
@@ -55,17 +57,17 @@ namespace MpcLib.Apps
 			Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
 			Console.WriteLine("Seed         = " + seed + "\n");
 			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-        //    Console.ReadKey();
+            Console.ReadKey();
 		}
 
 
-        public static void SetupReconstructionProtocol(int n)
+        public static void SetupReconstructionProtocol(Quorum quorum)
         {
+            int n = quorum.Size;
             var input = new BigZp(prime, 20);
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
 
             var shares = BigShamirSharing.Share(input, n, polyDeg);
-            Quorum quorum = new Quorum(0, n);
             for (int i = 0; i < n; i++)
             {
                 TestParty<BigZp> party = new TestParty<BigZp>();
@@ -89,67 +91,47 @@ namespace MpcLib.Apps
             }
         }
 
-        public static void SetupRandomGenProtocol(int n)
+        public static void SetupRandomGenProtocol(Quorum quorum)
         {
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
+            int n = quorum.Size;
             for (int i = 0; i < n; i++)
             {
                 TestParty<Share<BigZp>> party = new TestParty<Share<BigZp>>();
-                party.UnderTest = new RandomGenProtocol(party, quorum, new BigZp(prime, i), prime);
+                party.UnderTest = new RandomGenProtocol(party, quorum.Clone() as Quorum, new BigZp(prime, i), prime);
                 NetSimulator.RegisterParty(party);
             }
         }
 
-        public static void CheckRandomGenProtocol()
+        public static void SetupShareMultiplicationProtocol(Quorum quorum)
         {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Expected Output: " + (n * (n - 1) / 2));
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
-        public static void SetupShareMultiplicationProtocol(int n)
-        {
+            int n = quorum.Size;
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
 
             var sharesA = BigShamirSharing.Share(new BigZp(prime, 20), n, polyDeg);
-            var sharesB = BigShamirSharing.Share(new BigZp(prime, 50), n, polyDeg);
-
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
+            var sharesB = BigShamirSharing.Share(new BigZp(prime, 3), n, polyDeg);
+            
             for (int i = 0; i < n; i++)
             {
                 TestParty<Share<BigZp>> party = new TestParty<Share<BigZp>>();
-                party.UnderTest = new ShareMultiplicationProtocol(party, quorum, new Share<BigZp>(sharesA[i]), new Share<BigZp>(sharesB[i]));
+                party.UnderTest = new ShareMultiplicationProtocol(party, quorum.Clone() as Quorum, new Share<BigZp>(sharesA[i]), new Share<BigZp>(sharesB[i]));
                 NetSimulator.RegisterParty(party);
             }
         }
 
-        public static void CheckShareMultiplicationProtocol()
+        public static void SetupRandomBitGenProtocol(Quorum quorum)
         {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Expected Output: " + 1000);
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
-        public static void SetupRandomBitGenProtocol(int n)
-        {
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
+            int n = quorum.Size;
             for (int i = 0; i < n; i++)
             {
                 TestParty<Share<BigZp>> party = new TestParty<Share<BigZp>>();
-                party.UnderTest = new RandomBitGenProtocol(party, quorum, prime);
+                party.UnderTest = new RandomBitGenProtocol(party, quorum.Clone() as Quorum, prime);
                 NetSimulator.RegisterParty(party);
             }
         }
 
-        public static void CheckRandomBitGenProtocol()
+        public static void SetupBitCompositionProtocol(Quorum quorum)
         {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
-        public static void SetupBitCompositionProtocol(int n)
-        {
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
+            int n = quorum.Size;
 
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
 
@@ -166,16 +148,9 @@ namespace MpcLib.Apps
             }
         }
 
-        public static void CheckBitCompositionProtocol()
+        public static void SetupBitwiseAndProtocol(Quorum quorum)
         {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Expected Output: " + 6);
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
-        public static void SetupBitwiseAndProtocol(int n)
-        {
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
+            int n = quorum.Size;
 
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
 
@@ -190,26 +165,14 @@ namespace MpcLib.Apps
 
             for (int i = 0; i < n; i++)
             {
+                Quorum q = quorum.Clone() as Quorum;
                 TestParty<List<Share<BigZp>>> party = new TestParty<List<Share<BigZp>>>();
-                party.UnderTest = new BitwiseOperationProtocol(party, quorum,
+                party.UnderTest = new BitwiseOperationProtocol(party, q,
                     MakeList(sharesA[i], sharesB[i], sharesC[i]),
                     MakeList(sharesD[i], sharesE[i], sharesF[i]),
-                    new SharedBitAnd.ProtocolFactory(party, quorum));
+                    new SharedBitAnd.ProtocolFactory(party, q));
                 NetSimulator.RegisterParty(party);
             }
-        }
-
-        public static void CheckBitwiseAndProtocol()
-        {
-            int n = NetSimulator.PartyCount;
-            List<BigZp> result = ReconstructBitwise(new Quorum(0, n), 3);
-            Console.WriteLine("Expected Output: 010");
-            Console.Write("Result: ");
-            foreach (var bit in result)
-            {
-                Console.Write(bit);
-            }
-            Console.WriteLine();
         }
 
         public static void SetupPrefixOrProtocol(Quorum quorum)
@@ -230,19 +193,6 @@ namespace MpcLib.Apps
                     new SharedBitOr.ProtocolFactory(party, quorum));
                 NetSimulator.RegisterParty(party);
             }
-        }
-
-        public static void CheckPrefixOrProtocol()
-        {
-            int n = NetSimulator.PartyCount;
-            List<BigZp> result = ReconstructBitwise(new Quorum(0, n), 4);
-            Console.WriteLine("Expected Output: 011");
-            Console.Write("Result: ");
-            foreach (var bit in result)
-            {
-                Console.Write(bit);
-            }
-            Console.WriteLine();
         }
 
         public static void SetupBitwiseLessThan(Quorum quorum)
@@ -270,17 +220,9 @@ namespace MpcLib.Apps
             }
         }
 
-        public static void CheckBitwiseLessThan()
+        public static void SetupBitwiseRandomGeneration(Quorum quorum)
         {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Expected Output: " + 1);
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
-        public static void SetupBitwiseRandomGeneration(int n)
-        {
-            Quorum quorum = new ByzantineQuorum(0, n, 0);
-
+            int n = quorum.Size;
             for (int i = 0; i < n; i++)
             {
                 TestParty<List<Share<BigZp>>> party = new TestParty<List<Share<BigZp>>>();
@@ -305,12 +247,6 @@ namespace MpcLib.Apps
             }
         }
 
-        public static void CheckLeastSignificantBitProtocol()
-        {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
         public static void SetupLessThan(Quorum quorum)
         {
             int n = quorum.Size;
@@ -326,36 +262,24 @@ namespace MpcLib.Apps
                 NetSimulator.RegisterParty(party);
             }
         }
-
-        public static void CheckLessThan()
-        {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Result: " + Reconstruct(new Quorum(0, n)));
-        }
-
+        
         public static void SetupCompareAndSwap(Quorum quorum)
         {
             int n = quorum.Size;
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
 
-            var sharesA = BigShamirSharing.Share(new BigZp(prime, 700), n, polyDeg);
-            var sharesB = BigShamirSharing.Share(new BigZp(prime, 701), n, polyDeg);
+            var sharesA = BigShamirSharing.Share(new BigZp(prime, 440), n, polyDeg);
+            var sharesB = BigShamirSharing.Share(new BigZp(prime, 450), n, polyDeg);
 
             for (int i = 0; i < n; i++)
             {
                 TestParty<Tuple<Share<BigZp>, Share<BigZp>>> party = new TestParty<Tuple<Share<BigZp>, Share<BigZp>>>();
-                party.UnderTest = new CompareAndSwapProtocol(party, quorum, new Share<BigZp>(sharesA[i]), new Share<BigZp>(sharesB[i]));
+                party.UnderTest = new CompareAndSwapProtocol(party, quorum.Clone() as Quorum, new Share<BigZp>(sharesA[i]), new Share<BigZp>(sharesB[i]));
                 NetSimulator.RegisterParty(party);
             }
         }
-
-        public static void CheckCompareAndSwap()
-        {
-            int n = NetSimulator.PartyCount;
-            Console.WriteLine("Result: " + ReconstructTuple(new Quorum(0, n)));
-        }
-
-        public static BigZp Reconstruct(Quorum q)
+        
+        public static void Reconstruct(Quorum q)
         {
             BigZp[] shares = new BigZp[q.Size];
 
@@ -365,10 +289,12 @@ namespace MpcLib.Apps
                 shares[i++] = (NetSimulator.GetParty(id) as TestParty<Share<BigZp>>).UnderTest.Result.Value;
             }
 
-            return BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime);
+            var val = BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime);
+
+            Console.WriteLine("Output: " + val);
         }
 
-        public static Tuple<BigZp, BigZp> ReconstructTuple(Quorum q)
+        public static void ReconstructTuple(Quorum q)
         {
             BigZp[] shares1 = new BigZp[q.Size];
             BigZp[] shares2 = new BigZp[q.Size];
@@ -385,10 +311,10 @@ namespace MpcLib.Apps
             var val1 = BigShamirSharing.Recombine(new List<BigZp>(shares1), (int)Math.Ceiling(q.Size / 3.0) - 1, prime);
             var val2 = BigShamirSharing.Recombine(new List<BigZp>(shares2), (int)Math.Ceiling(q.Size / 3.0) - 1, prime);
 
-            return new Tuple<BigZp, BigZp>(val1, val2);
+            Console.WriteLine(val1 + " " + val2);
         }
 
-        public static List<BigZp> ReconstructBitwise(Quorum q, int bitCount)
+        public static void ReconstructBitwise(Quorum q, int bitCount)
         {
             List<BigZp> result = new List<BigZp>();
             for (int i = bitCount - 1; i >= 0; i--)
@@ -402,11 +328,15 @@ namespace MpcLib.Apps
                 }
                 result.Add(BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime));
             }
-            
-            return result;
+
+            foreach (var bit in result)
+            {
+                Console.Write(bit);
+            }
+            Console.WriteLine();
         }
 
-        public static List<BigZp> ReconstructDictionary(Quorum q, OutputGateAddress[] ordering)
+        public static void ReconstructDictionary(Quorum q, OutputGateAddress[] ordering)
         {
             List<BigZp> result = new List<BigZp>();
             foreach (OutputGateAddress outAddr in ordering)
@@ -416,12 +346,13 @@ namespace MpcLib.Apps
                 int j = 0;
                 foreach (var id in q.Members)
                 {
-                    shares[j++] = (NetSimulator.GetParty(id) as TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>).UnderTest.Result[outAddr].Value;
+                    Protocol<IDictionary<OutputGateAddress, Share<BigZp>>> p = (NetSimulator.GetParty(id) as TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>).UnderTest;
+                       shares[j++] = p.Result[outAddr].Value;
                 }
                 result.Add(BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime));
             }
 
-            return result;
+            Console.WriteLine("Result: " + string.Join(" ", result));
         }
 
         public static List<Share<BigZp>> MakeList(params BigZp[] vals)
@@ -440,7 +371,7 @@ namespace MpcLib.Apps
         }
 
         public static PermutationNetwork network;
-        public static void TestSimpleCircuitEvaluation(Quorum quorum)
+        public static void SetupSimpleCircuitEvaluation(Quorum quorum)
         {
             int n = quorum.Size;
             var polyDeg = (int)Math.Ceiling(n / 3.0) - 1;
@@ -466,14 +397,9 @@ namespace MpcLib.Apps
                 }
 
                 TestParty<IDictionary<OutputGateAddress, Share<BigZp>>> party = new TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>();
-                party.UnderTest = new SecureGroupCircuitEvaluation(party, quorum, network.Circuit, inShares);
+                party.UnderTest = new SecureGroupCircuitEvaluation(party, quorum.Clone() as Quorum, network.Circuit, inShares);
                 NetSimulator.RegisterParty(party);
             }
-        }
-
-        public static void CheckSimpleCircuitEvaluation(Quorum quorum)
-        {
-            Console.WriteLine("Result: " + string.Join(" ", ReconstructDictionary(quorum, network.LastGateForWire)));
         }
         
         public static void TestShamir(int n, BigInteger prime, int seed)
