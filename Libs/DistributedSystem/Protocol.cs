@@ -13,11 +13,11 @@ namespace MpcLib.DistributedSystem
         public SortedSet<int> PartyIds { get; internal set; }
         public int NumParties;
         public bool IsCompleted { get; protected set; }
-        public long ProtocolId { get; protected set; }
+        public ulong ProtocolId { get; protected set; }
 
         public object RawResult { get; protected set; }
 
-        public Protocol(Party me, SortedSet<int> partyIds, long protocolId)
+        public Protocol(Party me, SortedSet<int> partyIds, ulong protocolId)
         {
             Me = me;
             PartyIds = partyIds;
@@ -71,7 +71,7 @@ namespace MpcLib.DistributedSystem
 
     public abstract class Protocol<T> : Protocol where T : class
     {
-        public Protocol(Party me, SortedSet<int> partyIds, long protocolId)
+        public Protocol(Party me, SortedSet<int> partyIds, ulong protocolId)
             : base(me, partyIds, protocolId)
         {
         }
@@ -92,13 +92,13 @@ namespace MpcLib.DistributedSystem
     public class SubProtocolCompletedMsg : Msg
     {
 
-        public SubProtocolCompletedMsg(SortedDictionary<long, object> result)
+        public SubProtocolCompletedMsg(SortedDictionary<ulong, object> result)
             : base(MsgType.SubProtocolCompleted)
         {
             Result = result;
         }
 
-        public SortedDictionary<long, object> Result;
+        public SortedDictionary<ulong, object> Result;
 
         private List<object> ResultListInternal;
         public List<object> ResultList
@@ -121,9 +121,9 @@ namespace MpcLib.DistributedSystem
         }
     }
 
-    public class NopProtocol : Protocol
+    public class LoopbackProtocol : Protocol
     {
-        public NopProtocol(Party me, object result, long protocolId)
+        public LoopbackProtocol(Party me, object result, ulong protocolId)
             : base(me, new SortedSet<int>(), protocolId)
         {
             IsCompleted = true;
@@ -136,6 +136,31 @@ namespace MpcLib.DistributedSystem
 
         public override void HandleMessage(int fromId, Msg msg)
         {
+        }
+    }
+
+    public class NopProtocol : Protocol
+    {
+        private int NopCount;
+
+        public NopProtocol(Party me, ulong protocolId, int nopCount)
+            : base(me, new SortedSet<int>(), protocolId)
+        {
+            NopCount = nopCount;
+        }
+
+        public override void Start()
+        {
+            Send(Me.Id, new Msg(MsgType.NextRound));
+        }
+
+        public override void HandleMessage(int fromId, Msg msg)
+        {
+            NopCount--;
+            if (NopCount <= 0)
+                IsCompleted = true;
+            else
+                Send(Me.Id, new Msg(MsgType.NextRound));
         }
     }
 }

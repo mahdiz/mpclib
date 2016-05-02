@@ -73,7 +73,7 @@ namespace MpcLib.DistributedSystem
             des.Run();
         }
 
-        public static void Send(int fromId, int toId, long protocolId, Msg msg, int delay = 0)
+        public static void Send(int fromId, int toId, ulong protocolId, Msg msg, int delay = 0)
         {
           //  Console.WriteLine("Adding send from " + fromId + " at " + des.Clock);
 
@@ -88,7 +88,7 @@ namespace MpcLib.DistributedSystem
         /// <summary>
         /// Sends the i-th message to the i-th party.
         /// </summary>
-        public static void Send(int fromId, long protocolId, ICollection<Msg> msgs, int delay = 0)
+        public static void Send(int fromId, ulong protocolId, ICollection<Msg> msgs, int delay = 0)
         {
             Debug.Assert(parties.Count == msgs.Count, "Not enough recipients/messages to send!");
 
@@ -102,7 +102,7 @@ namespace MpcLib.DistributedSystem
             }
         }
 
-        public static void Send(int fromId, long protocolId, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
+        public static void Send(int fromId, ulong protocolId, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
         {
             Debug.Assert(msgs.Count == recipients.Count, "Not enough recipients/messages to send!");
 
@@ -115,7 +115,7 @@ namespace MpcLib.DistributedSystem
             }
         }
 
-        public static void Multicast(int fromId, long protocolId, IEnumerable<int> toIds, Msg msg, int delay = 0)
+        public static void Multicast(int fromId, ulong protocolId, IEnumerable<int> toIds, Msg msg, int delay = 0)
         {
            // Console.WriteLine("Adding multicast from " + fromId + " at " + des.Clock);
             foreach (var toId in toIds)
@@ -140,12 +140,12 @@ namespace MpcLib.DistributedSystem
             SentByteCount += 1024 * nSquared;
         }
 
-        public static void Broadcast(int fromId, long protocolId, Msg msg, int delay = 0)
+        public static void Broadcast(int fromId, ulong protocolId, Msg msg, int delay = 0)
         {
             Multicast(fromId, protocolId, PartyIds, msg, delay);
         }
 
-        public static void Loopback(int id, long protocolId, Msg msg)
+        public static void Loopback(int id, ulong protocolId, Msg msg)
         {
             des.Loopback(id, parties[id].Receive, id, protocolId, msg);
         }

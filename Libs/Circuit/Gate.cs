@@ -13,9 +13,9 @@ namespace MpcLib.Circuits
 
         public int InputCount { get; protected set; }
         public int OutputCount { get; protected set; }
-        
+
         public int TopologicalRank = NO_RANK;
-        
+
         public Gate(int inputCount, int outputCount)
         {
             InputCount = inputCount;
@@ -50,7 +50,7 @@ namespace MpcLib.Circuits
             Gate = gate;
             Port = port;
         }
-        
+
         public override string ToString()
         {
             return "(" + Gate.TopologicalRank + ", " + Port + ")";
@@ -205,6 +205,16 @@ namespace MpcLib.Circuits
             if (Permutation != null)
                 return Permutation[input];
             return PermutationFunc(input);
+        }
+
+        public int Unpermute(int output)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                if ((Permutation != null && Permutation[i] == output) || (PermutationFunc(i) == output))
+                    return i;
+            }
+            return -1;
         }
 
         public override Gate Copy()

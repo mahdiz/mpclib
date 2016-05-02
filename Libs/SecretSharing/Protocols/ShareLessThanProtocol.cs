@@ -35,7 +35,7 @@ namespace MpcLib.SecretSharing
             Stage = 0;
             ExecuteSubProtocol(new ShareAdditionProtocol(Me, Quorum, ShareA, BigZpShareFactory.ShareAdditiveInverse(ShareB)));
         }
-
+        
         public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
@@ -58,7 +58,6 @@ namespace MpcLib.SecretSharing
                     W = (Share<BigZp>)completedMsg.ResultList[0];
                     X = (Share<BigZp>)completedMsg.ResultList[1];
                     Y = (Share<BigZp>)completedMsg.ResultList[2];
-
                     ExecuteSubProtocols(new Protocol[]
                     {
                         new ShareMultiplicationProtocol(Me, Quorum, X, Y),

@@ -38,12 +38,14 @@ namespace MpcLib.SecretSharing
             ExecuteSubProtocol(new RandomBitwiseGenProtocol(Me, Quorum, Prime, Prime));
         }
 
+        bool reconstruct;
+
         public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-
+            
             switch (Stage)
             {
                 case 0:

@@ -43,9 +43,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MpsParty.cs" />
+    <Compile Include="MpsProtocol.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BasicProtocols\BasicProtocols.csproj">
+      <Project>{e6ebe24e-1515-49b3-9618-7f7217988715}</Project>
+      <Name>BasicProtocols</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Circuit\Circuit.csproj">
+      <Project>{84c74dd1-bc63-44ea-be28-227048400333}</Project>
+      <Name>Circuit</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{281e03fd-c141-4cd6-a4c2-7fb74a78e063}</Project>
       <Name>Common</Name>
@@ -65,6 +74,10 @@
     <ProjectReference Include="..\SecretSharing\SecretSharing.csproj">
       <Project>{2279ad83-89cc-439f-a198-4e6c1c73f668}</Project>
       <Name>SecretSharing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StochasticUtils\StochasticUtils.csproj">
+      <Project>{4966DB10-9B4A-426F-8D36-D56D47CBE0AC}</Project>
+      <Name>StochasticUtils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using System.Linq;
 using MpcLib.Common;
 using MpcLib.Common.FiniteField;
 using MpcLib.Common.StochasticUtils;
@@ -36,19 +37,19 @@ namespace MpcLib.Apps
             int n = 16;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
-            NetSimulator.Init(seed);
+            NetSimulator.Init(seed);   //seed
+            StaticRandom.Init(seed+1); //seed + 1
 
             Quorum q = new Quorum(0, 0, n);
 
-            SetupSimpleCircuitEvaluation(q);
-
+            SetupMps(n);
             Console.WriteLine(n + " parties initialized. Running simulation...\n");
             
             // run the simulator
             var elapsedTime = Timex.Run(() => NetSimulator.Run());
 
-            ReconstructDictionary(q, network.LastGateForWire);
-
+            CheckMps(n);
+            
             Console.WriteLine("Simulation finished.  Checking results...\n");
 
             Console.WriteLine("# parties    = " + n);
@@ -336,20 +337,23 @@ namespace MpcLib.Apps
             Console.WriteLine();
         }
 
-        public static void ReconstructDictionary(Quorum q, OutputGateAddress[] ordering)
+        public static void ReconstructDictionary(Quorum q, OutputGateAddress[] ordering, int qSize)
         {
             List<BigZp> result = new List<BigZp>();
             foreach (OutputGateAddress outAddr in ordering)
             {
-                BigZp[] shares = new BigZp[q.Size];
+                if (outAddr == null)
+                    continue;
+                BigZp[] shares = new BigZp[qSize];
 
                 int j = 0;
                 foreach (var id in q.Members)
                 {
                     Protocol<IDictionary<OutputGateAddress, Share<BigZp>>> p = (NetSimulator.GetParty(id) as TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>).UnderTest;
-                       shares[j++] = p.Result[outAddr].Value;
+                    if (p.Result.ContainsKey(outAddr))
+                        shares[j++] = p.Result[outAddr].Value;
                 }
-                result.Add(BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(q.Size / 3.0) - 1, prime));
+                result.Add(BigShamirSharing.Recombine(new List<BigZp>(shares), (int)Math.Ceiling(qSize / 3.0) - 1, prime));
             }
 
             Console.WriteLine("Result: " + string.Join(" ", result));
@@ -401,11 +405,84 @@ namespace MpcLib.Apps
                 NetSimulator.RegisterParty(party);
             }
         }
-        
+
+        public static void SetupMultiQuorumCircuitEvaluation(Quorum bigQuorum)
+        {
+            int n = bigQuorum.Size;
+
+            int qSize = n / 2;
+
+            var polyDeg = (int)Math.Ceiling(qSize / 3.0) - 1;
+
+            var quorums = new List<Quorum>();
+            quorums.Add(new Quorum(0, 0, qSize));
+            quorums.Add(new Quorum(1, qSize, 2*qSize));
+
+            Debug.Assert((n & (n - 1)) == 0); // is power of 2
+
+            network = new LPSortingNetwork(n);
+            //network = SortingNetworkFactory.CreateButterflyTournamentRound(4);
+
+            network.CollapsePermutationGates();
+
+            IList<BigZp>[] shares = new IList<BigZp>[n];
+
+            for (int i = 0; i < n; i++)
+                shares[i] = BigShamirSharing.Share(new BigZp(prime, 500 - 2 * i), qSize, polyDeg);
+            
+            foreach (var id in bigQuorum.Members)
+            {
+                Dictionary<InputGateAddress, Share<BigZp>> inShares = new Dictionary<InputGateAddress, Share<BigZp>>();
+
+                int i = 0;
+                foreach (var inAddr in network.Circuit.InputAddrs)
+                {
+                    inShares[inAddr] = new Share<BigZp>(shares[i][id % 4]);
+                    i++;
+                }
+
+                TestParty<IDictionary<OutputGateAddress, Share<BigZp>>> party = new TestParty<IDictionary<OutputGateAddress, Share<BigZp>>>();
+                Quorum[] quorumsClone = quorums.Select(a => a.Clone() as Quorum).ToArray();
+                
+                party.UnderTest = 
+                    new SecureMultiQuorumCircuitEvaluation(party, quorumsClone[id / qSize], quorumsClone,
+                    ProtocolIdGenerator.GenericIdentifier(0), network.Circuit, inShares, prime);
+
+                NetSimulator.RegisterParty(party);
+            }
+        }
+
+        public static void SetupMps(int n)
+        {
+            List<BigZp> inputs = new List<BigZp>();
+            for (int i = 0; i < n; i++)
+            {
+                inputs.Add(new BigZp(prime, StaticRandom.Next(prime)));
+            }
+
+            Console.WriteLine("Inputs: " + string.Join(" ", inputs));
+            var sorted = inputs.Select(zp => zp.Value).ToList();
+            sorted.Sort();
+
+            Console.WriteLine("Expected Output: " + string.Join(" ", sorted));
+
+            for (int i = 0; i < n; i++)
+            {
+                NetSimulator.RegisterParty(new MpsParty(n, inputs[i]));
+            }
+        }
+
+        public static void CheckMps(int n)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                MpsParty party = (MpsParty)NetSimulator.GetParty(i);
+                Console.WriteLine("Party " + i + ": " + string.Join(" ", party.Results));
+            }
+        }
+
         public static void TestShamir(int n, BigInteger prime, int seed)
 		{
-            StaticRandom.Init(seed);
-
             var PolyDegree = (int)Math.Ceiling(n / 3.0);
             var i1 = new BigZp(prime, StaticRandom.Next(1000000000));
             var i2 = new BigZp(prime, StaticRandom.Next(1000000000));

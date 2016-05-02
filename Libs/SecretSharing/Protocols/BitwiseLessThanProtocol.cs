@@ -18,6 +18,8 @@ namespace MpcLib.SecretSharing
 
         private int Stage;
 
+        private List<Share<BigZp>> baclone;
+
         public BitwiseLessThanProtocol(Party me, Quorum quorum, List<Share<BigZp>> aBitShares, List<Share<BigZp>> bBitShares)
             : base(me, quorum)
         {
@@ -25,6 +27,7 @@ namespace MpcLib.SecretSharing
 
             BitSharesA = aBitShares;
             BitSharesB = bBitShares;
+            baclone = new List<Share<BigZp>>(BitSharesA);
         }
 
         public override void Start()
@@ -32,16 +35,14 @@ namespace MpcLib.SecretSharing
             ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesA, BitSharesB, new SharedBitXor.ProtocolFactory(Me, Quorum)));
             Stage = 0;
         }
-
+        
         public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
-            //  Console.WriteLine("BLT Done Stage " + completedMsg.Tag);
-
-            var stageResult = (List<Share<BigZp>>)completedMsg.ResultList[0];
+            var stageResult = (List<Share<BigZp>>)completedMsg.SingleResult;
 
             switch (Stage)
             {
@@ -92,7 +93,7 @@ namespace MpcLib.SecretSharing
             else
             {
                 // only 1 bit in input. no subtraction necessary
-                ExecuteSubProtocol(new NopProtocol(Me, new List<Share<BigZp>>(), Quorum.NextProtocolId));
+                ExecuteSubProtocol(new LoopbackProtocol(Me, new List<Share<BigZp>>(), Quorum.NextProtocolId));
             }
         }
 

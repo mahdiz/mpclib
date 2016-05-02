@@ -26,12 +26,13 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private BigInteger Prime;
         private bool FinalRound;
 
-        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime, long protocolId)
+        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime, ulong protocolId)
             : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
         {
-            Debug.Assert(!share.IsPublic);  // makes no sense to do share renewal on a public value
+            Debug.Assert(share == null || !share.IsPublic);  // makes no sense to do share renewal on a public value
             Prime = prime;
-            Shares = new BigZp[] { share.Value };
+            if (share != null)
+                Shares = new BigZp[] { share.Value };
         }
 
         public override void HandleMessage(int fromId, Msg msg)
@@ -63,6 +64,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                             Debug.Assert(CurrentRound.Result.Length == 1);
                             Result = new Share<BigZp>(CurrentRound.Result[0], false);
                         }
+                            
                         IsCompleted = true;
                     }
                     else
@@ -111,8 +113,10 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                 CurrentRound = new ShareRenewalRound(Me, Quorums[FROM], Quorums[TO], null, Prime, FinalRoundInitialSharesPerParty, 1, ProtocolId);
                 FinalRound = true;
             }
-
+            
             CurrentRound.Start();
+            if (CurrentRound.IsCompleted && FinalRound)
+                IsCompleted = true;
         }
     }
 
@@ -137,7 +141,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private Dictionary<int, CommitMsg> commitsRecv = new Dictionary<int, CommitMsg>();
         private Dictionary<int, List<ShareWitnessMsg<BigZp>>[]> sharesRecv = new Dictionary<int, List<ShareWitnessMsg<BigZp>>[]>();
 
-        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty, long protocolId)
+        public ShareRenewalRound(Party me, Quorum quorumFrom, Quorum quorumTo, BigZp[] startShares, BigInteger prime, int startSharesPerParty, int finalSharesPerParty, ulong protocolId)
             : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
         {
             FinalSharesPerParty = finalSharesPerParty;
@@ -161,7 +165,6 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             NewPolyDeg = (int)Math.Ceiling(FinalShareCount / 3.0) - 1;
 
             VandermondeInv = StaticCache.GetVandermondeInvColumn(Prime, StartShareCount);
-           //     BigZpMatrix.GetVandermondeMatrix(StartShareCount, StartShareCount, Prime).Inverse.GetMatrixColumn(0);
 
             if (Quorums[TO].HasMember(Me.Id))
             {
@@ -242,6 +245,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             if (!Quorums[TO].HasMember(Me.Id))
             {
                 IsCompleted = true;
+              //  Send(Me.Id, new Msg(MsgType.NextRound));
             }
         }
 

@@ -8,7 +8,7 @@ namespace MpcLib.Common.FiniteField
 	/// <summary>
 	/// Represents a big finite field.
 	/// </summary>
-	public class BigZp : ISizable
+	public class BigZp : ISizable, IEquatable<BigZp>
 	{
 		private BigInteger num;
 		public readonly BigInteger Prime;
@@ -253,7 +253,12 @@ namespace MpcLib.Common.FiniteField
 			return Value.GetHashCode();
 		}
 
-		public int Size
+        public bool Equals(BigZp other)
+        {
+            return Equals((object)other);
+        }
+
+        public int Size
 		{
 			get
 			{

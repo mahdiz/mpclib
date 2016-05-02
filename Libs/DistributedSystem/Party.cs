@@ -21,10 +21,10 @@ namespace MpcLib.DistributedSystem
 
         public SafeRandom SafeRandGen { get; private set; }
 
-        protected Dictionary<long, Protocol> RegisteredProtocols;
-        protected Dictionary<long, long> ParentProtocols;
-        protected Dictionary<long, int> ChildProtocolOutstandingCount;
-        protected Dictionary<long, SortedDictionary<long, object>> ChildProtocolCompletedMsgs;
+        protected Dictionary<ulong, Protocol> RegisteredProtocols;
+        protected Dictionary<ulong, ulong> ParentProtocols;
+        protected Dictionary<ulong, int> ChildProtocolOutstandingCount;
+        protected Dictionary<ulong, SortedDictionary<ulong, object>> ChildProtocolCompletedMsgs;
 
         public Party()
         {
@@ -32,10 +32,10 @@ namespace MpcLib.DistributedSystem
             NetSimulator.RegisterParty(this);
             SafeRandGen = new SafeRandom();
 
-            RegisteredProtocols = new Dictionary<long, Protocol>();
-            ParentProtocols = new Dictionary<long, long>();
-            ChildProtocolOutstandingCount = new Dictionary<long, int>();
-            ChildProtocolCompletedMsgs = new Dictionary<long, SortedDictionary<long, object>>();
+            RegisteredProtocols = new Dictionary<ulong, Protocol>();
+            ParentProtocols = new Dictionary<ulong, ulong>();
+            ChildProtocolOutstandingCount = new Dictionary<ulong, int>();
+            ChildProtocolCompletedMsgs = new Dictionary<ulong, SortedDictionary<ulong, object>>();
         }
 
         public void Send(Protocol protocol, int toId, Msg msg, int delay = 0)
@@ -104,8 +104,9 @@ namespace MpcLib.DistributedSystem
         /// </summary>
         public abstract void Start();
 
-        public virtual void Receive(int fromId, long protocolId, Msg msg)
+        public virtual void Receive(int fromId, ulong protocolId, Msg msg)
         {
+           // Console.WriteLine("Receive msg " + Id + " " + protocolId);
             Debug.Assert(RegisteredProtocols.ContainsKey(protocolId));
 
             Protocol protocol = RegisteredProtocols[protocolId];
@@ -127,7 +128,7 @@ namespace MpcLib.DistributedSystem
             ParentProtocols.Remove(protocol.ProtocolId);
 
             if (!ChildProtocolCompletedMsgs.ContainsKey(parent.ProtocolId))
-                ChildProtocolCompletedMsgs[parent.ProtocolId] = new SortedDictionary<long, object>();
+                ChildProtocolCompletedMsgs[parent.ProtocolId] = new SortedDictionary<ulong, object>();
 
             ChildProtocolOutstandingCount[parent.ProtocolId]--;
             ChildProtocolCompletedMsgs[parent.ProtocolId][protocol.ProtocolId] = protocol.RawResult;

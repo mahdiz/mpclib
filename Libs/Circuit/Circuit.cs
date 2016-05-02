@@ -42,8 +42,7 @@ namespace MpcLib.Circuits
             OutputConnectionCounterparties = new Dictionary<OutputGateAddress, InputGateAddress>();
             InputConnectionCounterparties = new Dictionary<InputGateAddress, OutputGateAddress>();
         }
-
-        // create a copy of the gate and add it
+        
         public void AddGate(Gate gate, IEnumerable<GateConnection> connections)
         {
             // insert before checks to allow loopback
@@ -71,7 +70,7 @@ namespace MpcLib.Circuits
             {
                 // the "from" in this connection already has a counterparty.  want to remove it
                 var oldTo = OutputConnectionCounterparties[connection.FromAddr];
-                InputConnectionCounterparties[oldTo] = null;
+                InputConnectionCounterparties.Remove(oldTo);
                 InputAddrs.Add(oldTo);
             }
 
@@ -79,7 +78,7 @@ namespace MpcLib.Circuits
             {
                 // the "to" in this connection already has a counterparty.  want to remove it
                 var oldFrom = InputConnectionCounterparties[connection.ToAddr];
-                OutputConnectionCounterparties[oldFrom] = null;
+                OutputConnectionCounterparties.Remove(oldFrom);
                 OutputAddrs.Add(oldFrom);
             }
 
@@ -222,6 +221,46 @@ namespace MpcLib.Circuits
             }
 
             return sortList;
+        }
+
+        public void CollapsePermutationGates()
+        {
+            foreach (var gate in Gates.ToList())
+            {
+                if (gate is PermutationGate)
+                {
+                    PermutationGate pgate = (PermutationGate)gate;
+
+                    for (int i = 0; i < pgate.Count; i++)
+                    {
+                        OutputGateAddress inputCounterparty = InputConnectionCounterparties[pgate.GetLocalInputAddress(i)];
+                        InputGateAddress outputCounterparty = OutputConnectionCounterparties[pgate.GetLocalOutputAddress(pgate.Permute(i))];
+
+                        AddConnection(new GateConnection(inputCounterparty, outputCounterparty));
+                    }
+
+                    RemoveGate(pgate);
+                }
+            }
+        }
+
+        public void RemoveGate(Gate gate)
+        {
+            for (int i = 0; i < gate.InputCount; i++)
+            {
+                var inAddr = gate.GetLocalInputAddress(i);
+                Debug.Assert(!InputConnectionCounterparties.ContainsKey(inAddr));
+                InputAddrs.Remove(inAddr);
+            }
+
+            for (int i = 0; i < gate.OutputCount; i++)
+            {
+                var outAddr = gate.GetLocalOutputAddress(i);
+                Debug.Assert(!OutputConnectionCounterparties.ContainsKey(outAddr));
+                OutputAddrs.Remove(outAddr);
+            }
+
+            Gates.Remove(gate);
         }
 
         public override string ToString()
@@ -368,6 +407,40 @@ namespace MpcLib.Circuits
             }
 
             return clone;
+        }
+
+        public void CollapsePermutationGates()
+        {
+            // unwind input and output addresses until we find an address on a non-permutation gate
+            for (int i = 0; i < WireCount; i++)
+            {
+                InputGateAddress inAddr = FirstGateForWire[i];
+                while (inAddr != null && inAddr.Gate is PermutationGate)
+                {
+                    var pgate = (PermutationGate)inAddr.Gate;
+                    var permuteOut = pgate.GetLocalOutputAddress(pgate.Permute(inAddr.Port));
+
+                    Circuit.OutputConnectionCounterparties.TryGetValue(permuteOut, out inAddr);
+                }
+
+                FirstGateForWire[i] = inAddr;
+            }
+
+            for (int i = 0; i < WireCount; i++)
+            {
+                OutputGateAddress outAddr = LastGateForWire[i];
+                while (outAddr != null && outAddr.Gate is PermutationGate)
+                {
+                    var pgate = (PermutationGate)outAddr.Gate;
+                    var permuteIn = pgate.GetLocalInputAddress(pgate.Unpermute(outAddr.Port));
+
+                    Circuit.InputConnectionCounterparties.TryGetValue(permuteIn, out outAddr);
+                }
+
+                LastGateForWire[i] = outAddr;
+            }
+
+            Circuit.CollapsePermutationGates();
         }
 
         public override string ToString()

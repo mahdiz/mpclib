@@ -59,8 +59,8 @@ String ^ NtlConverter::toString(const ZZ &a)
 			r = S.Pop();
 			s += r;
 		}
-		return s;
 	}
+	return s;
 }
 
 BigInteger NtlFunctionality::ModSqrRoot(BigInteger a, BigInteger p)

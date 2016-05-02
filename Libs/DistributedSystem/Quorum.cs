@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,13 +17,13 @@ namespace MpcLib.DistributedSystem
             }
         }
 
-        private int QuorumNumber;
-        private long ProtocolId = 0;
-        public long NextProtocolId
+        private short QuorumNumber;
+        private int WhichProtocol = 0;
+        public ulong NextProtocolId
         {
             get
             {
-                return ProtocolId++;
+                return ProtocolIdGenerator.QuorumProtocolIdentifier(QuorumNumber, WhichProtocol++);
             }
         }
 
@@ -30,9 +31,9 @@ namespace MpcLib.DistributedSystem
         
         public Quorum(int quorumNumber)
         {
+            Debug.Assert(quorumNumber <= short.MaxValue);
             Members = new SortedSet<int>();
-            QuorumNumber = quorumNumber;
-            SetStartProtocolId();
+            QuorumNumber = (short) quorumNumber;
         }
 
         public Quorum(int quorumNumber, int startId, int endId)
@@ -57,14 +58,7 @@ namespace MpcLib.DistributedSystem
             q.Members = new SortedSet<int>(Members);
             return q;
         }
-
-        private void SetStartProtocolId()
-        {
-            ProtocolId = QuorumNumber;
-            ProtocolId <<= 32;
-            ProtocolId += 1;
-        }
-
+        
         public virtual void AddMember(int id)
         {
             Members.Add(id);
@@ -78,6 +72,38 @@ namespace MpcLib.DistributedSystem
         public bool HasMember(int id)
         {
             return Members.Contains(id);
+        }
+
+        public int GetPositionOf(int id)
+        {
+            return GetPositionOf(Members, id);
+        }
+        
+        public static int GetPositionOf(SortedSet<int> ids, int id)
+        {
+            int i = 0;
+            foreach (var qid in ids)
+            {
+                if (qid == id)
+                    return i;
+                i++;
+            }
+            return -1;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Quorum))
+                return false;
+            Quorum other = (Quorum)obj;
+
+            // should be sufficient
+            return other.QuorumNumber == QuorumNumber;
+        }
+
+        public override int GetHashCode()
+        {
+            return QuorumNumber.GetHashCode();
         }
     }
 }

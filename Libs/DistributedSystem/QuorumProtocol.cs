@@ -15,7 +15,7 @@ namespace MpcLib.DistributedSystem
         {
         }
 
-        public QuorumProtocol(Party me, Quorum quorum, long protocolId)
+        public QuorumProtocol(Party me, Quorum quorum, ulong protocolId)
             : base(me, quorum.Members, protocolId)
         {
             Quorum = quorum;
@@ -36,7 +36,7 @@ namespace MpcLib.DistributedSystem
     {
         protected Quorum[] Quorums;
 
-        public MultiQuorumProtocol(Party me, Quorum[] quorums, long protocolId)
+        public MultiQuorumProtocol(Party me, Quorum[] quorums, ulong protocolId)
             : base(me, MergeQuorums(quorums), protocolId)
         {
             Quorums = quorums;

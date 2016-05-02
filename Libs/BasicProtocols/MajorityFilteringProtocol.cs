@@ -12,7 +12,7 @@ namespace MpcLib.BasicProtocols
     {
         private T MyValue;
 
-        private IList<int> Receivers;
+        private IEnumerable<int> Receivers;
 
         private IList<int> Senders;
         private IList<T> Received;
@@ -20,21 +20,21 @@ namespace MpcLib.BasicProtocols
         private int majorityThreshold;
         private bool performedTally;
 
-        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> receivers, T value, long protocolId)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IEnumerable<int> receivers, T value, ulong protocolId)
             : base(me, partyIds, protocolId)
         {
             MyValue = value;
             Receivers = receivers;
         }
 
-        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IList<int> senders, long protocolId)
+        public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IEnumerable<int> senders, ulong protocolId)
             : base(me, partyIds, protocolId)
         {
             Senders = new List<int>(senders);
             Received = new List<T>();
             scheduledTally = false;
             performedTally = false;
-            majorityThreshold = senders.Count / 2 + 1;
+            majorityThreshold = Senders.Count / 2 + 1;
         }
 
         public override void HandleMessage(int fromId, Msg msg)
@@ -53,7 +53,7 @@ namespace MpcLib.BasicProtocols
                         Console.WriteLine("Unexpected majority filter receive from " + fromId);
                     }
 
-                    if (Received.Count >= Math.Ceiling(2.0 * NumParties / 3.0) && !scheduledTally)
+                    if (Received.Count >= Math.Ceiling(2.0 * Senders.Count / 3.0) && !scheduledTally)
                     {
                         Send(Me.Id, new Msg(MsgType.NextRound));
                         scheduledTally = true;
@@ -66,8 +66,11 @@ namespace MpcLib.BasicProtocols
                     {
                         Console.WriteLine("Invalid next round message received. Party " + fromId + " seems to be cheating!");
                     }
-
                     performTally();
+                    break;
+                case MsgType.SubProtocolCompleted:
+                    // NOP completed
+                    IsCompleted = true;
                     break;
             }
         }
@@ -80,9 +83,10 @@ namespace MpcLib.BasicProtocols
             {
                 Multicast(new BasicMessage<T>(MyValue), Receivers);
             }
-            if (!Receivers.Contains(Me.Id))
+            if (Receivers != null && !Receivers.Contains(Me.Id))
             {
-                IsCompleted = true;
+                // do a no-op protocol to keep everybody synchronized
+                ExecuteSubProtocol(new NopProtocol(Me, ProtocolIdGenerator.NopIdentifier(ProtocolId), 2));
             }
         }
 

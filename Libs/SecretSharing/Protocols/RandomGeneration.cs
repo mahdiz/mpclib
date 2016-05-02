@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Diagnostics;
 using MpcLib.Commitments.PolyCommitment;
 using MpcLib.SecretSharing.eVSS;
+using MpcLib.Common.StochasticUtils;
 
 namespace MpcLib.SecretSharing
 {
@@ -63,7 +64,7 @@ namespace MpcLib.SecretSharing
                     if (commitsRecv.ContainsKey(fromId))
                     {
                         // verify the share
-                        if (PolyCommit != null && !PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, Me.Id + 1),
+                        if (PolyCommit != null && !PolyCommit.VerifyEval(commitsRecv[fromId].Commitment, new BigZp(Prime, Quorum.GetPositionOf(Me.Id) + 1),
                             sharesRecv[fromId].Share, sharesRecv[fromId].Witness))
                         {
                             // broadcast an accusation against the i-th party.
@@ -159,8 +160,11 @@ namespace MpcLib.SecretSharing
                 case 2:
                     Rand2 = (BigZp)completedMsg.SingleResult;
                     if (Rand2.Value == 0)
+                    {
                         // need to start over
                         Start();
+                        return;
+                    }   
                     else
                         FinalProcessing();
                     break;
@@ -229,7 +233,7 @@ namespace MpcLib.SecretSharing
             Debug.Assert(msg is SubProtocolCompletedMsg);
 
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
-       
+
             switch (Stage)
             {
                 case 0:
@@ -262,6 +266,7 @@ namespace MpcLib.SecretSharing
                     else
                     {
                         // try again :(
+                        if (Me.Id == 0) Console.WriteLine("RAND GEN FAILED " + ProtocolId);
                         Result.Clear();
                         Start();
                     }

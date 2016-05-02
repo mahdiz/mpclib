@@ -22,7 +22,8 @@ namespace MpcLib.DistributedSystem
         
         // A loopback message that is sent to notify a party that a subprotocol has completed.  The contents of the message should
         // be the result of the subprotocol
-        SubProtocolCompleted
+        SubProtocolCompleted,
+        
     }
 
 	/// <summary>
