@@ -38,6 +38,14 @@ namespace MpcLib.DistributedSystem
         /// </summary>
         public static BigInteger SentByteCount;
 
+        public static long RoundCount
+        {
+            get
+            {
+                return des.MaxClock;
+            }
+        }
+
 		public static int idGen = 0;
 
         /// <summary>
