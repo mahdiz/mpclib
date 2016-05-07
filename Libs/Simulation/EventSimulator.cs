@@ -17,11 +17,20 @@
         protected long clock;
         protected bool halted;
 
-        public double Clock
+        public long Clock
         {
             get
             {
                 return clock;
+            }
+        }
+
+        protected long maxClock;
+        public long MaxClock
+        {
+            get
+            {
+                return maxClock;
             }
         }
 
@@ -118,6 +127,8 @@
 
                 // dispatch the event
                 clock = e.Time;
+                if (clock > maxClock)
+                    maxClock = clock;
                 e.Handle();
             }
         }

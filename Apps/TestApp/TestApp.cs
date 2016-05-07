@@ -34,7 +34,7 @@ namespace MpcLib.Apps
         public static void Main(string[] args)
         {
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 16;      // number of parties
+            int n = 8;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);   //seed
@@ -55,7 +55,8 @@ namespace MpcLib.Apps
             Console.WriteLine("# parties    = " + n);
             Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount);
             Console.WriteLine("# bits sent  = " + (NetSimulator.SentByteCount * 8).ToString("0.##E+00"));
-			Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
+            Console.WriteLine("Rounds       = " + NetSimulator.RoundCount + "\n");
+            Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
 			Console.WriteLine("Seed         = " + seed + "\n");
 			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
             Console.ReadKey();
