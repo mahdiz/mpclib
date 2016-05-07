@@ -13,7 +13,11 @@ using MpcLib.Common.StochasticUtils;
 
 namespace MpcLib.SecretSharing
 {
-    public class RandomGenProtocol : QuorumProtocol<Share<BigZp>>
+    /// <summary>
+    /// Implements the "Joint Random Number Sharing" protocol of Nishide and Ohta (PKC 2007).
+    /// The parties jointly compute a secret-shared random value.
+    /// </summary>
+    public class RandGenProtocol : QuorumProtocol<Share<BigZp>>
     {
         private BigZp MyRandom;
         private BigInteger Prime;
@@ -30,7 +34,7 @@ namespace MpcLib.SecretSharing
 
         private static readonly List<MsgType> MESSAGE_TYPES = new List<MsgType>() { MsgType.Share, MsgType.Commit, MsgType.Reconst, MsgType.NextRound };
 
-        public RandomGenProtocol(Party me, Quorum quorum, BigZp myRandom, BigInteger prime)
+        public RandGenProtocol(Party me, Quorum quorum, BigZp myRandom, BigInteger prime)
             : base(me, quorum)
         {
             MyRandom = myRandom;
@@ -127,6 +131,10 @@ namespace MpcLib.SecretSharing
         }
     }
 
+    /// <summary>
+    /// Implements the "Joint Random Bit Sharing" protocol of Nishide and Ohta (PKC 2007).
+    /// The parties jointly compute a secret-shared random bit.
+    /// </summary>
     public class RandomBitGenProtocol : QuorumProtocol<Share<BigZp>>
     {
         private BigInteger Prime;
@@ -153,10 +161,12 @@ namespace MpcLib.SecretSharing
                     RandShare = (Share<BigZp>)completedMsg.SingleResult;
                     ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, RandShare, RandShare));
                     break;
+
                 case 1:
                     Rand2Share = (Share<BigZp>)completedMsg.SingleResult;
                     ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, Rand2Share));
                     break;
+
                 case 2:
                     Rand2 = (BigZp)completedMsg.SingleResult;
                     if (Rand2.Value == 0)
@@ -177,7 +187,7 @@ namespace MpcLib.SecretSharing
         {
             Stage = 0;
             BigZp myRandom = new BigZp(Prime, Me.SafeRandGen.Next(Prime));
-            ExecuteSubProtocol(new RandomGenProtocol(Me, Quorum, myRandom, Prime));
+            ExecuteSubProtocol(new RandGenProtocol(Me, Quorum, myRandom, Prime));
         }
 
         private void FinalProcessing()
@@ -192,6 +202,10 @@ namespace MpcLib.SecretSharing
         }
     }
 
+    /// <summary>
+    /// Implements the "Joint Random Number Bitwise-Sharing" protocol of Nishide and Ohta (PKC 2007).
+    /// The parties jointly compute a bitwise secret-shared random value.
+    /// </summary>
     public class RandomBitwiseGenProtocol : QuorumProtocol<List<Share<BigZp>>>
     {
         private BigInteger Max;
@@ -208,9 +222,7 @@ namespace MpcLib.SecretSharing
 
             BitsNeeded = NumTheoryUtils.GetBitLength2(Max);
             if (Max.IsPowerOfTwo)
-            {
                 BitsNeeded--;
-            }
 
             Result = new List<Share<BigZp>>();
         }
@@ -219,11 +231,10 @@ namespace MpcLib.SecretSharing
         {
             Stage = 0;
 
-            List<Protocol> bitGens = new List<Protocol>();
+            // Generate a bitwise secret-shared random value r
+            var bitGens = new List<Protocol>();
             for (int i = 0; i < BitsNeeded; i++)
-            {
                 bitGens.Add(new RandomBitGenProtocol(Me, Quorum, Prime));
-            }
 
             ExecuteSubProtocols(bitGens);
         }
@@ -249,24 +260,26 @@ namespace MpcLib.SecretSharing
                         var maxBitsShares = new List<Share<BigZp>>();
                         foreach (var bit in maxBits)
                             maxBitsShares.Add(new Share<BigZp>(bit, true));
+
                         ExecuteSubProtocol(new BitwiseLessThanProtocol(Me, Quorum, Result, maxBitsShares));
                         Stage++;
                     }
                     break;
+
                 case 1:
+                    // Reveal (r < p)
                     ExecuteSubProtocol(new ReconstructionProtocol(Me, Quorum, (Share<BigZp>)completedMsg.SingleResult));
                     Stage++;
                     break;
+
                 case 2:
+                    // If (r < p), then we're done. Otherwise, we should retry since the generated random value is not in the field.
                     if (((BigZp)completedMsg.SingleResult).Value == 1)
-                    {
-                        // generation succeeded
                         IsCompleted = true;
-                    }
                     else
                     {
                         // try again :(
-                        if (Me.Id == 0) Console.WriteLine("RAND GEN FAILED " + ProtocolId);
+                        //if (Me.Id == 0) Console.WriteLine("RAND GEN FAILED " + ProtocolId);
                         Result.Clear();
                         Start();
                     }
