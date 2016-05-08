@@ -152,7 +152,7 @@ namespace MpcLib.MultiPartyShuffling
             if (RandGenQuorum.HasMember(Me.Id))
             {
                 BigZp myRandom = new BigZp(Prime, Me.SafeRandGen.Next(Prime));
-                ExecuteSubProtocol(new RandomGenProtocol(Me, RandGenQuorum, myRandom, Prime));
+                ExecuteSubProtocol(new RandGenProtocol(Me, RandGenQuorum, myRandom, Prime));
             }
             else
             {

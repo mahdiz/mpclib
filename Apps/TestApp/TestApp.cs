@@ -233,7 +233,7 @@ namespace MpcLib.Apps
             for (int i = 0; i < n; i++)
             {
                 TestParty<Share<BigZp>> party = new TestParty<Share<BigZp>>();
-                party.UnderTest = new RandomGenProtocol(party, quorum.Clone() as Quorum, new BigZp(prime, i), prime);
+                party.UnderTest = new RandGenProtocol(party, quorum.Clone() as Quorum, new BigZp(prime, i), prime);
                 NetSimulator.RegisterParty(party);
             }
         }

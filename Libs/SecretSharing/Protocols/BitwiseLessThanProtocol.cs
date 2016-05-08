@@ -9,9 +9,12 @@ using System.Threading.Tasks;
 
 namespace MpcLib.SecretSharing
 {
+    /// <summary>
+    /// Implements the "Bitwise Less-Than" protocol of Nishide and Ohta (PKC 2007).
+    /// Given two bitwise secret-shared values a and b, the parties jointly compute a secret-sharing of the bit (a < b).
+    /// </summary>
     public class BitwiseLessThanProtocol : QuorumProtocol<Share<BigZp>>
     {
-
         private List<Share<BigZp>> BitSharesA, BitSharesB;
 
         private List<Share<BigZp>> C, D, E, y;
@@ -35,7 +38,7 @@ namespace MpcLib.SecretSharing
             ExecuteSubProtocol(new BitwiseOperationProtocol(Me, Quorum, BitSharesA, BitSharesB, new SharedBitXor.ProtocolFactory(Me, Quorum)));
             Stage = 0;
         }
-        
+
         public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg is SubProtocolCompletedMsg);
@@ -73,7 +76,7 @@ namespace MpcLib.SecretSharing
 
             Stage++;
         }
-        
+
         private void ExecuteSubtractionStep()
         {
             var DLower = new List<Share<BigZp>>(D);
@@ -81,7 +84,7 @@ namespace MpcLib.SecretSharing
 
             DLower.RemoveAt(DLower.Count - 1); // remove the highest order bit
             DUpper.RemoveAt(0);                // shift right
-            
+
             if (DLower.Count > 0)
             {
                 for (int i = 0; i < DUpper.Count; i++)
