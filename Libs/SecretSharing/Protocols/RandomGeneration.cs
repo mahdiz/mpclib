@@ -177,6 +177,7 @@ namespace MpcLib.SecretSharing
         {
             Stage = 0;
             BigZp myRandom = new BigZp(Prime, Me.SafeRandGen.Next(Prime));
+            //BigZp myRandom = new BigZp(Prime, StaticRandom.Next(Prime));
             ExecuteSubProtocol(new RandomGenProtocol(Me, Quorum, myRandom, Prime));
         }
 
@@ -266,7 +267,6 @@ namespace MpcLib.SecretSharing
                     else
                     {
                         // try again :(
-                        if (Me.Id == 0) Console.WriteLine("RAND GEN FAILED " + ProtocolId);
                         Result.Clear();
                         Start();
                     }

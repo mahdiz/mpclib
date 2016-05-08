@@ -146,6 +146,7 @@ namespace MpcLib.Simulation.Des
         public override void Handle()
         {
             Debug.Assert(handler != null, "Event does not have any handler.");
+
             handler(arg1, arg2, arg3);
 
             if (OnFinish != null)

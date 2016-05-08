@@ -61,7 +61,7 @@ namespace MpcLib.SecretSharing
                 IsCompleted = true;
             }
             else
-                ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, newShare, Prime, Quorum.NextProtocolId));   
+                ExecuteSubProtocol(new QuorumShareRenewalProtocol(Me, Quorum, Quorum, newShare, Prime));   
         }
     }
 }

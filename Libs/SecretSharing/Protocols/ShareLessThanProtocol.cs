@@ -131,6 +131,7 @@ namespace MpcLib.SecretSharing
                 case 2:
                     Result = (Share<BigZp>)completedMsg.SingleResult;
                     IsCompleted = true;
+                    
                     break;
             }
 

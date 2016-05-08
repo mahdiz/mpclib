@@ -13,6 +13,7 @@ using MpcLib.SecretSharing.eVSS;
 
 namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
 {
+
     public class QuorumShareRenewalProtocol : MultiQuorumProtocol<Share<BigZp>>
     {
         private const int FROM = 0;
@@ -25,6 +26,11 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
         private int FinalRoundInitialSharesPerParty;
         private BigInteger Prime;
         private bool FinalRound;
+
+        public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime)
+            : this(me, quorumFrom, quorumTo, share, prime, quorumFrom.GetNextTwoProtocolId(quorumTo))
+        {  
+        }
 
         public QuorumShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Share<BigZp> share, BigInteger prime, ulong protocolId)
             : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
@@ -116,7 +122,10 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             
             CurrentRound.Start();
             if (CurrentRound.IsCompleted && FinalRound)
+            {
                 IsCompleted = true;
+            }
+                
         }
     }
 
@@ -241,7 +250,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             {
                 Reshare(startShare);
             }
-
+            
             if (!Quorums[TO].HasMember(Me.Id))
             {
                 IsCompleted = true;
@@ -260,7 +269,18 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             MG[] witnesses = null;
             MG commitment = null;
             if (PolyCommit != null)
+            {
                 commitment = BigShamirSharing.GenerateCommitment(FinalShareCount, coeffs.ToArray(), Prime, ref witnesses, (Quorums[TO] as ByzantineQuorum).PolyCommit);
+                
+                // fake random generation round
+                for (int i = 0; i < Quorums[TO].Size; i++)
+                {
+                    NetSimulator.FakeMulticast(Quorums[TO].Size, secret.Size);
+                }
+                // fake commitment and challenge response
+                NetSimulator.FakeMulticast(Quorums[TO].Size, secret.Size);
+                NetSimulator.FakeMulticast(Quorums[TO].Size, secret.Size);
+            }
             else
                 witnesses = new MG[FinalShareCount];
             
@@ -272,6 +292,7 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             Debug.Assert(BigShamirSharing.Recombine(shares, NewPolyDeg, Prime) == secret);
 
             int numSent = 0;
+            //int delay = (PolyCommit != null) ? 1 : 0;
             foreach (var toMember in Quorums[TO].Members)
             {
                 for (int i = 0; i < FinalSharesPerParty; i++)
@@ -280,7 +301,6 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
                     numSent++;
                 }
             }
-            
         }
 
         private void Recombine()
@@ -315,6 +335,40 @@ namespace MpcLib.SecretSharing.QuorumShareRenewal //what?
             }
 
             IsCompleted = true;
+        }
+    }
+
+    public class QuorumTaggedShareRenewalProtocol : MultiQuorumProtocol<Tuple<Share<BigZp>, Share<BigZp>>>
+    {
+        Tuple<Share<BigZp>, Share<BigZp>> Shares;
+        BigInteger Prime;
+
+        public QuorumTaggedShareRenewalProtocol(Party me, Quorum quorumFrom, Quorum quorumTo, Tuple<Share<BigZp>, Share<BigZp>> shares, BigInteger prime, ulong protocolId)
+            : base(me, new Quorum[] { quorumFrom, quorumTo }, protocolId)
+        {
+            if (shares != null)
+                Debug.Assert(shares.Item1.Value.Prime == shares.Item2.Value.Prime);
+            Shares = shares;
+            Prime = prime;
+        }
+
+        public override void HandleMessage(int fromId, Msg msg)
+        {
+            Debug.Assert(msg is SubProtocolCompletedMsg);
+
+            var reshared = (msg as SubProtocolCompletedMsg).ResultList.Cast<Share<BigZp>>().ToArray();
+
+            Result = new Tuple<Share<BigZp>, Share<BigZp>>(reshared[0], reshared[1]);
+            IsCompleted = true;
+        }
+
+        public override void Start()
+        {
+            ExecuteSubProtocols(new Protocol[]
+            {
+                new QuorumShareRenewalProtocol(Me, Quorums[0], Quorums[1], (Shares == null) ? null : Shares.Item1, Prime, ProtocolId + 1),
+                new QuorumShareRenewalProtocol(Me, Quorums[0], Quorums[1], (Shares == null) ? null : Shares.Item2, Prime, ProtocolId + 2)
+            });
         }
     }
 }

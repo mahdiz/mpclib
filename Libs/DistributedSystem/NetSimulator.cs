@@ -99,9 +99,7 @@ namespace MpcLib.DistributedSystem
         public static void Send(int fromId, ulong protocolId, ICollection<Msg> msgs, int delay = 0)
         {
             Debug.Assert(parties.Count == msgs.Count, "Not enough recipients/messages to send!");
-
-
-            int i = 0;
+            
             var msgIter = msgs.GetEnumerator();
             foreach (var pair in parties)
             {
@@ -146,6 +144,18 @@ namespace MpcLib.DistributedSystem
             // For 80 bit security (i.e., RSA 1024), CKS sends 4*n^2 messages, where each message is of at most
             // two RSA signatures (i.e., 2048 bit messages). So, the total number of bits sent is 8192*n^2 (or 1024*n^2 bytes).
             SentByteCount += 1024 * nSquared;
+        }
+
+        public static void FakeSend(int bytes)
+        {
+            SentMessageCount++;
+            SentByteCount += bytes;
+        }
+
+        public static void FakeMulticast(int idCount, int bytes)
+        {
+            SentMessageCount += 4 * idCount * idCount;
+            SentByteCount += 1024 * idCount * idCount;
         }
 
         public static void Broadcast(int fromId, ulong protocolId, Msg msg, int delay = 0)

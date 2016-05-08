@@ -17,23 +17,20 @@ namespace MpcLib.DistributedSystem
             }
         }
 
-        private short QuorumNumber;
-        private int WhichProtocol = 0;
-        public ulong NextProtocolId
-        {
-            get
-            {
-                return ProtocolIdGenerator.QuorumProtocolIdentifier(QuorumNumber, WhichProtocol++);
-            }
-        }
+        private Dictionary<Quorum, ushort> TwoQuorumProtocolIds;
 
+        private SortedSet<uint> UsedIds = new SortedSet<uint>();
+        public readonly ushort QuorumNumber;
+        private uint WhichProtocol = 0;
+        
         public SortedSet<int> Members { get; private set; }
         
         public Quorum(int quorumNumber)
         {
-            Debug.Assert(quorumNumber <= short.MaxValue);
+            Debug.Assert(quorumNumber <= ushort.MaxValue);
             Members = new SortedSet<int>();
-            QuorumNumber = (short) quorumNumber;
+            QuorumNumber = (ushort) quorumNumber;
+            TwoQuorumProtocolIds = new Dictionary<Quorum, ushort>();
         }
 
         public Quorum(int quorumNumber, int startId, int endId)
@@ -72,6 +69,41 @@ namespace MpcLib.DistributedSystem
         public bool HasMember(int id)
         {
             return Members.Contains(id);
+        }
+
+        public void ReleaseId(ulong id)
+        {
+            UsedIds.Remove(ProtocolIdGenerator.GetIntraQuorumProtocolNumber(id));
+        }
+
+        public ulong GetNextProtocolId()
+        {
+            Debug.Assert(UsedIds.LongCount() < uint.MaxValue);
+            while (UsedIds.Contains(WhichProtocol))
+                WhichProtocol++;
+
+            return ProtocolIdGenerator.QuorumProtocolIdentifier(QuorumNumber, WhichProtocol++);
+        }
+
+        public ulong GetNextTwoProtocolId(Quorum other, bool incrementOther = true)
+        {
+            if (this == other)
+                return GetNextProtocolId();
+
+            if (!TwoQuorumProtocolIds.ContainsKey(other))
+                TwoQuorumProtocolIds[other] = 0;
+
+            // if we are failing this assert, we need to expand the range
+            Debug.Assert(TwoQuorumProtocolIds[other] <= ushort.MaxValue);
+
+            ulong retId = ProtocolIdGenerator.TwoQuorumProtocolIdentifier(QuorumNumber, other.QuorumNumber, TwoQuorumProtocolIds[other]);
+            TwoQuorumProtocolIds[other]++;
+
+            // increment the id in the other quorum (necessary because a party may be part of both quorums)
+            if (incrementOther)
+               other.GetNextTwoProtocolId(this, false);
+
+            return retId;
         }
 
         public int GetPositionOf(int id)

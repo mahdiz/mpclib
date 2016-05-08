@@ -18,7 +18,6 @@ namespace MpcLib.BasicProtocols
         private IList<T> Received;
         private bool scheduledTally;
         private int majorityThreshold;
-        private bool performedTally;
 
         public MajorityFilteringProtocol(Party me, SortedSet<int> partyIds, IEnumerable<int> receivers, T value, ulong protocolId)
             : base(me, partyIds, protocolId)
@@ -33,7 +32,6 @@ namespace MpcLib.BasicProtocols
             Senders = new List<int>(senders);
             Received = new List<T>();
             scheduledTally = false;
-            performedTally = false;
             majorityThreshold = Senders.Count / 2 + 1;
         }
 
@@ -57,7 +55,7 @@ namespace MpcLib.BasicProtocols
                     {
                         Send(Me.Id, new Msg(MsgType.NextRound));
                         scheduledTally = true;
-                        Console.WriteLine("Party " + Me.Id + " scheduled tally round");
+            //            Console.WriteLine("Party " + Me.Id + " scheduled tally round");
                     }
 
                     break;

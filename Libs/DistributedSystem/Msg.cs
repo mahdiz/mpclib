@@ -11,6 +11,9 @@ namespace MpcLib.DistributedSystem
         // For the majority filtering protocol
         Basic,
 
+        // So that we can share circuit values between protocols locally
+        CircuitLoopback,
+
         // For share multiplication
         RandomizationReceive,
 

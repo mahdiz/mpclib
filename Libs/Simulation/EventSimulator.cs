@@ -1,4 +1,7 @@
-﻿namespace MpcLib.Simulation.Des
+﻿using System;
+using System.Diagnostics;
+
+namespace MpcLib.Simulation.Des
 {
 	public delegate void Handler();
 	public delegate void Handler<T>(T e);
@@ -89,6 +92,8 @@
 
         public void Schedule<T,S,R>(int targetId, Handler<T,S,R> handler, int delay, T arg1, S arg2, R arg3)
         {
+            Debug.Assert(arg2 is ulong);
+
             queue.Enqueue(new Event<T, S, R>(targetId, handler, clock + delay, arg1, arg2, arg3));
         }
 
@@ -128,7 +133,10 @@
                 // dispatch the event
                 clock = e.Time;
                 if (clock > maxClock)
+                {
                     maxClock = clock;
+                }
+
                 e.Handle();
             }
         }

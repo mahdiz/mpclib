@@ -47,7 +47,7 @@ namespace MpcLib.Circuits
             // we want to join every wire to its corresponding wire on the other half using a compare and swap gate
             for (int i = 0; i < wireCount / 2; i++)
             {
-                pn.AppendGate(new CompareAndSwapGate(), new int[] { i, i + wireCount / 2 });
+                pn.AppendGate(new ComputationGate(ComputationGateType.COMPARE_AND_SWAP), new int[] { i, i + wireCount / 2 });
             }
 
             return pn;
@@ -61,7 +61,7 @@ namespace MpcLib.Circuits
 
             for (int i = 0; i < wireCount / 2; i++)
             {
-                pn.AppendGate(new CompareAndSwapGate(), new int[] { i, i + wireCount / 2 });
+                pn.AppendGate(new ComputationGate(ComputationGateType.COMPARE_AND_SWAP), new int[] { i, i + wireCount / 2 });
                 if (invertOrder)
                     pn.AppendGate(PermutationGateFactory.CreateSwapGate(), new int[] { i, i + wireCount / 2 });
             }
@@ -116,7 +116,7 @@ namespace MpcLib.Circuits
                 return pn;
             }
 
-            pn.AppendGate(new CompareAndSwapGate(), new int[] { 0, wireCount / 2 });
+            pn.AppendGate(new ComputationGate(ComputationGateType.COMPARE_AND_SWAP), new int[] { 0, wireCount / 2 });
 
             if (wireCount > 2)
             {

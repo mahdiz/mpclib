@@ -21,7 +21,6 @@ namespace MpcLib.SecretSharing
 
         PolyCommit PolyCommit;
         MG Commitment;
-        Share<BigZp> RecvShare;
         int PolyDegree;
 
         public SharingProtocol(Party me, int srcParty, Quorum dstQuorum, BigZp secret, BigInteger prime, ulong protocolId)

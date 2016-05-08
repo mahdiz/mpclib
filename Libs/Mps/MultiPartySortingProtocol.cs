@@ -3,6 +3,7 @@ using MpcLib.Circuits;
 using MpcLib.Common.FiniteField;
 using MpcLib.DistributedSystem;
 using MpcLib.SecretSharing;
+using MpcLib.SecretSharing.QuorumShareRenewal;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,12 +14,43 @@ using System.Threading.Tasks;
 
 namespace MpcLib.MultiPartyShuffling
 {
-    class MpsProtocol : Protocol<List<BigZp>>
+    public class BigZpShareGateEvaluationFactory : IGateEvaluationProtocolFactory<Share<BigZp>>
+    {
+        private BigInteger Prime;
+
+        public BigZpShareGateEvaluationFactory(BigInteger prime)
+        {
+            Prime = prime;
+        }
+
+        public QuorumProtocol<Share<BigZp>[]> GetEvaluationProtocolFor(ComputationGateType type, Party me, Quorum quorum, Share<BigZp>[] inputs)
+        {
+            switch (type)
+            {
+                case ComputationGateType.COMPARE_AND_SWAP:
+                    Debug.Assert(inputs.Length == 2);
+                    return new CompareAndSwapProtocol(me, quorum, inputs[0], inputs[1]);
+                default:
+                    Debug.Assert(false, "should not get here");
+                    return null;
+            }
+        }
+
+        public MultiQuorumProtocol<Share<BigZp>> GetResharingProtocol(Party me, Quorum fromQuorum, Quorum toQuorum, Share<BigZp> value, int gateNumber, int portNumber)
+        {
+            return new QuorumShareRenewalProtocol(me, fromQuorum, toQuorum, value, Prime, ProtocolIdGenerator.GateInputSharingIdentifier(gateNumber, portNumber));
+        }
+    }
+
+    class MultiPartySortingProtocol : Protocol<List<BigZp>>
     {
         public const int TRUSTED_PARTY_COUNT = 5;
-        public const int EVALUATION_QUORUM_COUNT = 8;
-        public const int EVALUATION_QUORUM_SIZE = 8;
+        public const int EVALUATION_QUORUM_COUNT = 2;
+        public const int EVALUATION_QUORUM_SIZE = 6;
         public const int POLY_COMMIT_SEED = 0;
+
+        private const int RANDOM_DISTRIBUTION_PROTOCOL = 1;
+        private const int CIRCUIT_EVAL_SYNC_PROTOCOL = 2;
 
         private Quorum RandGenQuorum;
         private BigInteger Prime;
@@ -37,17 +69,25 @@ namespace MpcLib.MultiPartyShuffling
         private Dictionary<Quorum, ulong> EvalProtocolMapping;
         private Dictionary<Quorum, IDictionary<OutputGateAddress, Share<BigZp>>> CircuitResultsPerQuorum;
 
+        private BigZpShareGateEvaluationFactory GateProtocolEvaluationFactory;
+
         private Dictionary<OutputGateAddress, ulong> ReconstructProtocolMapping;
 
         int Stage = 0;
 
-        public MpsProtocol(Party me, SortedSet<int> members, ulong protocolId, BigZp secret, BigInteger prime)
+        public MultiPartySortingProtocol(Party me, SortedSet<int> members, ulong protocolId, BigZp secret, BigInteger prime)
             : base(me, members, protocolId)
         {
             Prime = prime;
             Secret = secret;
 
+            GateProtocolEvaluationFactory = new BigZpShareGateEvaluationFactory(prime);
+
             SortNetwork = new LPSortingNetwork(members.Count);
+            /*
+            SortNetwork = SortingNetworkFactory.CreateButterflyTournamentRound(members.Count);
+            SortNetwork.AppendNetwork(SortingNetworkFactory.CreateButterflyTournamentRound(members.Count), 0);
+            */
             SortNetwork.CollapsePermutationGates();
         }
 
@@ -66,7 +106,7 @@ namespace MpcLib.MultiPartyShuffling
                 case 1:
                     ProtocolRandom = (BigZp)completedMsg.SingleResult;
                     ExecuteSubProtocol(new MajorityFilteringProtocol<BigZp>(Me, PartyIds, PartyIds.Skip(TRUSTED_PARTY_COUNT).ToArray(),
-                        ProtocolRandom, ProtocolIdGenerator.GenericIdentifier(1)));
+                        ProtocolRandom, ProtocolIdGenerator.GenericIdentifier(RANDOM_DISTRIBUTION_PROTOCOL)));
                     break;
                 case 2:
                     if (!RandGenQuorum.HasMember(Me.Id))
@@ -82,7 +122,7 @@ namespace MpcLib.MultiPartyShuffling
                     SetupQuorumExecutions();
                     break;
                 case 4:
-                    UnpackCircuitResults(completedMsg.Result);
+                    UnpackCircuitResults((completedMsg.SingleResult as SubProtocolCompletedMsg).Result);
                     SetupReconstruction();
                     break;
                 case 5:
@@ -108,7 +148,7 @@ namespace MpcLib.MultiPartyShuffling
         {
             Debug.Assert(PartyIds.Count > TRUSTED_PARTY_COUNT);
 
-            RandGenQuorum = new Quorum(NextQuorumNumber++, PartyIds.Take(5).ToArray());
+            RandGenQuorum = new Quorum(20, PartyIds.Take(5).ToArray());
             if (RandGenQuorum.HasMember(Me.Id))
             {
                 BigZp myRandom = new BigZp(Prime, Me.SafeRandGen.Next(Prime));
@@ -117,7 +157,7 @@ namespace MpcLib.MultiPartyShuffling
             else
             {
                 // receive the rand broadcast
-                ExecuteSubProtocol(new MajorityFilteringProtocol<BigZp>(Me, PartyIds, RandGenQuorum.Members.ToList(), ProtocolIdGenerator.GenericIdentifier(1)));
+                ExecuteSubProtocol(new MajorityFilteringProtocol<BigZp>(Me, PartyIds, RandGenQuorum.Members.ToList(), ProtocolIdGenerator.GenericIdentifier(RANDOM_DISTRIBUTION_PROTOCOL)));
                 Stage = 2;
             }
         }
@@ -125,6 +165,13 @@ namespace MpcLib.MultiPartyShuffling
         public void GenerateQuorums()
         {
             var quorumMembers = QuorumGenerator.GenerateQuorums(PartyIds, EVALUATION_QUORUM_COUNT, EVALUATION_QUORUM_SIZE, ProtocolRandom.Value);
+            
+            /*
+            var quorumMembers = new List<SortedSet<int>>();
+
+            quorumMembers.Add(new SortedSet<int>(new int[] { 0, 1, 2 }));
+            quorumMembers.Add(new SortedSet<int>(new int[] { 5, 6, 7 }));
+            */
 
             EvalQuorums = quorumMembers.Select(memberSet => new Quorum(NextQuorumNumber++, memberSet)).ToArray();
             MyQuorums = EvalQuorums.Where(q => q.HasMember(Me.Id)).ToArray();
@@ -174,8 +221,8 @@ namespace MpcLib.MultiPartyShuffling
                     }
                 }
             }
-
-            ExecuteSubProtocols(inputProtocols);
+            if (inputProtocols.Any())
+                ExecuteSubProtocols(inputProtocols);
         }
 
         private void UnpackCircuitInputs(IDictionary<ulong, object> circuitInputs)
@@ -197,12 +244,12 @@ namespace MpcLib.MultiPartyShuffling
             EvalProtocolMapping = new Dictionary<Quorum, ulong>();
             foreach (Quorum q in MyQuorums)
             {
-                ulong evalProtocolId = q.NextProtocolId;
+                ulong evalProtocolId = q.GetNextProtocolId();
                 EvalProtocolMapping[q] = evalProtocolId;
-                executionProtocols.Add(new SecureMultiQuorumCircuitEvaluation(Me, q, EvalQuorums, evalProtocolId, SortNetwork.Circuit, CircuitInputs, Prime));
+                executionProtocols.Add(new SecureMultiQuorumCircuitEvaluation<Share<BigZp>>(Me, q, EvalQuorums, evalProtocolId, SortNetwork.Circuit, CircuitInputs, GateProtocolEvaluationFactory, GateQuorumMapping, Prime));
             }
 
-            ExecuteSubProtocols(executionProtocols);
+            ExecuteSubProtocol(new SynchronizationProtocol(Me, PartyIds, executionProtocols, ProtocolIdGenerator.GenericIdentifier(CIRCUIT_EVAL_SYNC_PROTOCOL)));
         }
 
         private void UnpackCircuitResults(SortedDictionary<ulong, object> circuitResults)

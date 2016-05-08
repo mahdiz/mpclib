@@ -79,6 +79,7 @@ namespace MpcLib.SecretSharing
 
         public override void Start()
         {
+
             // we need to iterate over the bits in the opposite order. build the result list in the wrong order then reverse it at the end
             Result = new List<Share<BigZp>>();
 
@@ -132,7 +133,7 @@ namespace MpcLib.SecretSharing
         public override void HandleMessage(int fromId, Msg msg)
         {
             Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
-
+            
             SubProtocolCompletedMsg completedMsg = msg as SubProtocolCompletedMsg;
 
             switch (Stage)
@@ -158,6 +159,7 @@ namespace MpcLib.SecretSharing
         {
             Stage = 0;
             ExecuteSubProtocol(new ShareMultiplicationProtocol(Me, Quorum, BitA, BitB));
+            
         }
     }
 

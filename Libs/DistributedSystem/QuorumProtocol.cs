@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,8 +11,10 @@ namespace MpcLib.DistributedSystem
     {
         protected Quorum Quorum;
 
+        private bool WasDestructed;
+
         public QuorumProtocol(Party me, Quorum quorum)
-            : this(me, quorum, quorum.NextProtocolId)
+            : this(me, quorum, quorum.GetNextProtocolId())
         {
         }
 
@@ -30,12 +33,24 @@ namespace MpcLib.DistributedSystem
         {
             Send(msgs, Quorum.Members, delay);
         }
+
+        public override void Teardown()
+        {
+            base.Teardown();
+            Quorum.ReleaseId(ProtocolId);
+            WasDestructed = true;
+        }
+
+        ~QuorumProtocol()
+        {
+            Debug.Assert(WasDestructed, "Protocol ID was not released!");
+        }
     }
 
     public abstract class MultiQuorumProtocol<T> : Protocol<T> where T : class
     {
         protected Quorum[] Quorums;
-
+        
         public MultiQuorumProtocol(Party me, Quorum[] quorums, ulong protocolId)
             : base(me, MergeQuorums(quorums), protocolId)
         {
@@ -61,6 +76,13 @@ namespace MpcLib.DistributedSystem
         protected void QuorumBroadcast(Msg msg, int whichQuorum, int delay = 0)
         {
             Multicast(msg, Quorums[whichQuorum].Members, delay);
+        }
+
+        public override void Teardown()
+        {
+            base.Teardown();
+            if (ProtocolIdGenerator.IsQuorumProtocolIdentifier(ProtocolId))
+                Quorums[0].ReleaseId(ProtocolId);
         }
     }
 }

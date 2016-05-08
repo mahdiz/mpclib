@@ -139,45 +139,75 @@ namespace MpcLib.Circuits
         }
     }
 
-    public class InputGate : Gate
+    public enum ComputationGateType
     {
-        public InputGate()
-            : base(0, 1)
-        {
-        }
-
-        public override Gate Copy()
-        {
-            return new InputGate();
-        }
+        COMPARE_AND_SWAP,
     }
 
-    public abstract class ComputationGate : Gate
+    public static class ComputationGateTypeHelper
+    {
+        static internal int GetInputCount(this ComputationGateType type)
+        {
+            switch(type)
+            {
+                case ComputationGateType.COMPARE_AND_SWAP: return 2;
+                default:
+                    Debug.Assert(false, "Should not reach here");
+                    return 0;
+            }
+        }
+
+        static internal int GetOutputCount(this ComputationGateType type)
+        {
+            switch (type)
+            {
+                case ComputationGateType.COMPARE_AND_SWAP: return 2;
+                default:
+                    Debug.Assert(false, "Should not reach here");
+                    return 0;
+            }
+        }
+
+        static internal string GetName(this ComputationGateType type)
+        {
+            switch (type)
+            {
+                case ComputationGateType.COMPARE_AND_SWAP: return "C&S";
+                default:
+                    Debug.Assert(false, "Should not reach here");
+                    return null;
+            }
+        }
+    }
+    
+    public class ComputationGate : Gate
     {
         public int EvaluationQuorum;
 
-        public ComputationGate(int inputCount, int outputCount)
+        public readonly ComputationGateType Type;
+
+        public ComputationGate(ComputationGateType type)
+            : base(type.GetInputCount(), type.GetOutputCount())
+        {
+            Type = type;
+        }
+
+        public ComputationGate(ComputationGateType type, int inputCount, int outputCount)
             : base(inputCount, outputCount)
         {
-        }
-    }
-
-
-    public class CompareAndSwapGate : ComputationGate
-    {
-        public CompareAndSwapGate()
-            : base(2, 2)
-        {
+            Type = type;
         }
 
         public override Gate Copy()
         {
-            return new CompareAndSwapGate();
+            ComputationGate clone = new ComputationGate(Type);
+            clone.EvaluationQuorum = EvaluationQuorum;
+            return clone;
         }
 
         public override string ToString()
         {
-            return base.ToString() + " Gate Type: C&S";
+            return base.ToString() + " Gate Type: " + Type.GetName();
         }
     }
 

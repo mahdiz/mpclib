@@ -12,6 +12,13 @@ using MpcLib.Common.FiniteField;
 
 namespace MpcLib.Circuits
 {
+    public interface IGateEvaluationProtocolFactory<T> where T : class
+    {
+        QuorumProtocol<T[]> GetEvaluationProtocolFor(ComputationGateType type, Party me, Quorum quorum, T[] inputs);
+        MultiQuorumProtocol<T> GetResharingProtocol(Party me, Quorum fromQuorum, Quorum toQuorum, T value, int gateNumber, int portNumber);
+    }
+
+    /*
     // for now assume only 1 quorum
     public class SecureGroupCircuitEvaluation : QuorumProtocol<IDictionary<OutputGateAddress, Share<BigZp>>>
     {
@@ -127,31 +134,35 @@ namespace MpcLib.Circuits
 
         }
     }
+    */
 
-    public class SecureMultiQuorumCircuitEvaluation : MultiQuorumProtocol<IDictionary<OutputGateAddress, Share<BigZp>>>
+    public class SecureMultiQuorumCircuitEvaluation<T> : MultiQuorumProtocol<IDictionary<OutputGateAddress, T>> where T : class
     {
         private List<Gate> GateList;
-        private Dictionary<Gate, int> GateQuorumMapping = new Dictionary<Gate, int>();
+        private IDictionary<Gate, Quorum> GateQuorumMapping;
 
         private Quorum MyQuorum;
 
-        private IDictionary<InputGateAddress, Share<BigZp>> CircuitInputs;
+        private IDictionary<InputGateAddress, T> CircuitInputs;
         private Circuit Circuit;
         private BigInteger Prime;
+        private IGateEvaluationProtocolFactory<T> ProtocolFactory;
 
-        public SecureMultiQuorumCircuitEvaluation(Party me, Quorum myQuorum, Quorum[] quorums, ulong protocolId, Circuit circuit, IDictionary<InputGateAddress, Share<BigZp>> circuitInputs, BigInteger prime)
+        public SecureMultiQuorumCircuitEvaluation(Party me, Quorum myQuorum, Quorum[] quorums, ulong protocolId, Circuit circuit,
+            IDictionary<InputGateAddress, T> circuitInputs, IGateEvaluationProtocolFactory<T> protocolFactory,
+            IDictionary<Gate, Quorum> gateQuorumMapping, BigInteger prime)
             : base(me, quorums, protocolId)
         {
             // assign gates to quorums
             GateList = circuit.TopologicalOrder;
-            for (int i = 0; i < GateList.Count; i++)
-                GateQuorumMapping[GateList[i]] = i % quorums.Length;
+            GateQuorumMapping = gateQuorumMapping;
 
             Circuit = circuit;
             CircuitInputs = circuitInputs;
             Prime = prime;
-            Result = new Dictionary<OutputGateAddress, Share<BigZp>>();
+            Result = new Dictionary<OutputGateAddress, T>();
             MyQuorum = myQuorum;
+            ProtocolFactory = protocolFactory;
         }
 
         public override void HandleMessage(int fromId, Msg msg)
@@ -162,7 +173,7 @@ namespace MpcLib.Circuits
             var outputList = completedMsg.Result;
             foreach (var output in completedMsg.Result)
             {
-                var gateOutputs = (IDictionary<OutputGateAddress, Share<BigZp>>)output.Value;
+                var gateOutputs = (IDictionary<OutputGateAddress, T>)output.Value;
 
                 foreach (var gateOutput in gateOutputs)
                 {
@@ -181,11 +192,11 @@ namespace MpcLib.Circuits
             {
                 Debug.Assert(GateList[i] is ComputationGate);
 
-                var evalQuorum = Quorums[GateQuorumMapping[GateList[i]]];
+                var evalQuorum = GateQuorumMapping[GateList[i]];
                 if (evalQuorum == MyQuorum)
                 {
                     ulong evalProtocolId = ProtocolIdGenerator.GateEvalIdentifier(i);
-                    evalProtocols.Add(new MultiQuorumGateEvaluation(Me, Quorums, GateList[i], GateQuorumMapping, Circuit, CircuitInputs, Prime, evalProtocolId));
+                    evalProtocols.Add(new MultiQuorumGateEvaluation<T>(Me, (ComputationGate)GateList[i], GateQuorumMapping, Circuit, ProtocolFactory, CircuitInputs, Prime, evalProtocolId));
                 }
             }
 
@@ -196,42 +207,46 @@ namespace MpcLib.Circuits
         }
     }
 
-    public class MultiQuorumGateEvaluation : MultiQuorumProtocol<IDictionary<OutputGateAddress, Share<BigZp>>>
+    public class MultiQuorumGateEvaluation<T> : MultiQuorumProtocol<IDictionary<OutputGateAddress, T>> where T : class
     {
         private BigInteger Prime;
 
-        private Quorum[] AllQuorums;
-        private Gate EvalGate;
-        private Dictionary<Gate, int> GateQuorumMapping;
+        private ComputationGate EvalGate;
+        private IDictionary<Gate, Quorum> GateQuorumMapping;
         private Circuit Circuit;
+        private IGateEvaluationProtocolFactory<T> ProtocolFactory;
 
-        private IDictionary<InputGateAddress, Share<BigZp>> CircuitInputs;
-        private Share<BigZp>[] InputShares;
+
+        private IDictionary<InputGateAddress, T> CircuitInputs;
+        private T[] InputShares;
         private int SharesReceived;
         private Dictionary<int, ulong> inputIdProtocolIdMap;
 
-        private Share<BigZp>[] OutputShares;
+        private T[] OutputShares;
+
+        private Dictionary<ulong, InputGateAddress> OutputLoopbacksNeeded;
 
         private Quorum EvalQuorum;
 
         private int Stage;
 
-        public MultiQuorumGateEvaluation(Party me, Quorum[] allQuorums, Gate evalGate, Dictionary<Gate, int> gateQuorumMapping, Circuit circuit, IDictionary<InputGateAddress, Share<BigZp>> circuitInputs, BigInteger prime, ulong protocolId)
-            : base(me, GetParticipatingQuorumList(evalGate, allQuorums, gateQuorumMapping, circuit), protocolId)
+        public MultiQuorumGateEvaluation(Party me, ComputationGate evalGate, IDictionary<Gate, Quorum> gateQuorumMapping, Circuit circuit,
+            IGateEvaluationProtocolFactory<T> protocolFactory, IDictionary<InputGateAddress, T> circuitInputs, BigInteger prime, ulong protocolId)
+            : base(me, GetParticipatingQuorumList(evalGate, gateQuorumMapping, circuit), protocolId)
         {
-            AllQuorums = allQuorums;
             EvalGate = evalGate;
             GateQuorumMapping = gateQuorumMapping;
             Circuit = circuit;
             Prime = prime;
-            EvalQuorum = allQuorums[gateQuorumMapping[EvalGate]];
+            EvalQuorum = gateQuorumMapping[EvalGate];
             CircuitInputs = circuitInputs;
-            Result = new Dictionary<OutputGateAddress, Share<BigZp>>();
+            ProtocolFactory = protocolFactory;
+            Result = new Dictionary<OutputGateAddress, T>();
         }
 
-        private static Quorum[] GetParticipatingQuorumList(Gate evalGate, Quorum[] allQuorums, Dictionary<Gate, int> gateQuorumMapping, Circuit circuit)
+        private static Quorum[] GetParticipatingQuorumList(Gate evalGate, IDictionary<Gate, Quorum> gateQuorumMapping, Circuit circuit)
         {
-            List<int> quorumsIds = new List<int>();
+            List<Quorum> quorums = new List<Quorum>();
 
             // first add where we're receiving from
             for (int i = 0; i < evalGate.InputCount; i++)
@@ -239,11 +254,11 @@ namespace MpcLib.Circuits
                 if (circuit.InputConnectionCounterparties.ContainsKey(evalGate.GetLocalInputAddress(i)))
                 {
                     var counterpartGate = circuit.InputConnectionCounterparties[evalGate.GetLocalInputAddress(i)].Gate;
-                    quorumsIds.Add(gateQuorumMapping[counterpartGate]);
+                    quorums.Add(gateQuorumMapping[counterpartGate]);
                 }
             }
 
-            quorumsIds.Add(gateQuorumMapping[evalGate]);
+            quorums.Add(gateQuorumMapping[evalGate]);
 
             // then add where we're sending to
             for (int i = 0; i < evalGate.OutputCount; i++)
@@ -251,11 +266,11 @@ namespace MpcLib.Circuits
                 if (circuit.OutputConnectionCounterparties.ContainsKey(evalGate.GetLocalOutputAddress(i)))
                 {
                     var counterpartGate = circuit.OutputConnectionCounterparties[evalGate.GetLocalOutputAddress(i)].Gate;
-                    quorumsIds.Add(gateQuorumMapping[counterpartGate]);
+                    quorums.Add(gateQuorumMapping[counterpartGate]);
                 }
             }
 
-            return quorumsIds.Select(id => allQuorums[id]).ToArray();
+            return quorums.ToArray();
         }
 
         public override void HandleMessage(int fromId, Msg msg)
@@ -271,15 +286,25 @@ namespace MpcLib.Circuits
             else if (Stage == 1)
             {
                 Debug.Assert(msg.Type == MsgType.SubProtocolCompleted);
-                Debug.Assert(EvalGate is CompareAndSwapGate);
                 var completedMsg = (SubProtocolCompletedMsg)msg;
 
-                OutputShares = new Share<BigZp>[EvalGate.OutputCount];
-                CollectCompareAndSwapProtocol(completedMsg);
+                CollectGateEvaluation(completedMsg);
                 SendShareStage();
             }
             else if (Stage == 2)
+            {
+                // we loopback any shares that go to me in a different quorum.
+                Debug.Assert(msg is SubProtocolCompletedMsg);
+                SubProtocolCompletedMsg completedMsg = (SubProtocolCompletedMsg)msg;
+                foreach (var loopback in OutputLoopbacksNeeded)
+                {
+                    ulong counterpartEvalId = ProtocolIdGenerator.GateEvalIdentifier(loopback.Value.Gate.TopologicalRank);
+                    T loopbackVal = (T)completedMsg.Result[loopback.Key];
+
+                    NetSimulator.Loopback(Me.Id, counterpartEvalId, new LoopbackMsg<T>(loopbackVal, loopback.Value.Port));
+                }
                 IsCompleted = true;
+            }
         }
 
 
@@ -290,42 +315,36 @@ namespace MpcLib.Circuits
                 var completedMsg = (SubProtocolCompletedMsg)msg;
                 foreach (int key in inputIdProtocolIdMap.Keys)
                 {
-                    InputShares[key] = (Share<BigZp>)completedMsg.Result[inputIdProtocolIdMap[key]];
+                    InputShares[key] = (T)completedMsg.Result[inputIdProtocolIdMap[key]];
                     SharesReceived++;
                 }
             }
             else
             {
-                Debug.Assert(msg.Type == MsgType.Share);
-                var loopbackMsg = (BigZpShareLoopbackMsg)msg;
-                InputShares[loopbackMsg.WhichInputForGate] = loopbackMsg.Share;
+                Debug.Assert(msg.Type == MsgType.CircuitLoopback);
+                var loopbackMsg = (LoopbackMsg<T>)msg;
+                InputShares[loopbackMsg.WhichInputForGate] = loopbackMsg.Value;
                 SharesReceived++;
             }
         }
 
         private void StartGateEvaluation()
         {
-            Debug.Assert(EvalGate is CompareAndSwapGate);
             Stage = 1;
-            ExecuteSubProtocol(ConstructCompareAndSwapProtocol());
+            Debug.Assert(InputShares.Length == EvalGate.InputCount);
+            ExecuteSubProtocol(ProtocolFactory.GetEvaluationProtocolFor(EvalGate.Type, Me, EvalQuorum, InputShares));
         }
 
-        private Protocol ConstructCompareAndSwapProtocol()
+        private void CollectGateEvaluation(SubProtocolCompletedMsg msg)
         {
-            return new CompareAndSwapProtocol(Me, EvalQuorum, InputShares[0], InputShares[1]);
-        }
-
-        private void CollectCompareAndSwapProtocol(SubProtocolCompletedMsg msg)
-        {
-            Tuple<Share<BigZp>, Share<BigZp>> compOutput = (Tuple<Share<BigZp>, Share<BigZp>>)msg.SingleResult;
-
-            OutputShares[0] = compOutput.Item1;
-            OutputShares[1] = compOutput.Item2;
+            OutputShares = (T[])msg.SingleResult;
+            Debug.Assert(OutputShares.Length == EvalGate.OutputCount);
         }
 
         private void SendShareStage()
         {
             List<Protocol> reshareProtocols = new List<Protocol>();
+            OutputLoopbacksNeeded = new Dictionary<ulong, InputGateAddress>();
 
             for (int i = 0; i < EvalGate.OutputCount; i++)
             {
@@ -335,10 +354,10 @@ namespace MpcLib.Circuits
                 if (Circuit.OutputConnectionCounterparties.TryGetValue(EvalGate.GetLocalOutputAddress(i), out counterpartGateAddr))
                 {
                     var counterpartGate = counterpartGateAddr.Gate;
-                    var counterpartQuorum = AllQuorums[GateQuorumMapping[counterpartGate]];
+                    var counterpartQuorum = GateQuorumMapping[counterpartGate];
 
-                    bool needLoopback;
                     bool needReshare;
+                    bool needLoopback;
 
                     if (counterpartQuorum == EvalQuorum)
                     {
@@ -356,16 +375,22 @@ namespace MpcLib.Circuits
                         needReshare = true;
                     }
 
-                    if (needLoopback)
+                    if (needLoopback && !needReshare)
                     {
                         // loop a message back to the other protocol
                         ulong counterpartEvalId = ProtocolIdGenerator.GateEvalIdentifier(counterpartGate.TopologicalRank);
-                        NetSimulator.Loopback(Me.Id, counterpartEvalId, new BigZpShareLoopbackMsg(OutputShares[i], counterpartGateAddr.Port));
+                        NetSimulator.Loopback(Me.Id, counterpartEvalId, new LoopbackMsg<T>(OutputShares[i], counterpartGateAddr.Port));
                     }
+
                     if (needReshare)
                     {
-                        reshareProtocols.Add(new QuorumShareRenewalProtocol(Me, EvalQuorum, counterpartQuorum, OutputShares[i], Prime,
-                            ProtocolIdGenerator.GateInputSharingIdentifier(counterpartGate.TopologicalRank, counterpartGateAddr.Port)));
+                        Protocol reshareProtocol = ProtocolFactory.GetResharingProtocol(Me, EvalQuorum, counterpartQuorum, OutputShares[i],
+                            counterpartGate.TopologicalRank, counterpartGateAddr.Port);
+                        reshareProtocols.Add(reshareProtocol);
+                        if (needLoopback)
+                        {
+                            OutputLoopbacksNeeded[reshareProtocol.ProtocolId] = counterpartGateAddr;
+                        }
                     }
                 }
                 else
@@ -385,12 +410,12 @@ namespace MpcLib.Circuits
             {
                 IsCompleted = true;
             }
-            
+
         }
 
         public override void Start()
         {
-            InputShares = new Share<BigZp>[EvalGate.InputCount];
+            InputShares = new T[EvalGate.InputCount];
 
             List<Protocol> receiveSubProtocols = new List<Protocol>();
             inputIdProtocolIdMap = new Dictionary<int, ulong>();
@@ -402,13 +427,13 @@ namespace MpcLib.Circuits
                 if (Circuit.InputConnectionCounterparties.TryGetValue(EvalGate.GetLocalInputAddress(i), out counterpartGateAddr))
                 {
                     var counterpartGate = counterpartGateAddr.Gate;
-                    var counterpartQuorum = AllQuorums[GateQuorumMapping[counterpartGate]];
+                    var counterpartQuorum = GateQuorumMapping[counterpartGate];
                     if (!counterpartQuorum.HasMember(Me.Id))
                     {
-                        ulong recvProtocolId = ProtocolIdGenerator.GateInputSharingIdentifier(EvalGate.TopologicalRank, i);
                         // I expect to receive this value from a quorum resharing
-                        receiveSubProtocols.Add(new QuorumShareRenewalProtocol(Me, counterpartQuorum, EvalQuorum, null, Prime, recvProtocolId));
-                        inputIdProtocolIdMap[i] = recvProtocolId;
+                        Protocol reshareReceive = ProtocolFactory.GetResharingProtocol(Me, counterpartQuorum, EvalQuorum, null, EvalGate.TopologicalRank, i);
+                        receiveSubProtocols.Add(reshareReceive);
+                        inputIdProtocolIdMap[i] = reshareReceive.ProtocolId;
                     }
                 }
                 else
@@ -428,17 +453,17 @@ namespace MpcLib.Circuits
         }
     }
 
-    public class BigZpShareLoopbackMsg : Msg
+    class LoopbackMsg<T> : Msg
     {
-        public readonly Share<BigZp> Share;
+        public readonly T Value;
         public readonly int WhichInputForGate;
 
-        public BigZpShareLoopbackMsg(Share<BigZp> share, int whichInputForGate)
-            : base(MsgType.Share)
+        public LoopbackMsg(T value, int whichInputForGate)
+            : base(MsgType.CircuitLoopback)
         {
-            Share = share;
+            Value = value;
             WhichInputForGate = whichInputForGate;
         }
-    }
 
+    }
 }

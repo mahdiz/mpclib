@@ -28,13 +28,146 @@ namespace MpcLib.Apps
         const int min_logn = 10;        // min log number of parties
         const int max_logn = 30;        // max log number of parties
 
-        //static readonly BigInteger prime = BigInteger.Parse("730750862221594424981965739670091261094297337857");
-        static readonly BigInteger prime = BigInteger.Parse("997");
+        static readonly BigInteger prime160 = BigInteger.Parse("730750862221594424981965739670091261094297337857");
+
+        static BigInteger prime;
+        static BigInteger prime10 = BigInteger.Parse("997");
+        static BigInteger prime20 = BigInteger.Parse("545893");
+        static BigInteger prime30 = BigInteger.Parse("584410283");
+        static BigInteger prime40 = BigInteger.Parse("639257827889");
+        static BigInteger prime50 = BigInteger.Parse("628954128323383");
 
         public static void Main(string[] args)
         {
+            // no quorums all primes:
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 1;
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_SIZE = 8;
+            /*
+            prime = prime10;
+            Main(8);
+            NetSimulator.Reset();
+
+            prime = prime20;
+            Main(8);
+            NetSimulator.Reset();
+
+            prime = prime30;
+            Main(8);
+            NetSimulator.Reset();
+
+            prime = prime40;
+            Main(8);
+            NetSimulator.Reset();
+
+            prime = prime50;
+            Main(8);
+            NetSimulator.Reset();
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_SIZE = 16;
+
+            prime = prime10;
+            Main(16);
+            NetSimulator.Reset();
+
+            prime = prime20;
+            Main(16);
+            NetSimulator.Reset();
+
+            prime = prime30;
+            Main(16);
+            NetSimulator.Reset();
+
+            prime = prime40;
+            Main(16);
+            NetSimulator.Reset();
+
+            prime = prime50;
+            Main(16);
+            NetSimulator.Reset();
+            
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_SIZE = 32;
+
+            prime = prime10;
+            Main(32);
+            NetSimulator.Reset();
+            
+            // with log n quorums of size 8
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 4;
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_SIZE = 8;
+
+            prime = prime30;
+            Main(16);
+            NetSimulator.Reset();
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 8;
+
+            prime = prime30;
+            Main(32);
+            NetSimulator.Reset();
+            
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 16;
+
+            prime = prime30;
+            Main(64);
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 1;
+
+            prime = prime160;
+            Main(8);
+            NetSimulator.Reset();
+            */
+
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_COUNT = 8;
+            MultiPartyShufflingProtocol.EVALUATION_QUORUM_SIZE = 8;
+            
+            prime = prime10;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime20;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime30;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime40;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime50;
+            Main(32);
+            NetSimulator.Reset();
+
+            Console.ReadLine();
+            Console.ReadLine();
+            Console.ReadLine();
+        }
+
+        /*
+            prime = prime20;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime30;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime40;
+            Main(32);
+            NetSimulator.Reset();
+
+            prime = prime50;
+            Main(32);
+            NetSimulator.Reset();
+            */
+
+        public static void Main(int n) // number of parties
+        {
             Debug.Assert(NumTheoryUtils.MillerRabin(prime, 5) == false);        // must be a prime
-            int n = 8;      // number of parties
 
             // Create an MPC network, add parties, and init them with random inputs
             NetSimulator.Init(seed);   //seed
@@ -43,23 +176,24 @@ namespace MpcLib.Apps
             Quorum q = new Quorum(0, 0, n);
 
             SetupMps(n);
+
+            //SetupMultiQuorumCircuitEvaluation(q);
+
             Console.WriteLine(n + " parties initialized. Running simulation...\n");
-            
             // run the simulator
             var elapsedTime = Timex.Run(() => NetSimulator.Run());
+           // CheckMps(n);
+            //ReconstructDictionary(q, network.LastGateForWire, 4);
 
-            CheckMps(n);
-            
             Console.WriteLine("Simulation finished.  Checking results...\n");
 
             Console.WriteLine("# parties    = " + n);
-            Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount);
+            Console.WriteLine("# msgs sent  = " + NetSimulator.SentMessageCount.ToString("0.##E+00"));
             Console.WriteLine("# bits sent  = " + (NetSimulator.SentByteCount * 8).ToString("0.##E+00"));
             Console.WriteLine("Rounds       = " + NetSimulator.RoundCount + "\n");
-            Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength(prime) + " bits");
+            Console.WriteLine("Key size     = " + NumTheoryUtils.GetBitLength2(prime) + " bits");
 			Console.WriteLine("Seed         = " + seed + "\n");
 			Console.WriteLine("Elapsed time = " + elapsedTime.ToString("hh':'mm':'ss'.'fff") + "\n");
-            Console.ReadKey();
 		}
 
 
@@ -275,7 +409,7 @@ namespace MpcLib.Apps
 
             for (int i = 0; i < n; i++)
             {
-                TestParty<Tuple<Share<BigZp>, Share<BigZp>>> party = new TestParty<Tuple<Share<BigZp>, Share<BigZp>>>();
+                TestParty<Share<BigZp>[]> party = new TestParty<Share<BigZp>[]>();
                 party.UnderTest = new CompareAndSwapProtocol(party, quorum.Clone() as Quorum, new Share<BigZp>(sharesA[i]), new Share<BigZp>(sharesB[i]));
                 NetSimulator.RegisterParty(party);
             }
@@ -376,6 +510,7 @@ namespace MpcLib.Apps
         }
 
         public static PermutationNetwork network;
+        /*
         public static void SetupSimpleCircuitEvaluation(Quorum quorum)
         {
             int n = quorum.Size;
@@ -406,7 +541,7 @@ namespace MpcLib.Apps
                 NetSimulator.RegisterParty(party);
             }
         }
-
+        */
         public static void SetupMultiQuorumCircuitEvaluation(Quorum bigQuorum)
         {
             int n = bigQuorum.Size;
@@ -422,7 +557,7 @@ namespace MpcLib.Apps
             Debug.Assert((n & (n - 1)) == 0); // is power of 2
 
             network = new LPSortingNetwork(n);
-            //network = SortingNetworkFactory.CreateButterflyTournamentRound(4);
+            //network = SortingNetworkFactory.CreateButterflyTournamentRound(n);
 
             network.CollapsePermutationGates();
 
@@ -430,7 +565,11 @@ namespace MpcLib.Apps
 
             for (int i = 0; i < n; i++)
                 shares[i] = BigShamirSharing.Share(new BigZp(prime, 500 - 2 * i), qSize, polyDeg);
-            
+
+            Dictionary<Gate, Quorum> gqmapping = new Dictionary<Gate, Quorum>();
+            for (int i = 0; i < network.Circuit.TopologicalOrder.Count; i++)
+                gqmapping[network.Circuit.TopologicalOrder[i]] = quorums[i];
+
             foreach (var id in bigQuorum.Members)
             {
                 Dictionary<InputGateAddress, Share<BigZp>> inShares = new Dictionary<InputGateAddress, Share<BigZp>>();
@@ -446,8 +585,8 @@ namespace MpcLib.Apps
                 Quorum[] quorumsClone = quorums.Select(a => a.Clone() as Quorum).ToArray();
                 
                 party.UnderTest = 
-                    new SecureMultiQuorumCircuitEvaluation(party, quorumsClone[id / qSize], quorumsClone,
-                    ProtocolIdGenerator.GenericIdentifier(0), network.Circuit, inShares, prime);
+                    new SecureMultiQuorumCircuitEvaluation<Share<BigZp>>(party, quorumsClone[id / qSize], quorumsClone,
+                    ProtocolIdGenerator.GenericIdentifier(0), network.Circuit, inShares, new BigZpShareGateEvaluationFactory(prime), gqmapping, prime);
 
                 NetSimulator.RegisterParty(party);
             }
@@ -460,12 +599,28 @@ namespace MpcLib.Apps
             {
                 inputs.Add(new BigZp(prime, StaticRandom.Next(prime)));
             }
-
+/*
             Console.WriteLine("Inputs: " + string.Join(" ", inputs));
             var sorted = inputs.Select(zp => zp.Value).ToList();
             sorted.Sort();
 
             Console.WriteLine("Expected Output: " + string.Join(" ", sorted));
+            */
+            for (int i = 0; i < n; i++)
+            {
+                NetSimulator.RegisterParty(new MpsParty(n, inputs[i]));
+            }
+        }
+
+        public static void SetupMps2(int n)
+        {
+            List<BigZp> inputs = new List<BigZp>();
+            for (int i = 0; i < n; i++)
+            {
+                inputs.Add(new BigZp(prime, StaticRandom.Next(prime)));
+            }
+
+      //      Console.WriteLine("Inputs: " + string.Join(" ", inputs));
 
             for (int i = 0; i < n; i++)
             {

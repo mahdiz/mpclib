@@ -24,7 +24,8 @@ namespace MpcLib.DistributedSystem
         protected Dictionary<ulong, Protocol> RegisteredProtocols;
         protected Dictionary<ulong, ulong> ParentProtocols;
         protected Dictionary<ulong, int> ChildProtocolOutstandingCount;
-        protected Dictionary<ulong, SortedDictionary<ulong, object>> ChildProtocolCompletedMsgs;
+        protected Dictionary<ulong, SortedDictionary<ulong, object>> ChildProtocolCompletedMsg;
+        protected Dictionary<ulong, List<ulong>> ChildProtocolSubmissionOrder;
 
         public Party()
         {
@@ -35,7 +36,8 @@ namespace MpcLib.DistributedSystem
             RegisteredProtocols = new Dictionary<ulong, Protocol>();
             ParentProtocols = new Dictionary<ulong, ulong>();
             ChildProtocolOutstandingCount = new Dictionary<ulong, int>();
-            ChildProtocolCompletedMsgs = new Dictionary<ulong, SortedDictionary<ulong, object>>();
+            ChildProtocolCompletedMsg = new Dictionary<ulong, SortedDictionary<ulong, object>>();
+            ChildProtocolSubmissionOrder = new Dictionary<ulong, List<ulong>>();
         }
 
         public void Send(Protocol protocol, int toId, Msg msg, int delay = 0)
@@ -53,7 +55,7 @@ namespace MpcLib.DistributedSystem
         }
 
         public void Send(Protocol protocol, ICollection<Msg> msgs, ICollection<int> recipients, int delay = 0)
-        {
+        {   
             NetSimulator.Send(Id, protocol.ProtocolId, msgs, recipients, delay);
         }
 
@@ -69,6 +71,9 @@ namespace MpcLib.DistributedSystem
 
         public void RegisterProtocol(Protocol parent, Protocol child)
         {
+            if (Id == 1 && child.ProtocolId == 360287978779639809)
+                Console.WriteLine("bye2");
+
             Debug.Assert(parent == null || RegisteredProtocols.ContainsKey(parent.ProtocolId));
             Debug.Assert(!RegisteredProtocols.ContainsKey(child.ProtocolId));
 
@@ -79,6 +84,9 @@ namespace MpcLib.DistributedSystem
             {
                 ParentProtocols[child.ProtocolId] = parent.ProtocolId;
                 ChildProtocolOutstandingCount[parent.ProtocolId]++;
+                if (!ChildProtocolSubmissionOrder.ContainsKey(parent.ProtocolId))
+                    ChildProtocolSubmissionOrder[parent.ProtocolId] = new List<ulong>();
+                ChildProtocolSubmissionOrder[parent.ProtocolId].Add(child.ProtocolId);
             }
         }
 
@@ -98,7 +106,7 @@ namespace MpcLib.DistributedSystem
             foreach (var subProtocol in subProtocols)
                 CheckCompleted(subProtocol);
         }
-
+        
         /// <summary>
         /// Initiates the party protocol.
         /// </summary>
@@ -106,7 +114,7 @@ namespace MpcLib.DistributedSystem
 
         public virtual void Receive(int fromId, ulong protocolId, Msg msg)
         {
-           // Console.WriteLine("Receive msg " + Id + " " + protocolId);
+            // Console.WriteLine("Receive msg " + Id + " " + protocolId);
             Debug.Assert(RegisteredProtocols.ContainsKey(protocolId));
 
             Protocol protocol = RegisteredProtocols[protocolId];
@@ -120,6 +128,7 @@ namespace MpcLib.DistributedSystem
                 return;
 
             RegisteredProtocols.Remove(protocol.ProtocolId);
+            protocol.Teardown();
 
             if (!ParentProtocols.ContainsKey(protocol.ProtocolId))
                 return;
@@ -127,19 +136,20 @@ namespace MpcLib.DistributedSystem
             Protocol parent = RegisteredProtocols[ParentProtocols[protocol.ProtocolId]];
             ParentProtocols.Remove(protocol.ProtocolId);
 
-            if (!ChildProtocolCompletedMsgs.ContainsKey(parent.ProtocolId))
-                ChildProtocolCompletedMsgs[parent.ProtocolId] = new SortedDictionary<ulong, object>();
+            if (!ChildProtocolCompletedMsg.ContainsKey(parent.ProtocolId))
+                ChildProtocolCompletedMsg[parent.ProtocolId] = new SortedDictionary<ulong, object>();
 
             ChildProtocolOutstandingCount[parent.ProtocolId]--;
-            ChildProtocolCompletedMsgs[parent.ProtocolId][protocol.ProtocolId] = protocol.RawResult;
+            ChildProtocolCompletedMsg[parent.ProtocolId][protocol.ProtocolId] = protocol.RawResult;
 
             if (ChildProtocolOutstandingCount[parent.ProtocolId] > 0)
                 return;
 
             // all subprotocols are completed
             //Send(parent, Id, new SubProtocolCompletedMsg(ChildProtocolCompletedMsgs[parent.ProtocolId]));
-            NetSimulator.Loopback(Id, parent.ProtocolId, new SubProtocolCompletedMsg(ChildProtocolCompletedMsgs[parent.ProtocolId]));
-            ChildProtocolCompletedMsgs.Remove(parent.ProtocolId);
+            NetSimulator.Loopback(Id, parent.ProtocolId, new SubProtocolCompletedMsg(ChildProtocolCompletedMsg[parent.ProtocolId], ChildProtocolSubmissionOrder[parent.ProtocolId]));
+            ChildProtocolCompletedMsg.Remove(parent.ProtocolId);
+            ChildProtocolSubmissionOrder.Remove(parent.ProtocolId);
         }
 
         public static void Reset()

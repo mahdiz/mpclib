@@ -16,7 +16,7 @@ namespace MpcLib.MultiPartyShuffling
 {
     public class MpsParty : Party
     {
-        private MpsProtocol Protocol;
+        private MultiPartyShufflingProtocol Protocol;
         public List<BigZp> Results
         {
             get
@@ -42,7 +42,8 @@ namespace MpcLib.MultiPartyShuffling
             for (int i = 0; i < numParties; i++)
                 parties.Add(i);
 
-            Protocol = new MpsProtocol(this, parties, ProtocolIdGenerator.GenericIdentifier(0), input, input.Prime);
+            Protocol = new MultiPartyShufflingProtocol(this, parties, ProtocolIdGenerator.GenericIdentifier(0), input, input.Prime);
+            //Protocol = new MultiPartySortingProtocol(this, parties, ProtocolIdGenerator.GenericIdentifier(0), input, input.Prime);
         }
 
         public override void Start()

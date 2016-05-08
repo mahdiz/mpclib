@@ -66,6 +66,7 @@ namespace MpcLib.SecretSharing
                     break;
                 case 4:
                     Result = stageResult[0];
+
                     IsCompleted = true;
                     break;
             }
@@ -93,7 +94,7 @@ namespace MpcLib.SecretSharing
             else
             {
                 // only 1 bit in input. no subtraction necessary
-                ExecuteSubProtocol(new LoopbackProtocol(Me, new List<Share<BigZp>>(), Quorum.NextProtocolId));
+                ExecuteSubProtocol(new LoopbackProtocol(Me, new List<Share<BigZp>>(), Quorum.GetNextProtocolId()));
             }
         }
 

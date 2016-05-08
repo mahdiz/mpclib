@@ -28,6 +28,8 @@ namespace MpcLib.DistributedSystem
 
         public abstract void Start();
         public abstract void HandleMessage(int fromId, Msg msg);
+
+        public virtual void Teardown() { }
         
         public void Send(int toId, Msg msg, int delay = 0)
         {
@@ -92,13 +94,15 @@ namespace MpcLib.DistributedSystem
     public class SubProtocolCompletedMsg : Msg
     {
 
-        public SubProtocolCompletedMsg(SortedDictionary<ulong, object> result)
+        public SubProtocolCompletedMsg(SortedDictionary<ulong, object> result, IList<ulong> submissionOrder)
             : base(MsgType.SubProtocolCompleted)
         {
             Result = result;
+            SubmissionOrder = submissionOrder;
         }
 
         public SortedDictionary<ulong, object> Result;
+        private IList<ulong> SubmissionOrder;
 
         private List<object> ResultListInternal;
         public List<object> ResultList
@@ -106,7 +110,7 @@ namespace MpcLib.DistributedSystem
             get
             {
                 if (ResultListInternal == null)
-                    ResultListInternal = Result.Values.ToList();
+                    ResultListInternal = SubmissionOrder.Select(id => Result[id]).ToList();
                 return ResultListInternal;
             }
         }
@@ -115,8 +119,8 @@ namespace MpcLib.DistributedSystem
         {
             get
             {
-                Debug.Assert(ResultList.Count == 1);
-                return ResultList[0];
+                Debug.Assert(Result.Count == 1);
+                return Result[SubmissionOrder[0]];
             }
         }
     }
